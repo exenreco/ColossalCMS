@@ -1,0 +1,31 @@
+{
+  "id": "com.colossal.settings",
+  "name": "Settings",
+  "description": "Your site identity, preferences, and team.",
+  "isCore": true,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "settings",
+  "admin": {
+    "entryComponent": "SettingsComponent",
+    "menu": {
+      "label": "Settings",
+      "icon": "settings",
+      "path": "/admin/settings",
+      "order": 50,
+      "group": "main"
+    },
+    "skeleton": {
+      "component": "SettingsSkeletonComponent",
+      "variant": "form"
+    }
+  },
+  "frontend": {
+    "routes": []
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": ["com.colossal.media"]
+  }
+}

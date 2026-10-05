@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: colossal-cms
+    runtime: node
+    # Application files live at the repository root; omit rootDir.
+    buildCommand: pnpm install --frozen-lockfile --prod=false && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24
+      - key: CMS_DB_PROVIDER
+        value: mongodb
+      - key: CMS_STORAGE_PROVIDER
+        value: gridfs
+      - key: CMS_PUBLIC_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: ColossalCMS
+      - key: MONGODB_GRIDFS_BUCKET
+        value: colossal_media
+      - key: MONGODB_DNS_SERVERS
+        value: "1.1.1.1,8.8.8.8"
+      - key: CMS_SETUP_TOKEN
+        sync: false

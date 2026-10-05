@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.google-ads",
+  "name": "Google Ads",
+  "description": "Configure Google AdSense and place display ads using the Ads block.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "globe",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": [] },
+  "admin": {
+    "entryComponent": "GoogleAdsComponent",
+    "menu": {
+      "label": "Google Ads",
+      "icon": "globe",
+      "path": "/admin/google-ads",
+      "order": 940,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

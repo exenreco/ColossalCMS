@@ -1,0 +1,38 @@
+# Dependencies and generated builds
+node_modules/
+.pnpm-store/
+dist/
+.angular/
+storybook-static/
+*.tsbuildinfo
+
+# Local application data and runtime state
+.local/
+.production/
+.sites-runtime/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Environment credentials; keep the configuration template
+.env
+.env.*
+!.env.example
+.env*.tmp
+
+# Logs, temporary files and generated archives
+*.log
+/tmp/
+*.tar.gz
+
+# Test reports and generated fixtures
+test-results/
+coverage/
+cypress/screenshots/
+cypress/videos/
+tests/fixtures/plugin-sample.zip
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

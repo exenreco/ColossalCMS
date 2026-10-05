@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.production-connections",
+  "name": "Production Connections",
+  "description": "Manage MongoDB, Cloudflare D1, R2-compatible storage and server environment configuration.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "globe",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": [] },
+  "admin": {
+    "entryComponent": "ProductionConnectionsComponent",
+    "menu": {
+      "label": "Connections",
+      "icon": "globe",
+      "path": "/admin/connections",
+      "order": 950,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

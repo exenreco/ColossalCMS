@@ -1,0 +1,184 @@
+import { ChangeDetectorRef, Component, OnInit, inject } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { RouterLink } from "@angular/router";
+import { ApiService } from "../../../../shared/api.service";
+
+@Component({
+  selector: "cl-google-ads",
+  standalone: true,
+  imports: [FormsModule, RouterLink],
+  styles: `
+    .form-content label.live-ads-toggle {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+    .form-content .live-ads-toggle input {
+      width: auto;
+      margin: 0;
+    }
+    .settings-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 20px;
+    }
+  `,
+  template: `
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">GOOGLE ADSENSE</p>
+        <h1>Ads that fit your site.</h1>
+        <p>
+          Connect your AdSense display ad unit, then add an Ads block in any
+          editor.
+        </p>
+      </div>
+    </div>
+    @if (!enabled) {
+      <section class="panel empty-cell">
+        <h2>Activate Google Ads to add ad blocks</h2>
+        <a class="button primary" routerLink="/admin/plugins">Manage plugins</a>
+      </section>
+    } @else {
+      <form class="panel settings-panel" (ngSubmit)="save()">
+        <div class="form-content">
+          <h2>AdSense connection</h2>
+          <p>
+            Copy these values from the display ad code in your AdSense account.
+          </p>
+          <label
+            >Publisher ID<input
+              name="publisherId"
+              [(ngModel)]="settings.publisherId"
+              placeholder="ca-pub-1234567890123456"
+              maxlength="23"
+            /><small>Both pub- and ca-pub- formats are accepted.</small></label
+          >
+          <label
+            >Default ad slot ID<input
+              name="slotId"
+              [(ngModel)]="settings.slotId"
+              placeholder="1234567890"
+              inputmode="numeric"
+              maxlength="20"
+            /><small>Each Ads block can override this slot.</small></label
+          >
+          <label
+            >Default format<select name="format" [(ngModel)]="settings.format">
+              <option value="auto">Automatic</option>
+              <option value="horizontal">Horizontal</option>
+              <option value="rectangle">Rectangle</option>
+              <option value="vertical">Vertical</option>
+            </select></label
+          >
+          <label
+            >Sizing<select name="sizing" [(ngModel)]="settings.sizing">
+              <option value="responsive">Responsive</option>
+              <option value="fixed">Fixed dimensions</option>
+            </select></label
+          >
+          @if (settings.sizing === "fixed") {
+            <label
+              >Width (px)<input
+                name="width"
+                type="number"
+                [(ngModel)]="settings.width"
+                min="50"
+                max="2000"
+            /></label>
+            <label
+              >Height (px)<input
+                name="height"
+                type="number"
+                [(ngModel)]="settings.height"
+                min="50"
+                max="2000"
+            /></label>
+          }
+          <label class="live-ads-toggle"
+            ><input
+              name="liveAds"
+              type="checkbox"
+              [(ngModel)]="settings.liveAds"
+            />
+            Enable live ads on public pages</label
+          >
+          <p class="field-note">
+            When disabled, public pages show a preview placeholder. Editor
+            canvases and theme previews always use placeholders. Google
+            determines ad availability for your account and site.
+          </p>
+          <div class="settings-actions">
+            <a
+              href="https://support.google.com/adsense/answer/9183363"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Find your publisher and ad slot IDs ↗</a
+            >
+            @if (error) {
+              <p class="error" role="alert">{{ error }}</p>
+            }
+            <button class="button primary" [disabled]="busy || loading">
+              {{ busy ? "Saving…" : "Save Google Ads settings" }}
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+  `,
+})
+export class GoogleAdsComponent implements OnInit {
+  private cdr = inject(ChangeDetectorRef);
+  api = inject(ApiService);
+  settings = {
+    publisherId: "",
+    slotId: "",
+    format: "auto",
+    sizing: "responsive",
+    width: 300,
+    height: 250,
+    liveAds: false,
+  };
+  loading = true;
+  busy = false;
+  error = "";
+  get enabled() {
+    return (
+      this.api.state()?.user.role === "admin" &&
+      this.api
+        .state()
+        ?.plugins.some((p) => p.id === "com.colossal.google-ads" && p.active)
+    );
+  }
+  async ngOnInit() {
+    try {
+      this.settings = await this.api.request("/admin/google-ads");
+    } catch (error) {
+      this.error = (error as Error).message;
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
+  }
+  async save() {
+    this.busy = true;
+    this.error = "";
+    try {
+      await this.api.mutate(
+        "/admin/google-ads",
+        "POST",
+        this.settings,
+        "Google Ads settings saved.",
+      );
+      this.settings = await this.api.request("/admin/google-ads");
+    } catch (error) {
+      this.error = (error as Error).message;
+    } finally {
+      this.busy = false;
+      this.cdr.markForCheck();
+    }
+  }
+}

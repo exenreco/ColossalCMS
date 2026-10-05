@@ -1,0 +1,442 @@
+<section
+  class="theme-editor"
+  aria-label="Theme editor"
+  [attr.data-view-mode]="mode"
+  [attr.data-preview-width]="
+    width === 1200 ? 'desktop' : width === 768 ? 'tablet' : 'mobile'
+  "
+>
+  <header class="theme-editor-header">
+    <div class="toolbar-left">
+      <button class="button" (click)="close()">← Back</button>
+      <span class="toolbar-theme-name">{{ record?.name }}</span>
+    </div>
+    <div class="toolbar-center">
+      <label class="toolbar-template">
+        Template
+        <select
+          aria-label="Template to edit"
+          [ngModel]="state.templateId"
+          (ngModelChange)="selectTemplate($event)"
+        >
+          @for (t of templateOptions; track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-right">
+      <button
+        class="button"
+        (click)="previewSite()"
+        [disabled]="busy || !record"
+      >
+        Preview
+      </button>
+      <button
+        class="button primary publish-button"
+        [disabled]="busy || !record"
+        (click)="publish()"
+      >
+        Publish
+      </button>
+      <details class="theme-more">
+        <summary class="button" aria-label="More actions" title="More actions">
+          ···
+        </summary>
+        <div>
+          <button [disabled]="busy || !record" (click)="save()">
+            Save Draft
+          </button>
+          <button
+            (click)="toggleBoundaries()"
+            [attr.aria-pressed]="showBoundaries"
+          >
+            Show block boundaries
+          </button>
+          <button (click)="newTemplate()">New template</button>
+          <button
+            (click)="toggleBlockToolbar()"
+            [attr.aria-pressed]="showBlockToolbar"
+          >
+            Show block toolbar
+          </button>
+          <button (click)="clone()">Save as new theme</button>
+          <button (click)="exportTheme()">Export ZIP</button>
+          <button (click)="revert()">Revert to published</button>
+          <button (click)="history = !history">Version history</button>
+        </div>
+      </details>
+    </div>
+  </header>
+  @if (record) {
+    @if (
+      mode === "canvas" &&
+      state.node &&
+      !state.protected(state.node) &&
+      showBlockToolbar &&
+      !toolbarHidden &&
+      !dragging
+    ) {
+      <cl-contextual-block-toolbar
+        [style.position]="'fixed'"
+        [style.z-index]="50"
+        [style.left.px]="toolbarPosition.left"
+        [style.top.px]="toolbarPosition.top"
+        [style.width.px]="toolbarPosition.width"
+        (dismiss)="dismissToolbar()"
+        (format)="formatText($event)"
+        (replace)="replaceBlockMedia($event)"
+      />
+    }
+    <cl-theme-editor-secondary-toolbar
+      [blocksOpen]="blockLibraryOpen"
+      [blockListOpen]="blockListOpen"
+      [mode]="mode"
+      [width]="width"
+      [canUndo]="!!state.past.length"
+      [canRedo]="!!state.future.length"
+      (toggleBlocks)="toggleBlockLibrary()"
+      (toggleBlockList)="toggleBlockList()"
+      (modeChange)="mode = $event"
+      (widthChange)="width = $event"
+      (undo)="state.undo()"
+      (redo)="state.redo()"
+    />
+  }
+
+  @if (error || state.error) {
+    <p class="theme-editor-error" role="alert">{{ error || state.error }}</p>
+  }
+  @if (state.notice) {
+    <p class="theme-editor-error" role="status">{{ state.notice }}</p>
+  }
+  @if (!record && !error) {
+    <cl-theme-editor-skeleton />
+  }
+  @if (record && state.document(); as doc) {
+    @if (history) {
+      <div class="theme-history">
+        <strong>Published versions</strong>
+        @for (h of record.history; track h.id) {
+          <button class="button small" (click)="restore(h.id)">
+            Restore v{{ h.version }} · {{ h.created_at.slice(0, 10) }}
+          </button>
+        } @empty {
+          <span>No earlier versions yet.</span>
+        }
+      </div>
+    }
+    <div
+      class="theme-editor-panes"
+      [class.library-open]="blockLibraryOpen || blockListOpen"
+      [class.inspector-open]="inspectorOpen"
+      [class.is-dragging]="dragging"
+      [attr.inert]="busy ? '' : null"
+    >
+      <div
+        id="block-library-drawer"
+        class="theme-library-drawer"
+        [attr.inert]="blockLibraryOpen ? null : ''"
+        [attr.aria-hidden]="!blockLibraryOpen"
+      >
+        <cl-block-library-drawer
+          [columnsSelected]="state.node?.type === 'core/columns'"
+          [open]="blockLibraryOpen"
+          [blocks]="state.blocks"
+          [recent]="recent"
+          (choose)="insertBlock($event)"
+          (dragStart)="libraryDrag($event)"
+          (pointerStart)="libraryPointerStart($event)"
+          (end)="dragEnded()"
+          (dismiss)="setBlockLibrary(false, true)"
+        />
+      </div>
+      <div
+        id="block-list-drawer"
+        class="theme-library-drawer theme-block-list-drawer"
+        [attr.inert]="blockListOpen ? null : ''"
+        [attr.aria-hidden]="!blockListOpen"
+      >
+        @if (blockListOpen) {
+          <cl-block-list-drawer (close)="setBlockList(false, true)" />
+        }
+      </div>
+      @if (blockLibraryOpen || blockListOpen || inspectorOpen) {
+        <button
+          class="drawer-scrim"
+          aria-label="Close drawers"
+          (click)="closeDrawers()"
+        ></button>
+      }
+      <div class="theme-editor-viewport">
+        <main class="theme-workspace">
+          @if (state.part) {
+            <div class="theme-part-banner">
+              <button
+                class="button small"
+                (click)="selectTemplate(state.templateId)"
+              >
+                ← Template
+              </button>
+              <strong>Editing shared {{ state.part }}</strong>
+              <span>Updates every template using this part.</span>
+            </div>
+          }
+          <div class="theme-canvas-scroll" (click)="canvasClick($event)">
+            @if (mode === "outline") {
+              @if (state.root; as root) {
+                <div class="theme-outline" [style.max-width.px]="width">
+                  <cl-theme-block-tree [node]="root" />
+                </div>
+              }
+            } @else {
+              <iframe
+                #canvasFrame
+                class="theme-live-preview"
+                title="Live theme canvas"
+                sandbox="allow-same-origin"
+                [style.width.px]="width"
+                [srcdoc]="canvasHtml"
+                (load)="enhanceCanvas()"
+              ></iframe>
+            }
+          </div>
+          <div class="theme-canvas-status">
+            <span class="toolbar-state"
+              >{{
+                state.dirty
+                  ? "Unsaved changes"
+                  : record.hasDraft
+                    ? "Draft saved"
+                    : "Published version"
+              }}
+              · v{{ record.version }}</span
+            >
+            <button
+              class="button small"
+              (click)="toggleInspector()"
+              [attr.aria-expanded]="inspectorOpen"
+              aria-controls="theme-inspector"
+            >
+              Inspector
+            </button>
+
+            {{
+              mode === "outline"
+                ? "Drag to arrange · maximum 8 levels"
+                : "Rendered exactly as the Frontend renders it"
+            }}
+            · {{ width }} px
+          </div>
+        </main>
+        <aside
+          id="theme-inspector"
+          class="theme-inspector"
+          [attr.inert]="inspectorOpen ? null : ''"
+          [attr.aria-hidden]="!inspectorOpen"
+          aria-label="Inspector"
+        >
+          <div class="drawer-heading">
+            <strong>Inspector</strong
+            ><button
+              class="button toolbar-icon"
+              aria-label="Close Inspector"
+              title="Close Inspector (Escape)"
+              (click)="toggleInspector()"
+            >
+              <cl-block-icon icon="fas fa-times" />
+            </button>
+          </div>
+          @if (state.node; as node) {
+            <p class="eyebrow">
+              {{
+                node === state.root && !state.part
+                  ? "BODY SETTINGS"
+                  : "BLOCK SETTINGS"
+              }}
+            </p>
+            <h2 class="inspector-title">
+              <cl-block-icon [icon]="blockIcon" />
+              {{ state.label(node) }}
+            </h2>
+            @if (!state.protected(node)) {
+              <div class="theme-actions">
+                <button class="button small" (click)="state.duplicate()">
+                  Duplicate</button
+                ><button class="button small" (click)="state.remove()">
+                  Delete</button
+                ><button
+                  class="button small"
+                  aria-label="Move block up"
+                  (click)="state.shift(-1)"
+                >
+                  ↑</button
+                ><button
+                  class="button small"
+                  aria-label="Move block down"
+                  (click)="state.shift(1)"
+                >
+                  ↓
+                </button>
+              </div>
+              <div class="theme-actions">
+                <button class="button small" (click)="state.copy()">Copy</button
+                ><button
+                  class="button small"
+                  [disabled]="!state.clipboard"
+                  (click)="state.paste()"
+                >
+                  Paste
+                </button>
+              </div>
+            }
+            @for (f of fields; track f.key) {
+              <label class="theme-field"
+                >{{ f.label }}
+                @switch (f.type) {
+                  @case ("select") {
+                    <select
+                      [ngModel]="node.settings[f.key]"
+                      (ngModelChange)="state.set(f.key, $event)"
+                    >
+                      @for (option of f.options; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  }
+                  @case ("textarea") {
+                    <textarea
+                      rows="5"
+                      [ngModel]="node.settings[f.key]"
+                      (ngModelChange)="state.set(f.key, $event)"
+                    ></textarea>
+                  }
+                  @case ("checkbox") {
+                    <input
+                      type="checkbox"
+                      [ngModel]="node.settings[f.key]"
+                      (ngModelChange)="state.set(f.key, $event)"
+                    />
+                  }
+                  @case ("image") {
+                    <button class="button" (click)="chooseMedia(f)">
+                      {{
+                        node.settings[f.key] ? "Change image" : "Choose image"
+                      }}
+                    </button>
+                    @if (node.settings[f.key]) {
+                      <button
+                        class="button small"
+                        (click)="state.set(f.key, '')"
+                      >
+                        Clear image
+                      </button>
+                    }
+                  }
+                  @case ("media") {
+                    <button class="button" (click)="chooseMedia(f)">
+                      {{
+                        node.settings[f.key] ? "Change media" : "Choose media"
+                      }}
+                    </button>
+                  }
+                  @case ("model") {
+                    <button class="button" (click)="chooseMedia(f)">
+                      Choose model
+                    </button>
+                    <p class="field-note">
+                      External URLs require HTTPS and CORS permission. Preview
+                      to verify.
+                    </p>
+                  }
+                  @default {
+                    <input
+                      [type]="f.type === 'number' ? 'number' : 'text'"
+                      [ngModel]="node.settings[f.key]"
+                      (ngModelChange)="state.set(f.key, $event)"
+                    />
+                  }
+                }
+              </label>
+            }
+            <cl-appearance-picker-panel
+              [settings]="node.settings"
+              [blockType]="node.type"
+              [palette]="doc.manifest.palette || []"
+              (settingChange)="state.set($event.key, $event.value)"
+            />
+            <details>
+              <summary>Advanced</summary>
+              <label class="theme-field"
+                >CSS classes<input
+                  [ngModel]="node.settings['classes'] || ''"
+                  (ngModelChange)="state.set('classes', $event)" /></label
+              ><label class="theme-field"
+                >HTML anchor<input
+                  [ngModel]="node.settings['anchor'] || ''"
+                  (ngModelChange)="state.set('anchor', $event)"
+              /></label>
+              <h3>Visible on</h3>
+              @for (size of ["desktop", "tablet", "mobile"]; track size) {
+                <label class="theme-field"
+                  ><input
+                    type="checkbox"
+                    [ngModel]="node.settings['visibility']?.[size] !== false"
+                    (ngModelChange)="state.nested('visibility', size, $event)"
+                  />{{ size }}</label
+                >
+              }
+            </details>
+          } @else {
+            <p>Select a block to adjust its settings.</p>
+          }
+          @if (partNames.length) {
+            <div class="theme-parts">
+              <h3>Shared parts</h3>
+              @for (name of partNames; track name) {
+                <button class="button" (click)="selectPart(name)">
+                  {{ name }} ↗
+                </button>
+              }
+              <p class="muted">
+                Editing a part updates every template that includes it.
+              </p>
+            </div>
+          }
+          <details class="theme-template-options">
+            <summary>Template settings</summary>
+            @if (currentTemplate; as t) {
+              <label class="theme-field"
+                >Template name<input
+                  [ngModel]="t.name"
+                  (ngModelChange)="updateTemplate('name', $event)" /></label
+              ><label class="theme-field theme-check"
+                ><input
+                  type="checkbox"
+                  [ngModel]="t.isDefault || false"
+                  (ngModelChange)="setDefault($event)"
+                />Theme default</label
+              ><label class="theme-field theme-check"
+                ><input
+                  type="checkbox"
+                  [ngModel]="t.isTypeDefault || false"
+                  (ngModelChange)="typeDefault($event)"
+                />Default for these content types</label
+              >
+              @for (kind of kinds; track kind) {
+                <label class="theme-field theme-check"
+                  ><input
+                    type="checkbox"
+                    [ngModel]="t.appliesTo.includes(kind)"
+                    (ngModelChange)="toggleKind(kind, $event)"
+                  />{{ kind }}</label
+                >
+              }
+            }
+          </details>
+        </aside>
+      </div>
+    </div>
+  }
+</section>

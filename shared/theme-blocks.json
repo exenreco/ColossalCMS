@@ -1,0 +1,999 @@
+[
+  {
+    "type": "google-ads/ad",
+    "label": "Ads",
+    "category": "Plugin",
+    "description": "Place a Google AdSense display ad",
+    "pluginId": "com.colossal.google-ads",
+    "icon": "fas fa-ad",
+    "container": false,
+    "fields": [
+      {
+        "key": "slotId",
+        "label": "Ad slot override",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "format",
+        "label": "Ad format",
+        "type": "select",
+        "options": ["default", "auto", "horizontal", "rectangle", "vertical"],
+        "default": "default"
+      },
+      {
+        "key": "sizing",
+        "label": "Ad sizing",
+        "type": "select",
+        "options": ["default", "responsive", "fixed"],
+        "default": "default"
+      },
+      {
+        "key": "width",
+        "label": "Fixed width (px)",
+        "type": "number",
+        "default": 300
+      },
+      {
+        "key": "height",
+        "label": "Fixed height (px)",
+        "type": "number",
+        "default": 250
+      }
+    ],
+    "toolbar": ["slotId", "format", "sizing", "width", "height"]
+  },
+  {
+    "type": "core/container",
+    "label": "Container",
+    "category": "Layout",
+    "icon": "fas fa-square",
+    "container": true,
+    "fields": [
+      {
+        "key": "minHeightEnabled",
+        "label": "Enable min height",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "minHeight",
+        "label": "Min height",
+        "type": "number",
+        "default": 0
+      },
+      {
+        "key": "minHeightUnit",
+        "label": "Min height unit",
+        "type": "select",
+        "default": "px",
+        "options": ["px", "vh", "rem"]
+      },
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "flex-start",
+        "options": ["flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "fullBleed",
+        "label": "Full bleed",
+        "type": "checkbox",
+        "default": false
+      }
+    ],
+    "toolbar": [
+      "minHeightEnabled",
+      "minHeight",
+      "minHeightUnit",
+      "verticalAlign",
+      "background",
+      "fullBleed"
+    ]
+  },
+  {
+    "type": "core/columns",
+    "label": "Columns",
+    "category": "Layout",
+    "icon": "fas fa-columns",
+    "container": true,
+    "fields": [
+      {
+        "key": "gap",
+        "label": "Gap",
+        "type": "number",
+        "default": 24
+      },
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "stretch",
+        "options": ["stretch", "flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "stackOnMobile",
+        "label": "Stack on mobile",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "reverseOnMobile",
+        "label": "Reverse on mobile",
+        "type": "checkbox",
+        "default": false
+      }
+    ],
+    "toolbar": [
+      "addColumn",
+      "removeColumn",
+      "gap",
+      "verticalAlign",
+      "stackOnMobile",
+      "reverseOnMobile"
+    ]
+  },
+  {
+    "type": "core/spacer",
+    "label": "Spacer",
+    "category": "Layout",
+    "icon": "fas fa-arrows-alt-v",
+    "container": false,
+    "fields": [
+      {
+        "key": "height",
+        "label": "Height",
+        "type": "number",
+        "default": 48
+      },
+      {
+        "key": "unit",
+        "label": "Height unit",
+        "type": "select",
+        "default": "px",
+        "options": ["px", "vh", "rem"]
+      }
+    ],
+    "toolbar": ["height", "unit"]
+  },
+  {
+    "type": "core/heading",
+    "label": "Heading",
+    "category": "Content",
+    "icon": "fas fa-heading",
+    "container": false,
+    "fields": [
+      {
+        "key": "text",
+        "label": "Text",
+        "type": "text",
+        "default": "A new perspective"
+      },
+      {
+        "key": "level",
+        "label": "Heading level",
+        "type": "select",
+        "default": "h2",
+        "options": ["h1", "h2", "h3", "h4", "h5", "h6"]
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right"]
+      },
+      {
+        "key": "color",
+        "label": "Text color",
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "toolbar": [
+      "bold",
+      "italic",
+      "underline",
+      "strike",
+      "inlineCode",
+      "level",
+      "align",
+      "color"
+    ]
+  },
+  {
+    "type": "core/rich-text",
+    "label": "Rich text",
+    "category": "Content",
+    "icon": "fas fa-align-left",
+    "container": false,
+    "fields": [
+      {
+        "key": "html",
+        "label": "Content",
+        "type": "textarea",
+        "default": "<p>A little space for your next idea.</p>"
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": ["bold", "italic", "underline", "strike", "inlineCode", "align"]
+  },
+  {
+    "type": "core/image",
+    "label": "Image",
+    "category": "Content",
+    "icon": "fas fa-image",
+    "container": false,
+    "fields": [
+      {
+        "key": "mediaId",
+        "label": "Image",
+        "type": "image",
+        "default": ""
+      },
+      {
+        "key": "caption",
+        "label": "Caption",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "source",
+        "label": "Source",
+        "type": "select",
+        "default": "media",
+        "options": ["media", "url"]
+      },
+      {
+        "key": "url",
+        "label": "HTTPS image URL",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "alt",
+        "label": "Alt text",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      },
+      {
+        "key": "size",
+        "label": "Size",
+        "type": "select",
+        "default": "full",
+        "options": ["small", "medium", "large", "full"]
+      },
+      {
+        "key": "link",
+        "label": "Link",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "radius",
+        "label": "Rounded corners",
+        "type": "number",
+        "default": 0
+      }
+    ],
+    "toolbar": [
+      "replace",
+      "mediaId",
+      "alt",
+      "link",
+      "caption",
+      "source",
+      "align",
+      "size",
+      "radius"
+    ]
+  },
+  {
+    "type": "core/media",
+    "label": "Media",
+    "category": "Content",
+    "icon": "fas fa-photo-video",
+    "container": false,
+    "fields": [
+      {
+        "key": "mediaId",
+        "label": "Media file",
+        "type": "media",
+        "default": ""
+      },
+      {
+        "key": "source",
+        "label": "Source",
+        "type": "select",
+        "default": "media",
+        "options": ["media", "url"]
+      },
+      {
+        "key": "url",
+        "label": "HTTPS media URL",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "autoplay",
+        "label": "Autoplay",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "loop",
+        "label": "Loop",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "controls",
+        "label": "Controls",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "poster",
+        "label": "Poster image",
+        "type": "image",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": [
+      "replace",
+      "mediaId",
+      "source",
+      "autoplay",
+      "loop",
+      "controls",
+      "poster",
+      "align"
+    ]
+  },
+  {
+    "type": "core/featured-image",
+    "label": "Featured image",
+    "category": "Content",
+    "icon": "fas fa-portrait",
+    "container": false,
+    "fields": [
+      {
+        "key": "mediaId",
+        "label": "Fallback image",
+        "type": "image"
+      }
+    ],
+    "legacy": true,
+    "toolbar": ["mediaId"]
+  },
+  {
+    "type": "core/menu",
+    "label": "Menu",
+    "category": "Dynamic",
+    "icon": "fas fa-bars",
+    "container": false,
+    "fields": [
+      {
+        "key": "orientation",
+        "label": "Orientation",
+        "type": "select",
+        "default": "horizontal",
+        "options": ["horizontal", "vertical"]
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": ["orientation", "align"]
+  },
+  {
+    "type": "core/search",
+    "label": "Search",
+    "category": "Dynamic",
+    "icon": "fas fa-search",
+    "container": false,
+    "fields": [
+      {
+        "key": "placeholder",
+        "label": "Placeholder",
+        "type": "text",
+        "default": "Search stories…"
+      },
+      {
+        "key": "buttonLabel",
+        "label": "Button label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": ["placeholder", "buttonLabel", "align"]
+  },
+  {
+    "type": "core/post-list",
+    "label": "Post list",
+    "category": "Dynamic",
+    "icon": "fas fa-list",
+    "container": false,
+    "fields": [
+      {
+        "key": "portfolio",
+        "label": "Portfolio projects only",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "limit",
+        "label": "Posts per page",
+        "type": "number",
+        "default": 6
+      },
+      {
+        "key": "columns",
+        "label": "Columns",
+        "type": "number",
+        "default": 3
+      },
+      {
+        "key": "layout",
+        "label": "Layout",
+        "type": "select",
+        "default": "grid",
+        "options": ["grid", "list"]
+      },
+      {
+        "key": "showExcerpt",
+        "label": "Show excerpt",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "orderBy",
+        "label": "Order by",
+        "type": "select",
+        "default": "date",
+        "options": ["date", "title"]
+      },
+      {
+        "key": "order",
+        "label": "Order",
+        "type": "select",
+        "default": "descending",
+        "options": ["descending", "ascending"]
+      },
+      {
+        "key": "showFeaturedImage",
+        "label": "Show featured image",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "showDate",
+        "label": "Show date",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "category",
+        "label": "Category filter",
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "toolbar": [
+      "portfolio",
+      "limit",
+      "columns",
+      "layout",
+      "showExcerpt",
+      "orderBy",
+      "order",
+      "showFeaturedImage",
+      "showDate"
+    ]
+  },
+  {
+    "type": "core/post-content",
+    "label": "Post content",
+    "category": "Dynamic",
+    "icon": "fas fa-file-alt",
+    "container": false,
+    "fields": [],
+    "toolbar": ["bold", "italic", "underline", "strike", "inlineCode"]
+  },
+  {
+    "type": "core/post-meta",
+    "label": "Post meta",
+    "category": "Dynamic",
+    "icon": "fas fa-info-circle",
+    "container": false,
+    "fields": [
+      {
+        "key": "showDate",
+        "label": "Date",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "showAuthor",
+        "label": "Author",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "showCategories",
+        "label": "Categories",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "showTags",
+        "label": "Tags",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "showReadingTime",
+        "label": "Reading time",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "separator",
+        "label": "Separator",
+        "type": " · ",
+        "default": ""
+      }
+    ],
+    "toolbar": [
+      "showDate",
+      "showAuthor",
+      "showCategories",
+      "showTags",
+      "showReadingTime"
+    ]
+  },
+  {
+    "type": "core/pagination",
+    "label": "Pagination",
+    "category": "Dynamic",
+    "icon": "fas fa-ellipsis-h",
+    "container": false,
+    "fields": [
+      {
+        "key": "style",
+        "label": "Pagination style",
+        "type": "select",
+        "default": "numbers",
+        "options": ["numbers", "prev-next", "load-more"]
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": ["style", "align"]
+  },
+  {
+    "type": "core/site-brand",
+    "label": "Site identity",
+    "category": "Dynamic",
+    "icon": "fas fa-globe",
+    "fields": [],
+    "legacy": true,
+    "toolbar": []
+  },
+  {
+    "type": "core/group",
+    "label": "Group",
+    "category": "Layout",
+    "icon": "fas fa-layer-group",
+    "container": true,
+    "fields": [
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "stretch",
+        "options": ["stretch", "flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "borderColor",
+        "label": "Border color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "borderWidth",
+        "label": "Border width",
+        "type": "number",
+        "default": 0
+      },
+      {
+        "key": "radius",
+        "label": "Border radius",
+        "type": "number",
+        "default": 0
+      }
+    ],
+    "toolbar": [
+      "verticalAlign",
+      "background",
+      "borderColor",
+      "borderWidth",
+      "radius"
+    ]
+  },
+  {
+    "type": "core/row",
+    "label": "Row",
+    "category": "Layout",
+    "icon": "fas fa-arrows-alt-h",
+    "container": true,
+    "fields": [
+      {
+        "key": "justify",
+        "label": "Justify",
+        "type": "select",
+        "default": "flex-start",
+        "options": ["flex-start", "center", "flex-end", "space-between"]
+      },
+      {
+        "key": "alignItems",
+        "label": "Align items",
+        "type": "select",
+        "default": "center",
+        "options": ["stretch", "flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "gap",
+        "label": "Gap",
+        "type": "number",
+        "default": 16
+      },
+      {
+        "key": "wrap",
+        "label": "Wrap",
+        "type": "checkbox",
+        "default": true
+      }
+    ],
+    "toolbar": ["justify", "alignItems", "gap", "wrap"]
+  },
+  {
+    "type": "core/column",
+    "label": "Column",
+    "category": "Layout",
+    "icon": "fas fa-vector-square",
+    "container": true,
+    "fields": [
+      {
+        "key": "width",
+        "label": "Width",
+        "type": "text",
+        "default": "1fr"
+      },
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "stretch",
+        "options": ["stretch", "flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      }
+    ],
+    "toolbar": ["width", "verticalAlign", "background"]
+  },
+  {
+    "type": "core/content",
+    "label": "Content",
+    "category": "Content",
+    "icon": "fas fa-file-lines",
+    "container": false,
+    "fields": [],
+    "toolbar": ["bold", "italic", "underline", "strike", "inlineCode"]
+  },
+  {
+    "type": "core/slider",
+    "label": "Slider",
+    "category": "Layout",
+    "icon": "fas fa-images",
+    "container": true,
+    "fields": [
+      {
+        "key": "height",
+        "label": "Height (px)",
+        "type": "number",
+        "default": 420
+      },
+      {
+        "key": "slidesPerView",
+        "label": "Slides per view",
+        "type": "number",
+        "default": 1
+      },
+      {
+        "key": "spaceBetween",
+        "label": "Slide gap (px)",
+        "type": "number",
+        "default": 0
+      },
+      {
+        "key": "speed",
+        "label": "Transition speed (ms)",
+        "type": "number",
+        "default": 400
+      },
+      {
+        "key": "effect",
+        "label": "Effect",
+        "type": "select",
+        "default": "slide",
+        "options": ["slide", "fade"]
+      },
+      { "key": "loop", "label": "Loop", "type": "checkbox", "default": false },
+      {
+        "key": "autoplay",
+        "label": "Autoplay",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "autoplayDelay",
+        "label": "Autoplay delay (ms)",
+        "type": "number",
+        "default": 5000
+      },
+      {
+        "key": "navigation",
+        "label": "Navigation arrows",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "pagination",
+        "label": "Pagination dots",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "ariaLabel",
+        "label": "Slider label",
+        "type": "text",
+        "default": "Image slider"
+      }
+    ],
+    "toolbar": [
+      "height",
+      "slidesPerView",
+      "spaceBetween",
+      "speed",
+      "effect",
+      "loop",
+      "autoplay",
+      "autoplayDelay",
+      "navigation",
+      "pagination"
+    ]
+  },
+  {
+    "type": "core/slide",
+    "label": "Slide",
+    "category": "Layout",
+    "icon": "fas fa-clone",
+    "container": true,
+    "fields": [
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "center",
+        "options": ["flex-start", "center", "flex-end"]
+      }
+    ],
+    "toolbar": ["background", "verticalAlign"]
+  },
+  {
+    "type": "core/overlay",
+    "label": "Overlay",
+    "category": "Layout",
+    "icon": "fas fa-object-group",
+    "container": true,
+    "fields": [
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "verticalAlign",
+        "label": "Vertical align",
+        "type": "select",
+        "default": "center",
+        "options": ["flex-start", "center", "flex-end"]
+      },
+      {
+        "key": "align",
+        "label": "Horizontal align",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": ["background", "verticalAlign", "align"]
+  },
+  {
+    "type": "core/gltf",
+    "label": "3D model",
+    "category": "Content",
+    "icon": "fas fa-cube",
+    "container": true,
+    "fields": [
+      {
+        "key": "source",
+        "label": "Source",
+        "type": "select",
+        "options": ["media", "url"],
+        "default": "media"
+      },
+      {
+        "key": "mediaId",
+        "label": "Model",
+        "type": "model"
+      },
+      {
+        "key": "url",
+        "label": "HTTPS model URL",
+        "type": "text"
+      },
+      {
+        "key": "alt",
+        "label": "Model description",
+        "type": "text"
+      },
+      {
+        "key": "height",
+        "label": "Height",
+        "type": "number",
+        "default": 360
+      },
+      {
+        "key": "controls",
+        "label": "Camera controls",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "autoRotate",
+        "label": "Auto rotate",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "autoRotateSpeed",
+        "label": "Rotation speed",
+        "type": "number",
+        "default": 2
+      },
+      {
+        "key": "scrollInteractive",
+        "label": "Respond to scrolling",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "scrollStrength",
+        "label": "Scroll motion strength",
+        "type": "number",
+        "default": 1
+      },
+      {
+        "key": "cameraZoom",
+        "label": "Camera zoom",
+        "type": "number",
+        "default": 1
+      },
+      {
+        "key": "poster",
+        "label": "Poster image",
+        "type": "image"
+      },
+      {
+        "key": "lazyLoad",
+        "label": "Lazy load",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "ariaLabel",
+        "label": "Accessibility label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "background",
+        "label": "Background color",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      }
+    ],
+    "toolbar": [
+      "replace",
+      "source",
+      "mediaId",
+      "height",
+      "controls",
+      "autoRotate",
+      "autoRotateSpeed",
+      "poster",
+      "lazyLoad",
+      "background",
+      "align"
+    ]
+  }
+]

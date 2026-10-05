@@ -1,0 +1,27 @@
+{
+  "id": "com.colossal.plugins",
+  "name": "Plugins",
+  "description": "A flexible foundation. Extend your site your way.",
+  "isCore": true,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "plugins",
+  "admin": {
+    "entryComponent": "PluginsComponent",
+    "menu": {
+      "label": "Plugins",
+      "icon": "plugins",
+      "path": "/admin/plugins",
+      "order": 910,
+      "group": "system"
+    }
+  },
+  "frontend": {
+    "routes": []
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": []
+  }
+}

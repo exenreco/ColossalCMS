@@ -1,0 +1,27 @@
+{
+  "id": "com.colossal.announcement",
+  "name": "Announcement bar",
+  "description": "Put an important update at the top of your site.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "bell",
+  "admin": {
+    "entryComponent": "ExtensionComponent",
+    "menu": {
+      "label": "Announcement bar",
+      "icon": "plugins",
+      "path": "/admin/announcement",
+      "order": 930,
+      "group": "system"
+    }
+  },
+  "frontend": {
+    "routes": []
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": []
+  }
+}

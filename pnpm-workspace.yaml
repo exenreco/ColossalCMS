@@ -1,0 +1,16 @@
+packages:
+  - .
+
+# Installs are explicit in development, CI and deployment.
+verifyDepsBeforeRun: warn
+
+allowBuilds:
+  esbuild: true
+  "@parcel/watcher": false
+  lmdb: false
+  msgpackr-extract: false
+  cypress: false
+
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "^0.25.0"
+  "sockjs>uuid": "^11.1.1"

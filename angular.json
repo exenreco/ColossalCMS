@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "admin": {
+      "projectType": "application",
+      "root": "projects/admin",
+      "sourceRoot": "projects/admin/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/admin/src/main.ts",
+            "index": "projects/admin/src/index.html",
+            "tsConfig": "tsconfig.json",
+            "outputPath": "dist/admin",
+            "baseHref": "/admin/",
+            "styles": ["shared/styles.css"],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "/"
+              }
+            ]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "optimization": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "storybook": {
+          "builder": "@storybook/angular:start-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "admin:build",
+            "port": 6006,
+            "styles": ["shared/styles.css"],
+            "compodoc": false,
+            "tsConfig": ".storybook/tsconfig.json",
+            "experimentalZoneless": true
+          }
+        },
+        "build-storybook": {
+          "builder": "@storybook/angular:build-storybook",
+          "options": {
+            "configDir": ".storybook",
+            "browserTarget": "admin:build",
+            "outputDir": "storybook-static",
+            "styles": ["shared/styles.css"],
+            "compodoc": false,
+            "tsConfig": ".storybook/tsconfig.json",
+            "experimentalZoneless": true
+          }
+        }
+      }
+    },
+    "frontend": {
+      "projectType": "application",
+      "root": "projects/frontend",
+      "sourceRoot": "projects/frontend/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/frontend/src/main.ts",
+            "index": "projects/frontend/src/index.html",
+            "tsConfig": "tsconfig.json",
+            "outputPath": "dist/frontend",
+            "styles": ["shared/styles.css"],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "/"
+              }
+            ]
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "optimization": true
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

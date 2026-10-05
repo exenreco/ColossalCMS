@@ -1,0 +1,565 @@
+{
+  "document": {
+    "manifest": {
+      "id": "com.colossal.theme.default",
+      "name": "Colossal Default",
+      "version": "2.0.1",
+      "author": "Colossal Core Team",
+      "description": "A considered space for your stories. Clean typography, warm colors, and room to grow.",
+      "license": "MIT",
+      "isCore": true,
+      "requires": {
+        "colossal": ">=2.0.1"
+      },
+      "templates": [
+        {
+          "id": "default",
+          "name": "Default",
+          "file": "templates/default.html",
+          "isDefault": true,
+          "appliesTo": ["page", "post"]
+        },
+        {
+          "id": "full-width",
+          "name": "Full Width",
+          "file": "templates/full-width.html",
+          "appliesTo": ["page"]
+        },
+        {
+          "id": "post-single",
+          "name": "Single Post",
+          "file": "templates/post-single.html",
+          "isTypeDefault": true,
+          "appliesTo": ["post"]
+        },
+        {
+          "id": "post-archive",
+          "name": "Post Archive",
+          "file": "templates/post-archive.html",
+          "isTypeDefault": true,
+          "appliesTo": ["post-index"]
+        },
+        {
+          "id": "search",
+          "name": "Search",
+          "file": "templates/search.html",
+          "isTypeDefault": true,
+          "appliesTo": ["search"]
+        },
+        {
+          "id": "not-found",
+          "name": "Not Found",
+          "file": "templates/not-found.html",
+          "isTypeDefault": true,
+          "appliesTo": ["404"]
+        }
+      ],
+      "parts": {
+        "header": "parts/header.html",
+        "footer": "parts/footer.html",
+        "sidebar": "parts/sidebar.html"
+      },
+      "blocks": [
+        {
+          "type": "core/container",
+          "file": "blocks/container.html"
+        },
+        {
+          "type": "core/columns",
+          "file": "blocks/columns.html"
+        },
+        {
+          "type": "core/spacer",
+          "file": "blocks/spacer.html"
+        },
+        {
+          "type": "core/heading",
+          "file": "blocks/heading.html"
+        },
+        {
+          "type": "core/rich-text",
+          "file": "blocks/rich-text.html"
+        },
+        {
+          "type": "core/image",
+          "file": "blocks/image.html"
+        },
+        {
+          "type": "core/media",
+          "file": "blocks/media.html"
+        },
+        {
+          "type": "core/featured-image",
+          "file": "blocks/featured-image.html"
+        },
+        {
+          "type": "core/menu",
+          "file": "blocks/menu.html"
+        },
+        {
+          "type": "core/search",
+          "file": "blocks/search.html"
+        },
+        {
+          "type": "core/post-list",
+          "file": "blocks/post-list.html"
+        },
+        {
+          "type": "core/post-content",
+          "file": "blocks/post-content.html"
+        },
+        {
+          "type": "core/post-meta",
+          "file": "blocks/post-meta.html"
+        },
+        {
+          "type": "core/pagination",
+          "file": "blocks/pagination.html"
+        }
+      ],
+      "assets": {
+        "styles": ["assets/theme.css"],
+        "scripts": []
+      },
+      "palette": ["#214c3a", "#f6f8f1", "#d2debd", "#596f53", "#ffffff"]
+    },
+    "templates": {
+      "default": {
+        "id": "blk_fad209d2-8376-4f7b-b8b1-156f9d4756a3",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_e97c8bbf-99bc-442b-8a2a-af62013e2072",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_2efe58cd-e131-4e27-ae8c-d4681a0d130e",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1080
+            },
+            "children": [
+              {
+                "id": "blk_0a86aaf7-65b8-4bac-82ed-233d30f6bf97",
+                "type": "core/heading",
+                "settings": {
+                  "text": "{{content.title}}",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_702aedee-a81d-495c-ad81-82d8b8df51a8",
+                "type": "core/rich-text",
+                "settings": {
+                  "html": "<p>{{content.excerpt}}</p>"
+                }
+              },
+              {
+                "id": "blk_09f88302-3f3e-46df-b4e7-db43f428bc7d",
+                "type": "core/post-meta",
+                "settings": {}
+              },
+              {
+                "id": "blk_cb16978d-8fd5-4059-81bd-2b81b45b9f53",
+                "type": "core/featured-image",
+                "settings": {}
+              },
+              {
+                "id": "blk_61d3b4c0-c35a-4dd1-a48f-7dac6942a06c",
+                "type": "core/post-content",
+                "settings": {}
+              }
+            ]
+          },
+          {
+            "id": "blk_c8270d8d-7188-410f-8654-15867e11598e",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      },
+      "full-width": {
+        "id": "blk_e44b4d51-fc75-4b78-8e71-e50d8c685c74",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_2511ff4b-da65-468f-80d5-ba5e8fc41fc5",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_9846266b-5040-491c-a136-b47f631d7c17",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1600
+            },
+            "children": [
+              {
+                "id": "blk_68b03086-7f9a-4780-8dc2-e49fb9bee42a",
+                "type": "core/heading",
+                "settings": {
+                  "text": "{{content.title}}",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_004df766-085f-4558-ad12-d07e81f3a572",
+                "type": "core/rich-text",
+                "settings": {
+                  "html": "<p>{{content.excerpt}}</p>"
+                }
+              },
+              {
+                "id": "blk_f0e99e8d-43b2-45bb-ad74-7258846cf26f",
+                "type": "core/post-meta",
+                "settings": {}
+              },
+              {
+                "id": "blk_da130cc5-e5ca-4824-8c87-f7ffd9e8e1d9",
+                "type": "core/featured-image",
+                "settings": {}
+              },
+              {
+                "id": "blk_47657194-847e-4823-aabb-e3d5dda38958",
+                "type": "core/post-content",
+                "settings": {}
+              }
+            ]
+          },
+          {
+            "id": "blk_1eda5a45-7239-4995-9856-21117e130b67",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      },
+      "post-single": {
+        "id": "blk_2da70eb9-d59a-44df-b004-bce741177bda",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_55b65d51-b1cd-4a56-a081-60a902111f35",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_f118ad46-8be3-4557-b68b-171c07e38fc8",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1080
+            },
+            "children": [
+              {
+                "id": "blk_d337a3f6-ba2a-466e-9f1c-2f428435cce3",
+                "type": "core/heading",
+                "settings": {
+                  "text": "{{content.title}}",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_7a643885-f302-4301-8127-830bb1a2fb37",
+                "type": "core/rich-text",
+                "settings": {
+                  "html": "<p>{{content.excerpt}}</p>"
+                }
+              },
+              {
+                "id": "blk_7b95a229-865e-43bf-b657-6a1bcf7ff4c9",
+                "type": "core/post-meta",
+                "settings": {}
+              },
+              {
+                "id": "blk_efb6a0bc-7e60-4534-b87a-26150ab5fe43",
+                "type": "core/featured-image",
+                "settings": {}
+              },
+              {
+                "id": "blk_d8feca54-fef5-4703-805f-29beb369da80",
+                "type": "core/post-content",
+                "settings": {}
+              }
+            ]
+          },
+          {
+            "id": "blk_8b5b2847-6626-4e5c-b89e-f95446968320",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      },
+      "post-archive": {
+        "id": "blk_dbccccc8-e0b3-4b1d-88aa-333e85de92d4",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_ef31a572-b8b5-482a-a1fc-3727c3a01a5c",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_64005dc4-1fde-4f4c-bfd4-aa70505fdf93",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1080
+            },
+            "children": [
+              {
+                "id": "blk_f20e4964-bc8b-4dcb-af54-3019c7eb1cb7",
+                "type": "core/heading",
+                "settings": {
+                  "text": "{{site.tagline}}",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_9fc1921c-e83f-4633-9d5f-8dc4b2d052e9",
+                "type": "core/post-list",
+                "settings": {
+                  "limit": 6,
+                  "columns": 3,
+                  "showExcerpt": true
+                }
+              },
+              {
+                "id": "blk_5ebd5095-ad7e-4549-916c-efcb7bec47fb",
+                "type": "core/pagination",
+                "settings": {}
+              }
+            ]
+          },
+          {
+            "id": "blk_7d31fd3b-2a65-4c58-929f-532b992860e1",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      },
+      "search": {
+        "id": "blk_d58f8902-a3ec-49ca-9d41-dd5c5626ec0a",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_5f130eb0-bd5e-466a-9fc7-473096b20f24",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_17a34a22-0f99-4cf8-83a0-7a6a3b154c89",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1080
+            },
+            "children": [
+              {
+                "id": "blk_faeb18d6-6fda-4851-b185-e7d904958e49",
+                "type": "core/heading",
+                "settings": {
+                  "text": "Search the journal",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_14934ebc-1d9e-4089-996a-2fa10d1c4432",
+                "type": "core/search",
+                "settings": {}
+              },
+              {
+                "id": "blk_d56754fc-00fc-47d0-ae9b-d03b26ea6057",
+                "type": "core/post-list",
+                "settings": {
+                  "limit": 6,
+                  "columns": 2,
+                  "showExcerpt": true
+                }
+              },
+              {
+                "id": "blk_54936563-83ab-4fb5-b0ba-57e56deadbb0",
+                "type": "core/pagination",
+                "settings": {}
+              }
+            ]
+          },
+          {
+            "id": "blk_65dde9ac-99b2-49b6-82d7-0638422fab2a",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      },
+      "not-found": {
+        "id": "blk_c2d3087e-1b04-4353-84a7-3e432e4b0537",
+        "type": "core/container",
+        "settings": {},
+        "children": [
+          {
+            "id": "blk_88d22336-66db-49b1-b084-b1f6a9462fb0",
+            "type": "theme/part-header",
+            "settings": {}
+          },
+          {
+            "id": "blk_7725f812-e2a5-4da5-bf22-85b582c4db0c",
+            "type": "core/container",
+            "settings": {
+              "padding": {
+                "top": 40,
+                "right": 32,
+                "bottom": 40,
+                "left": 32
+              },
+              "maxWidth": 1080
+            },
+            "children": [
+              {
+                "id": "blk_e7599252-db32-45ce-891b-988db3344679",
+                "type": "core/heading",
+                "settings": {
+                  "text": "This page is still finding its words.",
+                  "level": "h1"
+                }
+              },
+              {
+                "id": "blk_c4b686c4-99da-418a-95bd-a78ece6ab0bd",
+                "type": "core/rich-text",
+                "settings": {
+                  "html": "<p>The page may have moved or is not published. <a href=\"/\">Return home</a>.</p>"
+                }
+              }
+            ]
+          },
+          {
+            "id": "blk_4667ee45-238d-4b75-8d61-e5a512e4b75c",
+            "type": "theme/part-footer",
+            "settings": {}
+          }
+        ]
+      }
+    },
+    "parts": {
+      "header": {
+        "id": "blk_e635d02b-f5df-4dee-92b5-248a952263ab",
+        "type": "core/container",
+        "settings": {
+          "padding": {
+            "top": 40,
+            "right": 32,
+            "bottom": 40,
+            "left": 32
+          },
+          "maxWidth": 1080
+        },
+        "children": [
+          {
+            "id": "blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077",
+            "type": "core/heading",
+            "settings": {
+              "text": "{{site.title}}",
+              "level": "h2"
+            }
+          },
+          {
+            "id": "blk_6a38a91b-5528-4643-ab25-35ce202b1bf0",
+            "type": "core/menu",
+            "settings": {}
+          }
+        ]
+      },
+      "footer": {
+        "id": "blk_dda7c108-35bd-40b4-a5df-83331c3176fe",
+        "type": "core/container",
+        "settings": {
+          "padding": {
+            "top": 40,
+            "right": 32,
+            "bottom": 40,
+            "left": 32
+          },
+          "maxWidth": 1080
+        },
+        "children": [
+          {
+            "id": "blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da",
+            "type": "core/rich-text",
+            "settings": {
+              "html": "<p>{{site.title}} · Powered by Colossal</p>"
+            }
+          }
+        ]
+      },
+      "sidebar": {
+        "id": "blk_485843cf-6403-40ae-9707-019975d86d38",
+        "type": "core/container",
+        "settings": {
+          "padding": {
+            "top": 40,
+            "right": 32,
+            "bottom": 40,
+            "left": 32
+          },
+          "maxWidth": 1080
+        },
+        "children": [
+          {
+            "id": "blk_62a35046-eda7-4d9a-982e-5c90658f3ca1",
+            "type": "core/search",
+            "settings": {}
+          }
+        ]
+      }
+    },
+    "blocks": [],
+    "html": {},
+    "assets": {},
+    "css": ".theme-root h1{font-family:Georgia,serif;font-size:clamp(32px,5vw,62px);font-weight:400;line-height:1.15;letter-spacing:-1.5px}.theme-root a{color:#246b50}.theme-root{color:#243e2f;background-color:#f7f9f3;font-family:system-ui;line-height:1.8}.theme-root .theme-part-header{border-bottom:1px solid #dce4d3}.theme-root .theme-part-footer{border-top:1px solid #dce4d3;color:#6c7d62}",
+    "compiled": {
+      "default": "<div data-block-id=\"blk_fad209d2-8376-4f7b-b8b1-156f9d4756a3\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_2efe58cd-e131-4e27-ae8c-d4681a0d130e\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_0a86aaf7-65b8-4bac-82ed-233d30f6bf97\" class=\"theme-block  \" style=\"\"><h1>{{content.title}}</h1></div><div data-block-id=\"blk_702aedee-a81d-495c-ad81-82d8b8df51a8\" class=\"theme-block  \" style=\"\"><p>{{content.excerpt}}</p></div><div data-block-id=\"blk_09f88302-3f3e-46df-b4e7-db43f428bc7d\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LW1ldGEiLCJzZXR0aW5ncyI6e319}}</div><div data-block-id=\"blk_cb16978d-8fd5-4059-81bd-2b81b45b9f53\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9mZWF0dXJlZC1pbWFnZSIsInNldHRpbmdzIjp7fX0=}}</div><div data-block-id=\"blk_61d3b4c0-c35a-4dd1-a48f-7dac6942a06c\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LWNvbnRlbnQiLCJzZXR0aW5ncyI6e319}}</div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>",
+      "full-width": "<div data-block-id=\"blk_e44b4d51-fc75-4b78-8e71-e50d8c685c74\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_9846266b-5040-491c-a136-b47f631d7c17\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1600px;margin:0 auto;\"><div data-block-id=\"blk_68b03086-7f9a-4780-8dc2-e49fb9bee42a\" class=\"theme-block  \" style=\"\"><h1>{{content.title}}</h1></div><div data-block-id=\"blk_004df766-085f-4558-ad12-d07e81f3a572\" class=\"theme-block  \" style=\"\"><p>{{content.excerpt}}</p></div><div data-block-id=\"blk_f0e99e8d-43b2-45bb-ad74-7258846cf26f\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LW1ldGEiLCJzZXR0aW5ncyI6e319}}</div><div data-block-id=\"blk_da130cc5-e5ca-4824-8c87-f7ffd9e8e1d9\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9mZWF0dXJlZC1pbWFnZSIsInNldHRpbmdzIjp7fX0=}}</div><div data-block-id=\"blk_47657194-847e-4823-aabb-e3d5dda38958\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LWNvbnRlbnQiLCJzZXR0aW5ncyI6e319}}</div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>",
+      "post-single": "<div data-block-id=\"blk_2da70eb9-d59a-44df-b004-bce741177bda\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_f118ad46-8be3-4557-b68b-171c07e38fc8\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_d337a3f6-ba2a-466e-9f1c-2f428435cce3\" class=\"theme-block  \" style=\"\"><h1>{{content.title}}</h1></div><div data-block-id=\"blk_7a643885-f302-4301-8127-830bb1a2fb37\" class=\"theme-block  \" style=\"\"><p>{{content.excerpt}}</p></div><div data-block-id=\"blk_7b95a229-865e-43bf-b657-6a1bcf7ff4c9\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LW1ldGEiLCJzZXR0aW5ncyI6e319}}</div><div data-block-id=\"blk_efb6a0bc-7e60-4534-b87a-26150ab5fe43\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9mZWF0dXJlZC1pbWFnZSIsInNldHRpbmdzIjp7fX0=}}</div><div data-block-id=\"blk_d8feca54-fef5-4703-805f-29beb369da80\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LWNvbnRlbnQiLCJzZXR0aW5ncyI6e319}}</div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>",
+      "post-archive": "<div data-block-id=\"blk_dbccccc8-e0b3-4b1d-88aa-333e85de92d4\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_64005dc4-1fde-4f4c-bfd4-aa70505fdf93\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_f20e4964-bc8b-4dcb-af54-3019c7eb1cb7\" class=\"theme-block  \" style=\"\"><h1>{{site.tagline}}</h1></div><div data-block-id=\"blk_9fc1921c-e83f-4633-9d5f-8dc4b2d052e9\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LWxpc3QiLCJzZXR0aW5ncyI6eyJsaW1pdCI6NiwiY29sdW1ucyI6Mywic2hvd0V4Y2VycHQiOnRydWV9fQ==}}</div><div data-block-id=\"blk_5ebd5095-ad7e-4549-916c-efcb7bec47fb\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wYWdpbmF0aW9uIiwic2V0dGluZ3MiOnt9fQ==}}</div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>",
+      "search": "<div data-block-id=\"blk_d58f8902-a3ec-49ca-9d41-dd5c5626ec0a\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_17a34a22-0f99-4cf8-83a0-7a6a3b154c89\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_faeb18d6-6fda-4851-b185-e7d904958e49\" class=\"theme-block  \" style=\"\"><h1>Search the journal</h1></div><div data-block-id=\"blk_14934ebc-1d9e-4089-996a-2fa10d1c4432\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9zZWFyY2giLCJzZXR0aW5ncyI6e319}}</div><div data-block-id=\"blk_d56754fc-00fc-47d0-ae9b-d03b26ea6057\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wb3N0LWxpc3QiLCJzZXR0aW5ncyI6eyJsaW1pdCI6NiwiY29sdW1ucyI6Miwic2hvd0V4Y2VycHQiOnRydWV9fQ==}}</div><div data-block-id=\"blk_54936563-83ab-4fb5-b0ba-57e56deadbb0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9wYWdpbmF0aW9uIiwic2V0dGluZ3MiOnt9fQ==}}</div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>",
+      "not-found": "<div data-block-id=\"blk_c2d3087e-1b04-4353-84a7-3e432e4b0537\" class=\"theme-block  \" style=\"\"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \" style=\"\"><h2>{{site.title}}</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \" style=\"\">{{block:eyJ0eXBlIjoiY29yZS9tZW51Iiwic2V0dGluZ3MiOnt9fQ==}}</div></div></div><div data-block-id=\"blk_7725f812-e2a5-4da5-bf22-85b582c4db0c\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_e7599252-db32-45ce-891b-988db3344679\" class=\"theme-block  \" style=\"\"><h1>This page is still finding its words.</h1></div><div data-block-id=\"blk_c4b686c4-99da-418a-95bd-a78ece6ab0bd\" class=\"theme-block  \" style=\"\"><p>The page may have moved or is not published. <a href=\"/\" target=\"_self\" rel=\"noopener noreferrer\">Return home</a>.</p></div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto;\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \" style=\"\"><p>{{site.title}} · Powered by Colossal</p></div></div></div></div>"
+    }
+  },
+  "preview": {
+    "html": "<div class=\"theme-root\" data-theme-id=\"com.colossal.theme.default\" data-theme-template=\"default\"><div data-block-id=\"blk_fad209d2-8376-4f7b-b8b1-156f9d4756a3\" class=\"theme-block  \"><div class=\"theme-part-header\"><div data-block-id=\"blk_e635d02b-f5df-4dee-92b5-248a952263ab\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto\"><div data-block-id=\"blk_2be3cb0f-4b06-413c-bc10-cf1f387c9077\" class=\"theme-block  \"><h2>Colossal Journal</h2></div><div data-block-id=\"blk_6a38a91b-5528-4643-ab25-35ce202b1bf0\" class=\"theme-block  \"><nav class=\"theme-menu\" aria-label=\"Site navigation\"><a href=\"/\" target=\"_self\" rel=\"noopener noreferrer\">Journal</a><a href=\"/search\" target=\"_self\" rel=\"noopener noreferrer\">Search</a></nav></div></div></div><div data-block-id=\"blk_2efe58cd-e131-4e27-ae8c-d4681a0d130e\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto\"><div data-block-id=\"blk_0a86aaf7-65b8-4bac-82ed-233d30f6bf97\" class=\"theme-block  \"><h1>Make room for a new perspective</h1></div><div data-block-id=\"blk_702aedee-a81d-495c-ad81-82d8b8df51a8\" class=\"theme-block  \"><p>A considered space for your next idea.</p></div><div data-block-id=\"blk_09f88302-3f3e-46df-b4e7-db43f428bc7d\" class=\"theme-block  \"></div><div data-block-id=\"blk_cb16978d-8fd5-4059-81bd-2b81b45b9f53\" class=\"theme-block  \"></div><div data-block-id=\"blk_61d3b4c0-c35a-4dd1-a48f-7dac6942a06c\" class=\"theme-block  \"><p>Every story begins with a little curiosity.</p></div></div><div class=\"theme-part-footer\"><div data-block-id=\"blk_dda7c108-35bd-40b4-a5df-83331c3176fe\" class=\"theme-block  \" style=\"padding:40px 32px 40px 32px;max-width:1080px;margin:0 auto\"><div data-block-id=\"blk_8075fdfc-5008-410f-b65a-09ce3b0ee1da\" class=\"theme-block  \"><p>Colossal Journal · Powered by Colossal</p></div></div></div></div></div>",
+    "css": ".theme-root{min-height:100vh}.theme-root *{box-sizing:border-box}.theme-root img,.theme-root video{max-width:100%;height:auto}.theme-root audio{width:100%}.theme-root figure{margin:20px 0}.theme-root figcaption{font-size:13px;color:#74846a}.theme-menu{display:flex;gap:24px;flex-wrap:wrap}.theme-post-grid article{background:#ffffff;padding:24px;border:1px solid #e0e6da;border-radius:12px}.theme-post-grid a{text-decoration:none}.theme-post-grid h2{line-height:1.4}.theme-root pre{white-space:pre-wrap;background:#eaf0e1;padding:20px}.theme-root input,.theme-root button{font:inherit;padding:10px;border:1px solid #becdb4;border-radius:6px}.theme-pagination{display:flex;gap:24px;justify-content:center;padding:24px}@media(min-width:1025px){.theme-hide-desktop{display:none!important}}@media(min-width:641px) and (max-width:1024px){.theme-hide-tablet{display:none!important}.theme-post-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:640px){.theme-hide-mobile{display:none!important}.theme-columns,.theme-post-grid{grid-template-columns:1fr!important}}.theme-root h1{font-family:Georgia,serif;font-size:clamp(32px,5vw,62px);font-weight:400;line-height:1.15;letter-spacing:-1.5px}.theme-root a{color:#246b50}.theme-root{color:#243e2f;background-color:#f7f9f3;font-family:system-ui;line-height:1.8}.theme-root .theme-part-header{border-bottom:1px solid #dce4d3}.theme-root .theme-part-footer{border-top:1px solid #dce4d3;color:#6c7d62}",
+    "templateId": "default",
+    "warning": ""
+  }
+}
