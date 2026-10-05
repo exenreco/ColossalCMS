@@ -1,6 +1,7 @@
 {
   "name": "colossal-cms",
   "version": "0.0.1",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.19.0",

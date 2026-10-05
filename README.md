@@ -1651,3 +1651,7 @@ node scripts/prepare-release.mjs --restore-local-defaults
 </table>
 
 This README describes the current repository implementation. Historical V2 labels identify specification iterations, not the current `0.0.1` release.
+
+## License
+
+Colossal CMS is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Exenreco Bell.
