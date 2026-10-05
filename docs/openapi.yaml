@@ -1,0 +1,557 @@
+openapi: 3.1.0
+info:
+  title: Colossal CMS API
+  version: 2.0.1
+  description: Server-authorized CMS operations. Admin endpoints require a verified hosting-platform session and a CMS role. Mutations also require a same-origin Origin header and application/json, except file uploads which use multipart/form-data.
+servers:
+  - url: /api
+components:
+  securitySchemes:
+    readKey:
+      type: http
+      scheme: bearer
+  schemas:
+    Content:
+      type: object
+      required: [kind, title, slug, body, excerpt, status]
+      properties:
+        id: { type: string }
+        templateId:
+          {
+            type: string,
+            description: Optional active-theme template override; missing IDs fall back without destroying content,
+          }
+        kind: { type: string, enum: [page, post] }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        slug:
+          { type: string, pattern: "^[a-z0-9]+(-[a-z0-9]+)*$", maxLength: 160 }
+        body: { type: string, maxLength: 100000 }
+        excerpt: { type: string, maxLength: 500 }
+        status: { type: string, enum: [draft, pending, published, scheduled] }
+        publishAt: { type: string, format: date-time }
+        expectedUpdatedAt:
+          { type: string, description: Optimistic concurrency token }
+        autosave:
+          {
+            type: boolean,
+            description: Published content saves to a private revision,
+          }
+        author: { type: string }
+        details:
+          type: object
+          properties:
+            richText:
+              { type: object, description: Validated Tiptap document JSON }
+            featuredImageId: { type: string }
+            categories: { type: array, items: { type: string } }
+            tags: { type: array, items: { type: string } }
+            metaTitle: { type: string, maxLength: 200 }
+            metaDescription: { type: string, maxLength: 500 }
+            panelData:
+              { type: object, description: Namespaced custom panel values }
+    Settings:
+      type: object
+      required: [title, tagline, accent, logo, announcement]
+      properties:
+        title: { type: string, maxLength: 80 }
+        tagline: { type: string, maxLength: 200 }
+        accent: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+        logo: { type: string, description: Empty string or an HTTPS image URL }
+        announcement: { type: string, maxLength: 240 }
+        siteIconId: { type: string }
+        postRouting: { type: string, enum: [home, page] }
+        postsPageId:
+          { type: string, description: Published page for the post index }
+        homePageId:
+          { type: string, description: Optional separate published homepage }
+  responses:
+    Error:
+      description: Validation, authentication, authorization, or persistence error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+paths:
+  /public:
+    get:
+      summary: Public configuration, active plugins, and publishable content
+      responses:
+        "200":
+          {
+            description: "Settings, plugins, media and content; drafts excluded",
+          }
+  /content:
+    get:
+      summary: Read published content through an integration key
+      security: [{ readKey: [] }]
+      responses:
+        "200": { description: Published and due scheduled entries }
+        "401": { $ref: "#/components/responses/Error" }
+  /admin/session:
+    get:
+      summary: Check setup status and the verified member session
+      responses:
+        "200": { description: Setup required or authenticated member }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+  /admin/setup:
+    post:
+      summary: Create the first owner and seed sample content while Site is owner-private
+      responses:
+        "200": { description: Workspace initialized }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/state:
+    get:
+      summary: Load member-authorized workspace state
+      responses:
+        "200":
+          description: "Content, settings, plugins, media, notices and activity; members and key metadata for admins only"
+        "401": { $ref: "#/components/responses/Error" }
+  /admin/content:
+    post:
+      summary: Create or update a page or post; administrator or editor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Content" }
+      responses:
+        "200": { description: Saved content ID }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/content/{id}:
+    delete:
+      summary: Delete a page or post
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Deleted }
+        "404": { $ref: "#/components/responses/Error" }
+  /admin/plugins:
+    post:
+      summary: Change a bundled optional plugin; administrator only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, action]
+              properties:
+                id: { type: string }
+                action:
+                  {
+                    type: string,
+                    enum: [install, activate, deactivate, uninstall],
+                  }
+      responses:
+        "200": { description: Plugin updated }
+        "403": { $ref: "#/components/responses/Error" }
+  /admin/settings:
+    post:
+      summary: Save all site settings; administrator only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Settings" }
+      responses:
+        "200": { description: Settings saved }
+        "400": { $ref: "#/components/responses/Error" }
+  /admin/members:
+    post:
+      summary: Add or change a member by email; administrator only, no invitation email sent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { type: string, enum: [admin, editor] }
+      responses:
+        "200": { description: Membership saved }
+  /admin/members/{id}:
+    delete:
+      summary: Revoke membership, excluding the owner and self
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Membership removed }
+  /admin/keys:
+    post:
+      summary: Generate a read-only API key; raw key returned once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 80 }
+      responses:
+        "200": { description: Raw key; save securely }
+  /admin/keys/{id}:
+    delete:
+      summary: Revoke an API key
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: API key revoked }
+
+  /media:
+    get:
+      summary: List media for an authenticated administrator or editor
+      responses:
+        "200": { description: Media items with stable URLs and metadata }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      summary: Upload a validated image, audio or video file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                altText: { type: string, description: Required for images }
+                metadata:
+                  {
+                    type: string,
+                    description: JSON containing optional duration in seconds,
+                  }
+      responses:
+        "201": { description: Saved MediaItem }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+  /media/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      summary: Edit name, altText, caption, description and tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, altText, caption, description, tags]
+              properties:
+                name: { type: string, maxLength: 200 }
+                altText: { type: string, maxLength: 500 }
+                caption: { type: string, maxLength: 1000 }
+                description: { type: string, maxLength: 5000 }
+                tags:
+                  {
+                    type: array,
+                    maxItems: 30,
+                    items: { type: string, maxLength: 80 },
+                  }
+      responses:
+        "200": { description: Updated MediaItem }
+    delete:
+      summary: Delete an unused media file
+      responses:
+        "200": { description: Deleted }
+        "409":
+          {
+            description: Media is referenced; response includes references array,
+          }
+  /media/{id}/replace:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      summary: Replace file while keeping its media ID and type
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                altText: { type: string }
+      responses:
+        "200": { description: Updated MediaItem with same ID }
+  /media/{id}/references:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: List content, revision and settings references
+      responses:
+        "200":
+          description: "Reference array containing title, kind, id and published"
+  /media/{id}/file:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Read media; unpublished and unreferenced files require a CMS session
+      parameters:
+        - {
+            name: Range,
+            in: header,
+            schema: { type: string },
+            description: Single bytes range,
+          }
+      responses:
+        "200": { description: Complete file with validated content type }
+        "206": { description: Requested byte range }
+        "401": { $ref: "#/components/responses/Error" }
+        "416": { description: Invalid byte range }
+    head:
+      summary: Read file headers with the same authorization as GET
+      responses:
+        "200": { description: File headers }
+  /admin/content/{id}/revisions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Read saved and autosaved content snapshots
+      responses:
+        "200":
+          { description: Revision array; restore through POST /admin/content }
+  /admin/notices/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    delete:
+      summary: Dismiss a dashboard routing notice
+      responses:
+        "200": { description: Dismissed }
+  /plugins/install:
+    post:
+      summary: Validate and store an uploaded ZIP as an inactive plugin
+      description: Administrator only. Maximum compressed size 25 MB. No uploaded code executes.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Installed inactive plugin metadata and revision }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409":
+          description: "Conflicting route, version, or pending installation"
+        "413": { $ref: "#/components/responses/Error" }
+  /plugins/{id}/{action}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - name: action
+        in: path
+        required: true
+        schema:
+          {
+            type: string,
+            enum: [activate, deactivate, rollback, discard, uninstall],
+          }
+    post:
+      summary: Manage an uploaded plugin package
+      description: Administrator only. Activate currently returns 403 because trusted runtime execution approval is pending. Rollback restores previous files and manifest inactive. Discard reverts a pending installation.
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200": { description: Operation completed }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /themes:
+    get:
+      summary: List installed themes and template metadata
+      description: Requires a CMS member. Includes active/core status, revision, and hasDraft.
+      responses:
+        "200": { description: Theme summary array }
+  /themes/active:
+    get:
+      summary: Get the active theme manifest for the content editor
+      responses:
+        "200": { description: Active theme manifest }
+  /themes/install:
+    post:
+      summary: Validate and install a theme ZIP inactive
+      description: Administrator only. 25 MB compressed limit. Validates archive integrity, manifest, paths, compatibility and media. Sanitizes HTML and CSS; removes scripts and returns a summary.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201": { description: Installed ID and sanitization report }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { description: Theme ID already installed }
+        "413": { description: Archive exceeds limit }
+  /themes/render:
+    get:
+      summary: Render the active published theme or a signed draft preview
+      parameters:
+        - { name: path, in: query, schema: { type: string, default: / } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - {
+            name: themePreview,
+            in: query,
+            schema: { type: string },
+            description: Signed 15-minute token bound to a theme revision,
+          }
+      responses:
+        "200":
+          {
+            description: Sanitized html,
+            scoped css,
+            templateId,
+            warning,
+            page status,
+            title and description,
+          }
+        "401": { description: Invalid or expired preview token }
+        "410": { description: Preview revision changed }
+  /themes/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Read published document, draft, revision and version history
+      description: Administrator only.
+      responses:
+        "200": { description: Theme record }
+    delete:
+      summary: Delete an inactive non-core theme and its assets/history
+      description: Administrator only. Send an empty JSON object.
+      responses:
+        "200": { description: Deleted }
+        "403": { description: Core themes cannot be deleted }
+        "409": { description: Activate another theme first }
+  /themes/{id}/draft:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    put:
+      summary: Validate and save an editor document as a private draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, document]
+              properties:
+                revision: { type: integer }
+                document:
+                  {
+                    type: object,
+                    description: Theme manifest,
+                    template/part block trees,
+                    custom definitions and CSS; asset identities are server-owned,
+                  }
+      responses:
+        "200": { description: Incremented revision }
+        "409": { description: Theme changed in another tab }
+  /themes/{id}/templates/{templateId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: templateId, in: path, required: true, schema: { type: string } }
+    put:
+      summary: Replace one template root in the draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, root]
+              properties:
+                revision: { type: integer }
+                root:
+                  {
+                    type: object,
+                    description: Container block tree with nesting up to 8 levels,
+                  }
+      responses:
+        "200": { description: Incremented revision }
+        "409": { description: Stale revision }
+  /themes/{id}/render:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      summary: Render an unsaved document with published sample content for the editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document]
+              properties:
+                document: { type: object }
+                templateId: { type: string }
+                part: { type: string, enum: [header, footer, sidebar] }
+      responses:
+        "200": { description: Sanitized html and css }
+  /themes/{id}/export:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Download an installable ZIP of the draft or published theme
+      responses:
+        "200":
+          description: ZIP including manifest, block tree, compiled templates, parts, blocks and assets
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+  /themes/{id}/assets/{file}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - { name: file, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Read a validated theme-owned media asset
+      description: Active theme assets are public. Inactive themes require membership or a valid preview token.
+      parameters:
+        - { name: themePreview, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Media bytes with verified MIME and nosniff }
+  /themes/{id}/{action}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - name: action
+        in: path
+        required: true
+        schema:
+          {
+            type: string,
+            enum: [activate, publish, preview, clone, revert, restore],
+          }
+    post:
+      summary: Manage a theme version or activation
+      description: Administrator only. All actions except preview require revision. Publish bumps patch and saves history. Restore creates a draft. Activate reports content fallbacks. Preview issues a signed URL.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision: { type: integer }
+                name: { type: string, description: Required for clone }
+                historyId: { type: string, description: Required for restore }
+                draft:
+                  {
+                    type: boolean,
+                    default: true,
+                    description: Preview saved draft when available,
+                  }
+      responses:
+        "200": { description: Operation result, fallback list, or preview URL }
+        "201": { description: Cloned theme ID }
+        "409": { description: Stale revision }

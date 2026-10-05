@@ -1,0 +1,31 @@
+{
+  "id": "com.colossal.media",
+  "name": "Media",
+  "version": "0.0.1",
+  "description": "A shared home for your images, audio, and video.",
+  "author": "Colossal Core Team",
+  "license": "MIT",
+  "isCore": true,
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": []
+  },
+  "icon": "media",
+  "admin": {
+    "entryComponent": "MediaLibraryComponent",
+    "menu": {
+      "label": "Media",
+      "icon": "media",
+      "path": "/admin/media",
+      "order": 20,
+      "group": "main"
+    },
+    "skeleton": {
+      "component": "MediaLibrarySkeletonComponent",
+      "variant": "grid"
+    }
+  },
+  "frontend": {
+    "routes": []
+  }
+}

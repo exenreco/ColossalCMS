@@ -1,0 +1,31 @@
+{
+  "id": "com.colossal.themes",
+  "name": "Themes",
+  "version": "0.0.1",
+  "description": "Design, install and manage the presentation of your site.",
+  "author": "Colossal Core Team",
+  "license": "MIT",
+  "isCore": true,
+  "icon": "themes",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": ["com.colossal.media"]
+  },
+  "admin": {
+    "entryComponent": "ThemesComponent",
+    "menu": {
+      "label": "Themes",
+      "icon": "themes",
+      "path": "/admin/themes",
+      "order": 900,
+      "group": "system"
+    },
+    "skeleton": {
+      "component": "ThemesListSkeletonComponent",
+      "variant": "grid"
+    }
+  },
+  "frontend": {
+    "routes": []
+  }
+}

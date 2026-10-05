@@ -1,0 +1,49 @@
+name: Validate Colossal CMS
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm audit --audit-level high
+      - run: pnpm build
+      - run: pnpm exec cypress install
+      - run: pnpm e2e
+      - run: pnpm storybook:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: colossal-${{ github.sha }}
+          path: |
+            dist/client
+            dist/server
+            drizzle
+            scripts
+            server
+            shared
+            plugins
+            package.json
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+          retention-days: 14

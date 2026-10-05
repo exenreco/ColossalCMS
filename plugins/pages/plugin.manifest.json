@@ -1,0 +1,40 @@
+{
+  "id": "com.colossal.pages",
+  "name": "Pages",
+  "description": "Create and publish the pages that make up your site.",
+  "isCore": true,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "pages",
+  "admin": {
+    "entryComponent": "PagesAdminComponent",
+    "menu": {
+      "label": "Pages",
+      "icon": "pages",
+      "path": "/admin/pages",
+      "order": 40,
+      "group": "main"
+    },
+    "skeleton": {
+      "component": "PagesListSkeletonComponent",
+      "variant": "table"
+    }
+  },
+  "frontend": {
+    "routes": [
+      {
+        "path": ":slug",
+        "component": "PageComponent"
+      }
+    ],
+    "skeleton": {
+      "component": "PageSkeletonComponent",
+      "variant": "detail"
+    }
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": ["com.colossal.media", "com.colossal.themes"]
+  }
+}

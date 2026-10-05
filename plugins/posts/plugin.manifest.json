@@ -1,0 +1,40 @@
+{
+  "id": "com.colossal.posts",
+  "name": "Posts",
+  "description": "Draft, schedule, and share your next story.",
+  "isCore": true,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "posts",
+  "admin": {
+    "entryComponent": "PostsAdminComponent",
+    "menu": {
+      "label": "Posts",
+      "icon": "posts",
+      "path": "/admin/posts",
+      "order": 30,
+      "group": "main"
+    },
+    "skeleton": {
+      "component": "PostsListSkeletonComponent",
+      "variant": "table"
+    }
+  },
+  "frontend": {
+    "routes": [
+      {
+        "path": ":year/:month/:slug",
+        "component": "PostComponent"
+      }
+    ],
+    "skeleton": {
+      "component": "PostListSkeletonComponent",
+      "variant": "grid"
+    }
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": ["com.colossal.media", "com.colossal.themes"]
+  }
+}

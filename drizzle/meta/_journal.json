@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790512698721,
+      "tag": "0000_smooth_skreet",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790530549503,
+      "tag": "0001_odd_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790589995263,
+      "tag": "0002_furry_red_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790635484827,
+      "tag": "0003_theme_core_icons",
+      "breakpoints": true
+    }
+  ]
+}

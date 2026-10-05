@@ -1,0 +1,27 @@
+{
+  "id": "com.colossal.reading-time",
+  "name": "Reading time",
+  "description": "Help readers find their next five-minute read.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "clock",
+  "admin": {
+    "entryComponent": "ExtensionComponent",
+    "menu": {
+      "label": "Reading time",
+      "icon": "plugins",
+      "path": "/admin/reading-time",
+      "order": 920,
+      "group": "system"
+    }
+  },
+  "frontend": {
+    "routes": []
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": []
+  }
+}

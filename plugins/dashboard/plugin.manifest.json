@@ -1,0 +1,31 @@
+{
+  "id": "com.colossal.dashboard",
+  "name": "Dashboard",
+  "description": "Your content and workspace at a glance.",
+  "isCore": true,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "dashboard",
+  "admin": {
+    "entryComponent": "DashboardComponent",
+    "menu": {
+      "label": "Dashboard",
+      "icon": "dashboard",
+      "path": "/admin/dashboard",
+      "order": 10,
+      "group": "main"
+    },
+    "skeleton": {
+      "component": "DashboardSkeletonComponent",
+      "variant": "grid"
+    }
+  },
+  "frontend": {
+    "routes": []
+  },
+  "license": "MIT",
+  "requires": {
+    "colossal": ">=0.0.1",
+    "plugins": []
+  }
+}
