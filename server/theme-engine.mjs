@@ -205,12 +205,22 @@ export function sanitizeTemplate(
         "data-scene-preset",
         "data-full-viewport",
         "data-moon-enabled",
+        "data-moon-placement",
         "data-moon-size",
         "data-moon-elevation",
         "data-moon-tint",
         "data-terrain-enabled",
         "data-snow-enabled",
         "data-snow-density",
+        "data-snow-size",
+        "data-snow-speed",
+        "data-snow-flutter",
+        "data-scene-speed",
+        "data-background-zoom",
+        "data-scene-veil-enabled",
+        "data-scene-veil-opacity",
+        "data-scene-pixels-enabled",
+        "data-scene-pixel-size",
         "data-wind-enabled",
         "data-wind-strength",
         "data-controls",
@@ -1558,7 +1568,7 @@ function dynamic(type, s, ctx) {
         /^https:\/\//.test(url);
       const world = s.scenePreset === "ice-world";
       const worldData = world
-        ? ` data-full-viewport="${s.fullViewport === true}" data-moon-enabled="${s.moonEnabled !== false}" data-moon-size="${num(s.moonSize ?? 4.5, 1, 7)}" data-moon-elevation="${num(s.moonElevation ?? 0, -4, 5)}" data-moon-tint="${color(s.moonTint) || "#b9dcef"}" data-terrain-enabled="${s.terrainEnabled !== false}" data-snow-enabled="${s.snowEnabled !== false}" data-snow-density="${Math.round(num(s.snowDensity ?? 700, 0, 1800))}" data-wind-enabled="${s.windEnabled !== false}" data-wind-strength="${num(s.windStrength ?? 1, 0, 3)}"`
+        ? ` data-full-viewport="${s.fullViewport === true}" data-moon-enabled="${s.moonEnabled !== false}" data-moon-placement="${s.moonPlacement === "center" ? "center" : "top-left"}" data-moon-size="${num(s.moonSize ?? 4.5, 1, 7)}" data-moon-elevation="${num(s.moonElevation ?? 0, -4, 5)}" data-moon-tint="${color(s.moonTint) || "#b9dcef"}" data-terrain-enabled="${s.terrainEnabled !== false}" data-snow-enabled="${s.snowEnabled !== false}" data-snow-density="${Math.round(num(s.snowDensity ?? 160, 0, 1800))}" data-snow-size="${num(s.snowSize ?? 1.2, 0.3, 2)}" data-snow-speed="${num(s.snowSpeed ?? 1.4, 0.25, 3)}" data-snow-flutter="${num(s.snowFlutter ?? 1.3, 0, 3)}" data-wind-enabled="${s.windEnabled !== false}" data-wind-strength="${num(s.windStrength ?? 1, 0, 3)}" data-scene-speed="${num(s.sceneSpeed ?? 1.35, 0.25, 3)}" data-background-zoom="${num(s.backgroundZoom ?? 0.1, 0, 0.25)}" data-scene-veil-enabled="${s.sceneVeilEnabled !== false}" data-scene-veil-opacity="${num(s.sceneVeilOpacity ?? 0.5, 0, 0.85)}" data-scene-pixels-enabled="${s.scenePixelsEnabled !== false}" data-scene-pixel-size="${num(s.scenePixelSize ?? 3, 1, 8)}"`
         : "";
       return `<div class="gltf-viewer cl-portrait-scene${world ? " cl-ice-world" : ""}" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "Interactive crystal portrait")}" ${url && safe ? `data-portrait-url="${esc(url)}"` : ""} data-scene-preset="${world ? "ice-world" : "portrait"}"${worldData} data-fragment-count="${num(s.fragmentCount ?? 18, 0, 40)}" data-pointer-interactive="${s.pointerInteractive !== false}" data-motion-strength="${num(s.motionStrength ?? 0.6, 0, 2)}" data-ice-tint="${color(s.iceTint) || "#c5e5ff"}" data-light-intensity="${num(s.lightIntensity ?? 2, 0, 5)}" data-scroll-interactive="${s.scrollInteractive !== false}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${world && s.fullViewport === true ? "100vh" : `${num(s.height || 680, 100, 1600)}px`}">${url && safe ? `<img src="${esc(url)}" alt="${esc(s.alt)}" class="cl-portrait-fallback">` : "<p>Choose a transparent portrait in the Inspector.</p>"}</div>`;
     }

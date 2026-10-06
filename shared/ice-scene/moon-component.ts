@@ -1,6 +1,6 @@
 // @ts-ignore Three.js runtime declarations are separate from its package.
 import * as THREE from "three";
-import { seededRandom } from "./scene-math";
+import { seededRandom, moonCornerFrame } from "./scene-math";
 import { SceneComponent, SceneFrame } from "./scene-component";
 
 /** A real sphere with procedural craters, directional light and an atmospheric rim. */
@@ -8,7 +8,13 @@ export class MoonComponent implements SceneComponent {
   object: any;
   private texture: any;
   private baseX = -1.8;
-  constructor(doc: Document, size: number, elevation: number, tint: string) {
+  constructor(
+    doc: Document,
+    private size: number,
+    private elevation: number,
+    tint: string,
+    private placement = "top-left",
+  ) {
     this.object = new THREE.Group();
     this.object.position.set(this.baseX, elevation + 2.6, -17);
     const canvas = doc.createElement("canvas");
@@ -68,9 +74,16 @@ export class MoonComponent implements SceneComponent {
         uniforms: {
           surface: { value: this.texture },
           tint: { value: new THREE.Color(tint) },
+          lightDirection: {
+            value: new THREE.Vector3(
+              placement === "top-left" ? 0.65 : -0.9,
+              placement === "top-left" ? -0.25 : 0.25,
+              placement === "top-left" ? 0.7 : 0.24,
+            ).normalize(),
+          },
         },
         vertexShader: `varying vec2 vUv; varying vec3 vNormal; void main(){vUv=uv; vNormal=normalize(mat3(modelMatrix)*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-        fragmentShader: `uniform sampler2D surface; uniform vec3 tint; varying vec2 vUv; varying vec3 vNormal; void main(){float light=max(0.,dot(normalize(vNormal),normalize(vec3(-.9,.25,.24)))); vec3 craters=texture2D(surface,vUv).rgb; gl_FragColor=vec4(craters*tint*(.045+light*.95),1.);
+        fragmentShader: `uniform sampler2D surface; uniform vec3 tint; uniform vec3 lightDirection; varying vec2 vUv; varying vec3 vNormal; void main(){float light=max(0.,dot(normalize(vNormal),lightDirection)); vec3 craters=texture2D(surface,vUv).rgb; gl_FragColor=vec4(craters*tint*(.045+light*.95),1.);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }`,
@@ -94,10 +107,22 @@ export class MoonComponent implements SceneComponent {
   }
   update(frame: SceneFrame) {
     this.object.rotation.y = frame.progress * 0.08;
-    this.object.position.x = this.baseX + frame.progress * 1.1;
+    if (this.placement !== "top-left")
+      this.object.position.x = this.baseX + frame.progress * 1.1;
   }
-  resize(aspect: number) {
+  resize(aspect: number, cameraDistance: number) {
+    if (this.placement === "top-left") {
+      const corner = moonCornerFrame(
+        aspect,
+        cameraDistance + 17,
+        this.size,
+        this.elevation,
+      );
+      this.object.position.set(corner.x, corner.y, -17);
+      return;
+    }
     this.baseX = aspect < 0.9 ? 0 : -1.8;
+    this.object.position.set(this.baseX, this.elevation + 2.6, -17);
   }
   dispose() {
     this.texture.dispose();

@@ -22,6 +22,9 @@ import {
   throneFrame,
   scrollProgress,
   seededRandom,
+  moonCornerFrame,
+  easeTo,
+  flakeMotion,
 } from "../shared/ice-scene/scene-math.ts";
 import { modelFieldVisible } from "../shared/model-field-visibility.ts";
 
@@ -80,11 +83,14 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.equal(home.templateId, "home");
     assert.match(
       home.html,
-      /data-portrait-url="\/themes\/colossal-2027\/ice-throne.png"/,
+      /data-portrait-url="\/themes\/colossal-2027\/ice-throne-royal.png"/,
     );
     assert.match(home.html, /data-scene-preset="ice-world"/);
     assert.match(home.html, /data-full-viewport="true"/);
     assert.match(home.html, /data-moon-enabled="true"/);
+    assert.match(home.html, /data-moon-placement="top-left"/);
+    assert.match(home.html, /data-scene-veil-enabled="true"/);
+    assert.match(home.html, /data-scene-pixels-enabled="true"/);
     assert.match(home.html, /data-snow-enabled="true"/);
     assert.match(home.html, /data-wind-enabled="true"/);
     assert.match(home.css, /height:100vh/);
@@ -132,6 +138,14 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
     moonTint: "red;bad()",
     snowDensity: 100000,
     windStrength: -20,
+    sceneSpeed: 100,
+    backgroundZoom: 3,
+    sceneVeilOpacity: 99,
+    scenePixelSize: -1,
+    snowSize: 99,
+    snowSpeed: -1,
+    snowFlutter: 100,
+    moonPlacement: "javascript:bad()",
   });
   const result = renderTheme(
     validateDocument(d, true),
@@ -156,6 +170,14 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
   assert.match(result.html, /data-moon-tint="#b9dcef"/);
   assert.match(result.html, /data-snow-density="1800"/);
   assert.match(result.html, /data-wind-strength="0"/);
+  assert.match(result.html, /data-scene-speed="3"/);
+  assert.match(result.html, /data-background-zoom="0.25"/);
+  assert.match(result.html, /data-scene-veil-opacity="0.85"/);
+  assert.match(result.html, /data-scene-pixel-size="1"/);
+  assert.match(result.html, /data-snow-size="2"/);
+  assert.match(result.html, /data-snow-speed="0.25"/);
+  assert.match(result.html, /data-snow-flutter="3"/);
+  assert.match(result.html, /data-moon-placement="top-left"/);
   assert.match(result.html, /<img src="\/api\/media\/portrait\/file"/);
   assert.ok(themeMediaIds(d).includes("portrait"));
   assert.ok(mediaIds({ contentBlocks: [scene] }).includes("portrait"));
@@ -199,7 +221,7 @@ test("glass controls produce bounded sanitized styles and the ice artwork ships 
     ),
     /backdrop-filter/,
   );
-  for (const asset of ["ice-portrait", "ice-throne"]) {
+  for (const asset of ["ice-portrait", "ice-throne", "ice-throne-royal"]) {
     const png = await readFile(`public/themes/colossal-2027/${asset}.png`);
     assert.equal(png.subarray(1, 4).toString(), "PNG");
     assert.equal(png[25], 6); // PNG RGBA: alpha is preserved in the shipped asset.
@@ -219,7 +241,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 2);
+  assert.equal(upgraded.manifest.bundledRevision, 3);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -288,9 +310,13 @@ test("shared Inspector only exposes world controls for ice scenes and hides disa
   assert.equal(showModelField("fullViewport", world), true);
   for (const field of [
     "moonSize",
+    "moonPlacement",
     "moonElevation",
     "moonTint",
     "snowDensity",
+    "snowSize",
+    "snowSpeed",
+    "snowFlutter",
     "windStrength",
     "height",
   ]) {
@@ -314,10 +340,102 @@ test("shared Inspector only exposes world controls for ice scenes and hides disa
   );
   assert.equal(showModelField("moonEnabled", { source: "url" }), false);
   assert.equal(
+    showModelField("sceneVeilOpacity", { ...world, sceneVeilEnabled: false }),
+    false,
+  );
+  assert.equal(
+    showModelField("scenePixelSize", { ...world, scenePixelsEnabled: false }),
+    false,
+  );
+  assert.equal(
+    showModelField("scenePixelSize", {
+      ...world,
+      sceneVeilEnabled: true,
+      scenePixelsEnabled: true,
+    }),
+    true,
+  );
+  assert.equal(
     showModelField("moonEnabled", {
       source: "portrait",
       scenePreset: "portrait",
     }),
     false,
   );
+});
+
+test("the corner moon is cropped by both viewport edges with roughly half its surface visible", () => {
+  for (const aspect of [1440 / 900, 390 / 844, 915 / 918]) {
+    const distance = 28,
+      radius = 4.5;
+    const corner = moonCornerFrame(aspect, distance, radius);
+    const halfHeight = Math.tan((38 * Math.PI) / 360) * distance;
+    const halfWidth = halfHeight * aspect;
+    assert.ok(corner.x - radius < -halfWidth);
+    assert.ok(corner.y + radius > halfHeight);
+    const random = seededRandom(87);
+    let total = 0,
+      visible = 0;
+    for (let i = 0; i < 20000; i++) {
+      const x = (random() * 2 - 1) * radius,
+        y = (random() * 2 - 1) * radius;
+      if (x * x + y * y > radius * radius) continue;
+      total++;
+      if (
+        corner.x + x >= -halfWidth &&
+        corner.x + x <= halfWidth &&
+        corner.y + y <= halfHeight &&
+        corner.y + y >= -halfHeight
+      )
+        visible++;
+    }
+    assert.ok(visible / total > 0.45 && visible / total < 0.65);
+  }
+});
+
+test("camera easing is independent of display refresh rate and flakes have individual falling-leaf motion", () => {
+  const response = (fps) => {
+    let position = 0;
+    for (let i = 0; i < fps; i++) position = easeTo(position, 1, 1 / fps);
+    return position;
+  };
+  assert.ok(Math.abs(response(30) - response(60)) < 1e-10);
+  assert.ok(response(60) > 0.999);
+  assert.equal(easeTo(0, 1, 0), 0);
+  const a = flakeMotion(2, 0, 0.5, 1, 1, 1.3);
+  const b = flakeMotion(2, 2, 1.6, 1, 1, 1.3);
+  assert.notDeepEqual(a, b);
+  for (const motion of [a, b]) {
+    assert.ok(motion.y < 0);
+    assert.ok(Math.abs(motion.flip) <= 0.75);
+    assert.ok(Object.values(motion).every(Number.isFinite));
+  }
+  assert.equal(flakeMotion(2, 0, 0.5, 0, 1, 0).x, 0);
+  const stillFlake = flakeMotion(2, 1, 0.5, 0, 1, 0);
+  assert.equal(stillFlake.angle, 1);
+  assert.equal(stillFlake.flip, 1);
+});
+
+test("revision two themes receive the glass refresh while retaining custom scene controls", () => {
+  const document = colossal2027Theme();
+  document.manifest.bundledRevision = 2;
+  const scene = document.templates.home.children[1].children[1].children[0];
+  Object.assign(scene.settings, {
+    portraitUrl: "/themes/colossal-2027/ice-throne.png",
+    snowDensity: 700,
+    fragmentCount: 8,
+    windStrength: 2,
+    sceneVeilOpacity: 0.6,
+  });
+  const updated = migrateThemeDocument(document);
+  const next = updated.templates.home.children[1].children[1].children[0];
+  assert.equal(
+    next.settings.portraitUrl,
+    "/themes/colossal-2027/ice-throne-royal.png",
+  );
+  assert.equal(next.settings.snowDensity, 160);
+  assert.equal(next.settings.fragmentCount, 0);
+  assert.equal(next.settings.windStrength, 2);
+  assert.equal(next.settings.sceneVeilOpacity, 0.6);
+  assert.deepEqual(migrateThemeDocument(updated), updated);
 });

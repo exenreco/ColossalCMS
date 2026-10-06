@@ -930,6 +930,13 @@
         "default": 4.5
       },
       {
+        "key": "moonPlacement",
+        "label": "Moon placement",
+        "type": "select",
+        "options": ["top-left", "center"],
+        "default": "top-left"
+      },
+      {
         "key": "moonElevation",
         "label": "Moon elevation (−4–5)",
         "type": "number",
@@ -957,7 +964,25 @@
         "key": "snowDensity",
         "label": "Snow density (0–1800)",
         "type": "number",
-        "default": 700
+        "default": 160
+      },
+      {
+        "key": "snowSize",
+        "label": "Snowflake size (0.3–2)",
+        "type": "number",
+        "default": 1.2
+      },
+      {
+        "key": "snowSpeed",
+        "label": "Snowfall speed (0.25–3)",
+        "type": "number",
+        "default": 1.4
+      },
+      {
+        "key": "snowFlutter",
+        "label": "Snowflake flutter (0–3)",
+        "type": "number",
+        "default": 1.3
       },
       {
         "key": "windEnabled",
@@ -970,6 +995,42 @@
         "label": "Wind strength (0–3)",
         "type": "number",
         "default": 1
+      },
+      {
+        "key": "sceneSpeed",
+        "label": "Scene animation speed (0.25–3)",
+        "type": "number",
+        "default": 1.35
+      },
+      {
+        "key": "backgroundZoom",
+        "label": "Background zoom amount (0–0.25)",
+        "type": "number",
+        "default": 0.1
+      },
+      {
+        "key": "sceneVeilEnabled",
+        "label": "Dark glass overlay",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "sceneVeilOpacity",
+        "label": "Glass overlay opacity (0–0.85)",
+        "type": "number",
+        "default": 0.5
+      },
+      {
+        "key": "scenePixelsEnabled",
+        "label": "Animated pixel texture",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "scenePixelSize",
+        "label": "Pixel texture size (1–8)",
+        "type": "number",
+        "default": 3
       },
       {
         "key": "fragmentCount",

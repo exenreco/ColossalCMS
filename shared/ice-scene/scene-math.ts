@@ -39,3 +39,51 @@ export function scrollProgress(
     ? 0
     : clamp((scrollY / Math.max(1, viewportHeight)) * strength, 0, 1);
 }
+
+/** Frame-rate independent response for scroll, camera dolly and pointer motion. */
+export function easeTo(
+  current: number,
+  target: number,
+  delta: number,
+  response = 9,
+) {
+  return (
+    current +
+    (target - current) * (1 - Math.exp(-Math.max(0, delta) * response))
+  );
+}
+
+/** Crop approximately half of the moon across the upper and left viewport edges. */
+export function moonCornerFrame(
+  aspect: number,
+  distance: number,
+  radius: number,
+  elevation = 0,
+) {
+  const halfHeight = Math.tan((38 * Math.PI) / 360) * distance;
+  return {
+    x: -halfHeight * aspect + radius * 0.32,
+    y: halfHeight - radius * 0.42 + elevation,
+  };
+}
+
+/** Independent phases give each flake a falling-leaf sway, spin and edge-on flutter. */
+export function flakeMotion(
+  time: number,
+  phase: number,
+  frequency: number,
+  wind: number,
+  speed: number,
+  flutter: number,
+) {
+  const wave = time * frequency + phase;
+  return {
+    x: wind * 0.65 + Math.sin(wave) * flutter * 0.8,
+    y: -speed * (0.85 + Math.sin(wave * 0.7) * 0.18),
+    angle: phase + (time * frequency * 0.65 + Math.sin(wave * 0.55)) * flutter,
+    flip:
+      1 -
+      Math.min(1, flutter) +
+      Math.cos(wave * 0.8) * 0.75 * Math.min(1, flutter),
+  };
+}

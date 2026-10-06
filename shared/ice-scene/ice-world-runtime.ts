@@ -10,8 +10,9 @@ import { StarsComponent } from "./stars-component";
 import { SkyComponent } from "./sky-component";
 import { ThroneComponent } from "./throne-component";
 import { IceFragmentsComponent } from "./ice-fragments-component";
+import { GlassVeilComponent } from "./glass-veil-component";
 import { SceneComponent, SceneFrame } from "./scene-component";
-import { clamp, scrollProgress } from "./scene-math";
+import { clamp, scrollProgress, easeTo } from "./scene-math";
 
 /** One renderer, with independent scene components and a viewport-sized background. */
 export async function mountIceWorld(host: HTMLElement) {
@@ -26,7 +27,11 @@ export async function mountIceWorld(host: HTMLElement) {
   const full = host.dataset["fullViewport"] === "true";
   const components: SceneComponent[] = [];
   const cleanups: (() => void)[] = [];
-  let renderer: any, environment: any, texture: any, scene: any;
+  let renderer: any,
+    environment: any,
+    texture: any,
+    flakeTexture: any,
+    scene: any;
   let resizeObserver: ResizeObserver | undefined;
   let intersection: IntersectionObserver | undefined;
   let animation = 0,
@@ -50,6 +55,7 @@ export async function mountIceWorld(host: HTMLElement) {
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => material.dispose());
     texture?.dispose();
+    flakeTexture?.dispose();
     environment?.dispose();
     renderer?.dispose();
     delete host.dataset["sceneReady"];
@@ -73,6 +79,16 @@ export async function mountIceWorld(host: HTMLElement) {
       return;
     }
     texture.colorSpace = THREE.SRGBColorSpace;
+    if (host.dataset["snowEnabled"] !== "false") {
+      flakeTexture = await new THREE.TextureLoader()
+        .loadAsync("/themes/colossal-2027/snowflake-reference.jpg")
+        .catch(() => null);
+      if (!attached()) {
+        dispose();
+        return;
+      }
+      if (flakeTexture) flakeTexture.colorSpace = THREE.SRGBColorSpace;
+    }
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2("#203b52", 0.009);
     const room = new RoomEnvironment(),
@@ -106,6 +122,7 @@ export async function mountIceWorld(host: HTMLElement) {
               clamp(Number(host.dataset["moonSize"] || 4.5), 1, 7),
               clamp(Number(host.dataset["moonElevation"] || 0), -4, 5),
               host.dataset["moonTint"] || "#b9dcef",
+              host.dataset["moonPlacement"] || "top-left",
             ),
           )
         : null;
@@ -126,12 +143,32 @@ export async function mountIceWorld(host: HTMLElement) {
             ),
           )
         : null;
-    if (host.dataset["snowEnabled"] !== "false")
-      add(
-        new SnowComponent(
-          Math.round(clamp(Number(host.dataset["snowDensity"] || 0), 0, 1800)),
-        ),
-      );
+    const snow =
+      host.dataset["snowEnabled"] !== "false"
+        ? add(
+            new SnowComponent(
+              Math.round(
+                clamp(Number(host.dataset["snowDensity"] ?? 160), 0, 1800),
+              ),
+              flakeTexture,
+              clamp(Number(host.dataset["snowSize"] ?? 1.2), 0.3, 2),
+              clamp(Number(host.dataset["snowSpeed"] ?? 1.4), 0.25, 3),
+              clamp(Number(host.dataset["snowFlutter"] ?? 1.3), 0, 3),
+            ),
+          )
+        : null;
+    const veil =
+      host.dataset["sceneVeilEnabled"] !== "false"
+        ? add(
+            new GlassVeilComponent(
+              clamp(Number(host.dataset["sceneVeilOpacity"] ?? 0.5), 0, 0.85),
+              host.dataset["scenePixelsEnabled"] !== "false",
+              clamp(Number(host.dataset["scenePixelSize"] ?? 3), 1, 8),
+            ),
+          )
+        : null;
+    const speed = clamp(Number(host.dataset["sceneSpeed"] ?? 1.35), 0.25, 3);
+    const zoom = clamp(Number(host.dataset["backgroundZoom"] ?? 0.1), 0, 0.25);
     const canvas = renderer.domElement as HTMLCanvasElement;
     canvas.style.cssText =
       "display:block;width:100%;height:100%;position:absolute;inset:0;";
@@ -156,6 +193,7 @@ export async function mountIceWorld(host: HTMLElement) {
     let visible = true,
       dirty = true,
       progress = 0,
+      renderedProgress = 0,
       width = 0,
       height = 0;
     const resize = () => {
@@ -165,8 +203,10 @@ export async function mountIceWorld(host: HTMLElement) {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       throne.resize(camera.aspect, distance);
-      moon?.resize(camera.aspect);
+      moon?.resize(camera.aspect, distance);
       fragments.resize(throne.object);
+      snow?.resize(height);
+      veil?.resize(width, height);
       dirty = true;
     };
     resizeObserver = new ResizeObserver(resize);
@@ -264,6 +304,8 @@ export async function mountIceWorld(host: HTMLElement) {
     );
     scrolling();
     let last = 0,
+      elapsed = 0,
+      lastReduced = motion.matches,
       lastSnapshot = 0;
     const tick = (time: number) => {
       if (!attached()) {
@@ -271,26 +313,42 @@ export async function mountIceWorld(host: HTMLElement) {
         return;
       }
       animation = requestAnimationFrame(tick);
-      if (!visible || doc.hidden || time - last < (preview ? 66 : 33)) return;
+      if (!visible || doc.hidden || time - last < (preview ? 33 : 16)) return;
       const delta = Math.min(0.05, (time - last) / 1000);
       last = time;
+      if (motion.matches !== lastReduced) {
+        lastReduced = motion.matches;
+        preference();
+      }
       if (motion.matches && !dirty) return;
+      if (!motion.matches) elapsed += delta * speed;
+      renderedProgress = motion.matches
+        ? 0
+        : easeTo(renderedProgress, progress, delta, 10);
+      const zoomAmount = motion.matches
+        ? 0
+        : zoom *
+          (renderedProgress * 0.78 +
+            (0.5 + 0.5 * Math.sin(elapsed * 0.65)) * 0.22);
+      camera.position.z = motion.matches
+        ? distance
+        : easeTo(camera.position.z, distance * (1 - zoomAmount), delta, 8);
+      host.dataset["sceneZoom"] = (distance / camera.position.z).toFixed(3);
+      moon?.resize(camera.aspect, camera.position.z);
       const frame: SceneFrame = {
-        time: time / 1000,
-        delta,
-        progress,
+        time: elapsed,
+        delta: delta * speed,
+        progress: renderedProgress,
         reducedMotion: motion.matches,
-        wind: wind?.velocity(time / 1000, progress) || 0,
+        wind: wind?.velocity(elapsed, renderedProgress) || 0,
       };
       components.forEach((component) => component.update(frame));
-      camera.position.x +=
-        (motion.matches
-          ? -camera.position.x
-          : pointer.x * 0.32 - camera.position.x) * 0.07;
-      camera.position.y +=
-        (motion.matches
-          ? -camera.position.y
-          : -pointer.y * 0.18 - camera.position.y) * 0.07;
+      camera.position.x = motion.matches
+        ? 0
+        : easeTo(camera.position.x, pointer.x * 0.5, delta, 9);
+      camera.position.y = motion.matches
+        ? 0
+        : easeTo(camera.position.y, -pointer.y * 0.28, delta, 9);
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       if (fallback) fallback.style.visibility = "hidden";
