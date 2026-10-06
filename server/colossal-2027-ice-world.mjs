@@ -1,6 +1,6 @@
 /** Upgrade the bundled hero without rebuilding authored copy, other templates or shared parts. */
 export function upgradeColossal2027Document(input) {
-  if (!input?.templates?.home || input.manifest?.bundledRevision >= 3)
+  if (!input?.templates?.home || input.manifest?.bundledRevision >= 4)
     return input;
   const d = structuredClone(input);
   const hero = d.templates.home.children?.find((node) =>
@@ -63,24 +63,35 @@ export function upgradeColossal2027Document(input) {
     d.css = (d.css || "") + COLOSSAL_2027_ICE_CSS;
     d.manifest.bundledRevision = 2;
   }
-  scene.settings.moonPlacement ??= "top-left";
-  scene.settings.sceneSpeed ??= 1.35;
-  scene.settings.backgroundZoom ??= 0.1;
-  scene.settings.snowSize ??= 1.2;
-  scene.settings.snowSpeed ??= 1.4;
-  scene.settings.snowFlutter ??= 1.3;
-  scene.settings.sceneVeilEnabled ??= true;
-  scene.settings.sceneVeilOpacity ??= 0.5;
-  scene.settings.scenePixelsEnabled ??= true;
-  scene.settings.scenePixelSize ??= 3;
-  if (scene.settings.snowDensity === 700) scene.settings.snowDensity = 160;
-  if (scene.settings.fragmentCount === 8) scene.settings.fragmentCount = 0;
-  if (scene.settings.portraitUrl === "/themes/colossal-2027/ice-throne.png")
-    scene.settings.portraitUrl = "/themes/colossal-2027/ice-throne-royal.png";
-  d.css = (d.css || "") + COLOSSAL_2027_GLASS_CSS;
-  d.manifest.bundledRevision = 3;
+  if (!(d.manifest.bundledRevision >= 3)) {
+    scene.settings.moonPlacement ??= "top-left";
+    scene.settings.sceneSpeed ??= 1.35;
+    scene.settings.backgroundZoom ??= 0.1;
+    scene.settings.snowSize ??= 1.2;
+    scene.settings.snowSpeed ??= 1.4;
+    scene.settings.snowFlutter ??= 1.3;
+    scene.settings.sceneVeilEnabled ??= true;
+    scene.settings.sceneVeilOpacity ??= 0.5;
+    scene.settings.scenePixelsEnabled ??= true;
+    scene.settings.scenePixelSize ??= 3;
+    if (scene.settings.snowDensity === 700) scene.settings.snowDensity = 160;
+    if (scene.settings.fragmentCount === 8) scene.settings.fragmentCount = 0;
+    if (scene.settings.portraitUrl === "/themes/colossal-2027/ice-throne.png")
+      scene.settings.portraitUrl = "/themes/colossal-2027/ice-throne-royal.png";
+    d.css = (d.css || "") + COLOSSAL_2027_GLASS_CSS;
+    d.manifest.bundledRevision = 3;
+  }
+  // Shared-part wrappers do not compile the template reference's block settings.
+  // Raise the actual footer wrapper above the hero's fixed scene stacking context.
+  d.css = (d.css || "") + COLOSSAL_2027_FOOTER_CSS;
+  d.manifest.bundledRevision = 4;
   return d;
 }
+
+export const COLOSSAL_2027_FOOTER_CSS = `
+/* Colossal 2027 / footer above the persistent scene */
+.theme-root .theme-part-footer{position:relative;z-index:2}
+`;
 
 export const COLOSSAL_2027_GLASS_CSS = `
 /* Colossal 2027 / charcoal glass and animated pixel veil */

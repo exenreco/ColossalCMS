@@ -12,7 +12,7 @@ Colossal 2027 is a bundled core theme for Exenreco Bell's developer portfolio. I
 
 Startup seeds the theme inactive. It preserves the current active theme, posts, pages, existing Colossal 2027 edits, and drafts. No portfolio pages or invented education records are added to the content database.
 
-Existing Colossal 2027 documents receive the full-viewport scene and charcoal glass upgrades when opened or rendered. Bundled revision 3 replaces the previous default throne with the slimmer royal ice chair, adds the corner moon, snowflake motion, zoom, and veil controls, and updates the old default particle counts. The compatibility migration preserves block IDs, authored text, other templates, shared parts, custom CSS, replacement images, and existing scene-control values. The upgraded document is persisted on the next save or publish. The original database record and theme history remain available until then.
+Existing Colossal 2027 documents receive the full-viewport scene and charcoal glass upgrades when opened or rendered. Bundled revision 3 replaces the previous default throne with the slimmer royal ice chair, adds the corner moon, snowflake motion, zoom, and veil controls, and updates the old default particle counts. Revision 4 places the shared footer above the persistent background without replaying earlier upgrades. The compatibility migration preserves block IDs, authored text, other templates, shared parts, custom CSS, replacement images, and existing scene-control values. The upgraded document is persisted on the next save or publish. The original database record and theme history remain available until then.
 
 ## Templates and routing
 

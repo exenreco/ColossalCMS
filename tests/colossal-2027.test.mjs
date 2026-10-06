@@ -241,7 +241,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 3);
+  assert.equal(upgraded.manifest.bundledRevision, 4);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -438,4 +438,37 @@ test("revision two themes receive the glass refresh while retaining custom scene
   assert.equal(next.settings.windStrength, 2);
   assert.equal(next.settings.sceneVeilOpacity, 0.6);
   assert.deepEqual(migrateThemeDocument(updated), updated);
+});
+
+test("existing glass themes place the shared footer above the fixed scene without replaying previous upgrades", () => {
+  const document = colossal2027Theme();
+  document.manifest.bundledRevision = 3;
+  document.css = document.css.replace(
+    /\/\* Colossal 2027 \/ footer above the persistent scene \*\/[\s\S]*$/,
+    "",
+  );
+  const scene = document.templates.home.children[1].children[1].children[0];
+  scene.settings.snowDensity = 700;
+  scene.settings.fragmentCount = 8;
+  document.parts.footer.children[1].settings.html = "<p>My custom footer</p>";
+  const original = structuredClone(document);
+  const updated = migrateThemeDocument(document);
+  assert.deepEqual(document, original);
+  assert.equal(updated.manifest.bundledRevision, 4);
+  assert.deepEqual(updated.templates, original.templates);
+  assert.deepEqual(updated.parts, original.parts);
+  assert.ok(updated.css.startsWith(original.css));
+  assert.deepEqual(migrateThemeDocument(updated), updated);
+  const rendered = renderTheme(validateDocument(updated, true), {
+    settings: {},
+    allContent: [],
+    media: [],
+    kind: "home",
+    path: "/",
+  });
+  assert.match(rendered.html, /My custom footer/);
+  assert.match(
+    rendered.css,
+    /\.theme-root \.theme-part-footer\{position:relative;z-index:2\}/,
+  );
 });

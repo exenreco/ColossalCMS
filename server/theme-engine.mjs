@@ -397,7 +397,8 @@ export function sanitizeCss(css, report = []) {
   ast.walkDecls((d) => {
     if (
       !allowed.has(d.prop.toLowerCase()) ||
-      (d.prop.toLowerCase() === "position" && d.value !== "sticky") ||
+      (d.prop.toLowerCase() === "position" &&
+        !["relative", "sticky"].includes(d.value)) ||
       /[{}<>\\]|url\s*\(|expression\s*\(|@|javascript|behavior|var\s*\(/i.test(
         d.value,
       )
