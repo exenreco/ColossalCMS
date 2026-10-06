@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { loginSecurity } from "../server/login-security.mjs";
 import {
   createHash,
   randomBytes,
@@ -25,6 +26,7 @@ export function passwordAuth(
   { secure = true, clock = () => Date.now(), setupToken = "" } = {},
 ) {
   const attempts = new Map();
+  const security = loginSecurity(db, { clock });
   const setupAttempts = new Map();
   const setupNeeded = async () =>
     !(await db
@@ -187,15 +189,25 @@ export function passwordAuth(
         .first();
     },
     async login(email, password, client = "unknown") {
+      const ticket = await security.begin(client, email);
+      const invalid = async () => {
+        const details = await security.finish(ticket, false);
+        throw Object.assign(new Error("Invalid email or password."), {
+          status: 401,
+          ...details,
+        });
+      };
       if (
         typeof email !== "string" ||
         typeof password !== "string" ||
         email.length > 254 ||
         Buffer.byteLength(password, "utf8") > 72
       )
-        fail("Invalid email or password.", 401);
+        return invalid();
       // Bound memory and rate-limit both account and connection source, including nonexistent users.
-      const keys = ["email:" + email.toLowerCase(), "client:" + client];
+      const keys = ticket.active
+        ? []
+        : ["email:" + email.toLowerCase(), "client:" + client];
       for (const [k, v] of attempts)
         if (clock() - v.start > 15 * 60 * 1000) attempts.delete(k);
       if (attempts.size > 10000) fail("Please try again later.", 429);
@@ -221,8 +233,8 @@ export function passwordAuth(
         credentials?.password_hash ||
           "$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW",
       );
-      if (!member || !credentials || !valid)
-        fail("Invalid email or password.", 401);
+      if (!member || !credentials || !valid) return invalid();
+      await security.finish(ticket, true);
       for (const key of keys) attempts.delete(key);
       const raw = randomBytes(32).toString("hex"),
         expires = new Date(clock() + 8 * 60 * 60 * 1000).toISOString();

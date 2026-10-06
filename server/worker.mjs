@@ -10,6 +10,7 @@ import {
 import { renderContentCanvas } from "./theme-engine.mjs";
 import { readAdSettings, validateAdSettings } from "./google-ads.mjs";
 import { handleConnections } from "./production-connections.mjs";
+import { handleLoginSecurity, LOGIN_SECURITY_ID } from "./login-security.mjs";
 import { handleMedia, serveMedia } from "./media.mjs";
 import {
   uploadedPlugins,
@@ -105,7 +106,11 @@ export async function initialize(db, user) {
         .prepare(
           "INSERT OR IGNORE INTO plugins (id,active,installed) VALUES (?,?,?)",
         )
-        .bind(p.id, p.isCore ? 1 : 0, p.isCore ? 1 : 0),
+        .bind(
+          p.id,
+          p.isCore || p.id === LOGIN_SECURITY_ID ? 1 : 0,
+          p.isCore || p.id === LOGIN_SECURITY_ID ? 1 : 0,
+        ),
     ),
   );
   if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) return;
@@ -360,6 +365,8 @@ export default {
       const user = await identity(request, db);
       if (path.startsWith("/api/admin/connections"))
         return await handleConnections(request, env, user);
+      if (path.startsWith("/api/admin/login-security"))
+        return await handleLoginSecurity(request, env, user);
       if (path === "/api/admin/google-ads" && request.method === "GET") {
         requireAdmin(user);
         return json(await readAdSettings(db));

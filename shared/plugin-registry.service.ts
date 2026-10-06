@@ -10,6 +10,7 @@ import readingTime from "../plugins/reading-time/plugin.manifest.json";
 import announcement from "../plugins/announcement/plugin.manifest.json";
 import googleAds from "../plugins/google-ads/plugin.manifest.json";
 import productionConnections from "../plugins/production-connections/plugin.manifest.json";
+import loginSecurity from "../plugins/login-security/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
   themes,
   media,
@@ -22,9 +23,14 @@ export const PLUGIN_MANIFESTS = [
   announcement,
   googleAds,
   productionConnections,
+  loginSecurity,
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  LoginSecurityComponent: () =>
+    import("../projects/admin/src/plugins/login-security").then(
+      (m) => m.LoginSecurityComponent,
+    ),
   ProductionConnectionsComponent: () =>
     import("../projects/admin/src/plugins/production-connections").then(
       (m) => m.ProductionConnectionsComponent,

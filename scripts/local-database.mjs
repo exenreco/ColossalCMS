@@ -19,6 +19,8 @@ export function localDatabase(filename = ":memory:") {
       sqlite.prepare("INSERT INTO local_migrations VALUES (?)").run(file);
     }
   const wrapper = (sql, args = []) => ({
+    sql,
+    args,
     bind: (...values) => wrapper(sql, values),
     first: async () => sqlite.prepare(sql).get(...args) || null,
     all: async () => ({ results: sqlite.prepare(sql).all(...args) }),
@@ -30,7 +32,10 @@ export function localDatabase(filename = ":memory:") {
       sqlite.exec("BEGIN");
       try {
         const results = [];
-        for (const s of statements) results.push(await s.run());
+        // SQLite executes synchronously. Do not yield with a transaction open:
+        // another request could otherwise enter it or start a nested BEGIN.
+        for (const s of statements)
+          results.push(sqlite.prepare(s.sql).run(...s.args));
         sqlite.exec("COMMIT");
         return results;
       } catch (e) {

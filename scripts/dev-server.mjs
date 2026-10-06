@@ -1,4 +1,5 @@
 import { localStorage } from "./local-storage.mjs";
+import { clientIp } from "./client-ip.mjs";
 import http from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -84,6 +85,9 @@ const cmsServer = http
         if (v) headers.set(k, Array.isArray(v) ? v.join(",") : v);
       headers.delete("oai-authenticated-user-id");
       headers.delete("oai-authenticated-user-email");
+      headers.delete("x-cms-client-ip");
+      const ip = clientIp(req);
+      headers.set("x-cms-client-ip", ip);
       const request = new Request(
         "http://127.0.0.1:" + cmsServer.address().port + req.url,
         {
@@ -102,11 +106,7 @@ const cmsServer = http
         AUTH,
         PASSWORD_AUTH: !bypass,
       };
-      let response = await handleNodeAuth(
-        request,
-        AUTH,
-        req.socket.remoteAddress || "unknown",
-      );
+      let response = await handleNodeAuth(request, AUTH, ip);
       if (!response) {
         const member = bypass
           ? { id: "local-developer", email: "developer@localhost.test" }

@@ -121,3 +121,28 @@ export const themeHistory = sqliteTable("theme_history", {
   snapshot: text("snapshot").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const loginIpWindows = sqliteTable("login_ip_windows", {
+  id: text("id").primaryKey(),
+  ip: text("ip").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  failures: integer("failures").notNull().default(0),
+  successes: integer("successes").notNull().default(0),
+  firstAt: text("first_at").notNull(),
+  lastAt: text("last_at").notNull(),
+});
+export const loginIpBlocks = sqliteTable("login_ip_blocks", {
+  id: text("id").primaryKey(),
+  ip: text("ip").notNull(),
+  source: text("source").notNull(),
+  reason: text("reason").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull().default(""),
+});
+export const loginEvents = sqliteTable("login_events", {
+  id: text("id").primaryKey(),
+  ip: text("ip").notNull(),
+  email: text("email").notNull().default(""),
+  outcome: text("outcome").notNull(),
+  createdAt: text("created_at").notNull(),
+});

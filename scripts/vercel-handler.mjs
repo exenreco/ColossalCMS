@@ -3,6 +3,7 @@ import { resolve, extname, sep } from "node:path";
 import worker from "../server/worker.mjs";
 import { productionRuntime } from "./production-server.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { clientIp } from "./client-ip.mjs";
 import {
   connectionFailure,
   connectionErrorFacts,
@@ -116,6 +117,9 @@ export function createVercelHandler(
           headers.set(key, Array.isArray(value) ? value.join(",") : value);
       headers.delete("oai-authenticated-user-id");
       headers.delete("oai-authenticated-user-email");
+      headers.delete("x-cms-client-ip");
+      const ip = clientIp(req, { vercel: config.VERCEL === "1" });
+      headers.set("x-cms-client-ip", ip);
       let body;
       if (!["GET", "HEAD"].includes(req.method)) {
         if (req.body !== undefined && req.body !== null) {
@@ -149,11 +153,7 @@ export function createVercelHandler(
         body,
       });
       const env = await getRuntime();
-      let response = await handleNodeAuth(
-        request,
-        env.AUTH,
-        req.socket?.remoteAddress || "unknown",
-      );
+      let response = await handleNodeAuth(request, env.AUTH, ip);
       if (path === "/healthz") response = Response.json({ ok: true });
       if (!response) {
         const member = await env.AUTH.identify(request);

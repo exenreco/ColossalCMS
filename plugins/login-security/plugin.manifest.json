@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.login-security",
+  "name": "Login Security",
+  "description": "Limit failed sign-ins, monitor login activity and manage blocked IP addresses.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "shield",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": [] },
+  "admin": {
+    "entryComponent": "LoginSecurityComponent",
+    "menu": {
+      "label": "Login Security",
+      "icon": "shield",
+      "path": "/admin/login-security",
+      "order": 940,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

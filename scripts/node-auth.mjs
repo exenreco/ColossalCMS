@@ -1,3 +1,4 @@
+import { loginFormScript } from "./login-form.mjs";
 const fail = (message, status) => {
   throw Object.assign(new Error(message), { status });
 };
@@ -17,7 +18,7 @@ export function authPage(setup = false) {
   <button type="button" class="show" aria-pressed="false">Show password</button>
   ${setup ? '<label>Confirm password<input name="confirm" type="password" autocomplete="new-password" required></label>' : ""}
   <button type="submit">${setup ? "Create administrator" : "Sign in"}</button><p id="error" role="alert" aria-live="polite"></p></form>
-  </main><script>const form=document.querySelector('form');document.querySelector('.show').addEventListener('click',e=>{const show=form.elements.password.type==='password';form.elements.password.type=show?'text':'password';if(form.elements.confirm)form.elements.confirm.type=show?'text':'password';e.currentTarget.textContent=show?'Hide password':'Show password';e.currentTarget.setAttribute('aria-pressed',String(show));});form.addEventListener('submit',async e=>{e.preventDefault();const button=form.querySelector('[type="submit"]');const error=document.querySelector('#error');error.textContent='';if(form.elements.confirm&&form.elements.confirm.value!==form.elements.password.value){error.textContent='Passwords do not match.';return;}button.disabled=true;try{const r=await fetch('/api/auth/${setup ? "setup" : "login"}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:form.elements.email.value,password:form.elements.password.value,token:form.elements.token?.value})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to sign in.');location.assign('${setup ? "/login" : "/admin/"}');}catch(e){error.textContent=e.message;}finally{button.disabled=false;}});</script></body></html>`;
+  </main><script>${loginFormScript(setup)}</script></body></html>`;
 }
 
 export async function handleNodeAuth(request, auth, client = "unknown") {
@@ -71,9 +72,29 @@ export async function handleNodeAuth(request, auth, client = "unknown") {
       { headers: { "Cache-Control": "no-store" } },
     );
   }
-  if (path === "/api/auth/login")
-    result = await auth.login(body.email, body.password, client);
-  else result = await auth.logout(request);
+  if (path === "/api/auth/login") {
+    try {
+      result = await auth.login(body.email, body.password, client);
+    } catch (error) {
+      if (![401, 429].includes(error.status)) throw error;
+      return Response.json(
+        {
+          error: error.message,
+          remainingAttempts: error.remainingAttempts,
+          retryAfter: error.retryAfter,
+        },
+        {
+          status: error.status,
+          headers: {
+            "Cache-Control": "no-store",
+            ...(error.retryAfter
+              ? { "Retry-After": String(error.retryAfter) }
+              : {}),
+          },
+        },
+      );
+    }
+  } else result = await auth.logout(request);
   return Response.json(
     { ok: true },
     { headers: { "Set-Cookie": result.cookie, "Cache-Control": "no-store" } },

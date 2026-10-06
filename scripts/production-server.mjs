@@ -16,6 +16,7 @@ import { seedBuiltInData } from "./data-migration.mjs";
 import { localStorage } from "./local-storage.mjs";
 import { passwordAuth } from "./password-auth.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { clientIp } from "./client-ip.mjs";
 
 export async function productionRuntime(config, log = console.log) {
   config = validateConnectionConfig({ ...connectionDefaults, ...config }, true);
@@ -151,6 +152,9 @@ export async function startProductionServer(
       // Browser-provided gateway headers never establish identity on Node hosting.
       headers.delete("oai-authenticated-user-id");
       headers.delete("oai-authenticated-user-email");
+      headers.delete("x-cms-client-ip");
+      const ip = clientIp(req);
+      headers.set("x-cms-client-ip", ip);
       const request = new Request(new URL(req.url, origin), {
         method: req.method,
         headers,
@@ -164,11 +168,7 @@ export async function startProductionServer(
           status: 400,
         });
       let response;
-      const authResponse = await handleNodeAuth(
-        request,
-        env.AUTH,
-        req.socket.remoteAddress || "unknown",
-      );
+      const authResponse = await handleNodeAuth(request, env.AUTH, ip);
       if (path === "/healthz") response = Response.json({ ok: true });
       else if (authResponse) {
         response = authResponse;

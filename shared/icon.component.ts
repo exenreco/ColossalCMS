@@ -17,6 +17,7 @@ const paths: Record<string, string> = {
   clock: "M12 8v5l3 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20",
   check: "M5 12l4 4L19 6",
   lock: "M6 10h12v11H6z M8 10V6a4 4 0 0 1 8 0v4",
+  shield: "M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6z M8 12l3 3 5-6",
   book: "M3 3h6l3 3 3-3h6v16h-6l-3 3-3-3H3z M12 6v16",
   chevron: "M9 5l7 7-7 7",
   close: "M6 6l12 12 M6 18L18 6",

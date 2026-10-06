@@ -751,12 +751,16 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
         </tr>
         <tr>
             <td>Optional bundled</td>
-            <td>Reading time, Announcement bar, Google Ads, Production Connections</td>
+            <td>Reading time, Announcement bar, Google Ads, Production Connections, Login Security</td>
         </tr>
     </tbody>
 </table>
 
 Core plugins stay active and cannot be changed through ordinary plugin management. Optional extensions expose menus/features when activated.
+
+### Login Security
+
+Login Security is an optional bundled plugin activated by default. It provides persistent IP attempt limits, automatic timed blocks, admin-managed blocks, sign-in activity monitoring and login-form retry countdowns. Open **Admin → Login Security** to configure it. See [Login Security workflows, hosting behavior and API](docs/developers/login-security.md).
 
 ### Google Ads
 

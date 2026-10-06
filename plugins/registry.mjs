@@ -9,6 +9,7 @@ import reading_time from "./reading-time/plugin.manifest.json" with { type: "jso
 import announcement from "./announcement/plugin.manifest.json" with { type: "json" };
 import google_ads from "./google-ads/plugin.manifest.json" with { type: "json" };
 import production_connections from "./production-connections/plugin.manifest.json" with { type: "json" };
+import login_security from "./login-security/plugin.manifest.json" with { type: "json" };
 export const manifests = [
   themes,
   media,
@@ -21,4 +22,5 @@ export const manifests = [
   announcement,
   google_ads,
   production_connections,
+  login_security,
 ];
