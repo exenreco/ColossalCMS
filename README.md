@@ -31,6 +31,7 @@ All application files live at the **repository root**. Run commands in the direc
 - [Previews and Storybook](#previews-and-storybook)
 - [Media management](#media-management)
 - [Plugins and extensions](#plugins-and-extensions)
+  - [Maintenance](#maintenance)
   - [Google Ads](#google-ads)
   - [Plugin packages and development](#plugin-packages-and-development)
 - [Authentication and authorization](#authentication-and-authorization)
@@ -751,7 +752,7 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
         </tr>
         <tr>
             <td>Optional bundled</td>
-            <td>Reading time, Announcement bar, Google Ads, Login Security</td>
+            <td>Reading time, Announcement bar, Google Ads, Login Security, Maintenance</td>
         </tr>
     </tbody>
 </table>
@@ -759,6 +760,19 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 Core plugins stay active and cannot be changed through ordinary plugin management. Optional extensions expose menus/features when activated.
 
 The Plugins page initially opens in **List view**, with alternating table row colors. Use the **Grid/List** icon buttons beside search to switch layouts. Core plugins are hidden initially; the visibility icon to the left of **View site** shows or hides them in either layout. Search and Installed/Available tabs apply to both views. Both display preferences are saved in browser local storage and restored after reloads and browser restarts on the same site. Clearing site storage restores the defaults. If browser storage is unavailable, the controls still work for the current admin session.
+
+### Maintenance
+
+Install and activate **Maintenance** from Plugins, then open its admin menu. It includes three editable layouts: **Quiet**, **Midnight**, and **Studio**. Maintenance mode starts disabled.
+
+1. Choose **Edit** on a layout, or **New layout** to start blank. The shared Theme Editor provides blocks, Canvas, Outline, Inspector, responsive previews, CSS, and template settings.
+2. Save drafts, preview privately as an administrator, then publish. Add templates through the editor's template menu; **Save as new layout** duplicates a layout. Version history supports restoring a published version as a draft.
+3. Select the published layout and template, set **Retry after** (60–86,400 seconds; default 3,600), enable maintenance mode, and save settings.
+4. Clear the checkbox and save to reopen the site. Deactivating the plugin also stops maintenance without deleting layouts.
+
+Anonymous visitors receive the published maintenance page with **HTTP 503**, `Retry-After`, `Cache-Control: no-store`, and `X-Robots-Tag: noindex`. Signed-in administrators retain normal site access. Login, setup, admin, health checks, cron, and assets remain reachable. Public content listing is suppressed during maintenance. Drafts and maintenance previews require administrator access; publishing a draft updates the active layout immediately.
+
+Layouts are independent of site themes and use the configured database's `config` record named `maintenance`. Media uses the existing library and storage provider, and referenced files are protected against deletion. There is no maintenance ZIP upload, installation, or export workflow. See the [Maintenance API and developer guide](docs/developers/maintenance.md).
 
 ### MongoDB heartbeat
 

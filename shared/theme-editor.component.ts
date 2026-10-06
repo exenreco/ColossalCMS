@@ -50,6 +50,17 @@ import {
   templateUrl: "./theme-editor.component.html",
 })
 export class ThemeEditorComponent implements OnInit, OnDestroy {
+  get maintenance() {
+    return this.route.snapshot.pathFromRoot.some(
+      (route) => route.data["pluginId"] === "com.colossal.maintenance",
+    );
+  }
+  get apiBase() {
+    return this.maintenance ? "/maintenance" : "/themes";
+  }
+  get editorHome() {
+    return this.maintenance ? "/maintenance" : "/themes";
+  }
   cdr = inject(ChangeDetectorRef);
   state = inject(ThemeEditorState);
   api = inject(ApiService);
@@ -238,7 +249,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     try {
       const part = preserveSelection ? this.state.part : "";
       const selectedId = preserveSelection ? this.state.selected() : "";
-      this.record = await this.api.request("/themes/" + this.id);
+      this.record = await this.api.request(this.apiBase + "/" + this.id);
       const d = structuredClone(this.record!.draft || this.record!.published);
       const active = new Set(
         this.api
@@ -282,7 +293,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   async saveDraft() {
     const snapshot = JSON.stringify(this.state.document());
     const result = await this.api.request(
-      "/themes/" + this.id + "/draft",
+      this.apiBase + "/" + this.id + "/draft",
       "PUT",
       { revision: this.record!.revision, document: this.state.document() },
     );
@@ -293,7 +304,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   async save() {
     await this.run(async () => {
       await this.saveDraft();
-      this.api.toast("Theme draft saved.");
+      this.api.toast(
+        this.maintenance ? "Maintenance draft saved." : "Theme draft saved.",
+      );
     });
   }
   async publish() {
@@ -320,16 +333,26 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         warnings.push(`Editing the ${name} part affects ${count} templates.`);
       }
     }
-    if (warnings.length && !confirm(warnings.join("\n") + "\nPublish anyway?"))
+    if (
+      !this.maintenance &&
+      warnings.length &&
+      !confirm(warnings.join("\n") + "\nPublish anyway?")
+    )
       return;
     await this.run(async () => {
       if (this.state.dirty || !this.record!.hasDraft) await this.saveDraft();
-      await this.api.request("/themes/" + this.id + "/publish", "POST", {
-        revision: this.record!.revision,
-      });
+      await this.api.request(
+        this.apiBase + "/" + this.id + "/publish",
+        "POST",
+        {
+          revision: this.record!.revision,
+        },
+      );
       await this.load(true);
       await this.api.load();
-      this.api.toast("Theme published.");
+      this.api.toast(
+        this.maintenance ? "Maintenance layout published." : "Theme published.",
+      );
     });
   }
   async refreshCanvas() {
@@ -342,7 +365,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     const seq = ++this.sequence;
     try {
       const r = await this.api.request(
-        "/themes/" + this.id + "/render",
+        this.apiBase + "/" + this.id + "/render",
         "POST",
         {
           document: this.state.document(),
@@ -1027,9 +1050,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     await this.run(async () => {
       if (this.state.dirty) await this.saveDraft();
       const r = await this.api.request(
-        "/themes/" + this.id + "/preview",
+        this.apiBase + "/" + this.id + "/preview",
         "POST",
-        {},
+        this.maintenance ? { templateId: this.state.templateId } : {},
       );
       window.open(r.url, "_blank", "noopener");
     });
@@ -1044,25 +1067,28 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   async clone() {
-    const name = prompt("Name the new theme", this.record!.name + " copy");
+    const name = prompt(
+      this.maintenance ? "Name the new layout" : "Name the new theme",
+      this.record!.name + " copy",
+    );
     if (!name) return;
     await this.run(async () => {
       if (this.state.dirty) await this.saveDraft();
       const r = await this.api.request(
-        "/themes/" + this.id + "/clone",
+        this.apiBase + "/" + this.id + "/clone",
         "POST",
         { name, revision: this.record!.revision },
       );
       this.state.saved = JSON.stringify(this.state.document());
-      await this.router.navigateByUrl("/themes");
-      await this.router.navigate(["/themes/edit", r.id]);
+      await this.router.navigateByUrl(this.editorHome);
+      await this.router.navigate([this.editorHome + "/edit", r.id]);
     });
   }
   async revert() {
     if (!confirm("Discard this draft and return to the published theme?"))
       return;
     await this.run(async () => {
-      await this.api.request("/themes/" + this.id + "/revert", "POST", {
+      await this.api.request(this.apiBase + "/" + this.id + "/revert", "POST", {
         revision: this.record!.revision,
       });
       await this.load();
@@ -1072,10 +1098,14 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     if (!confirm("Replace the current draft with this earlier version?"))
       return;
     await this.run(async () => {
-      await this.api.request("/themes/" + this.id + "/restore", "POST", {
-        revision: this.record!.revision,
-        historyId,
-      });
+      await this.api.request(
+        this.apiBase + "/" + this.id + "/restore",
+        "POST",
+        {
+          revision: this.record!.revision,
+          historyId,
+        },
+      );
       await this.load();
       this.api.toast(
         "Earlier version restored as a draft. Publish to make it live.",
@@ -1117,7 +1147,10 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   newTemplate() {
-    const name = prompt("Template name", "New page template");
+    const name = prompt(
+      "Template name",
+      this.maintenance ? "New maintenance template" : "New page template",
+    );
     if (!name) return;
     const id = name
       .toLowerCase()
@@ -1134,7 +1167,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         id,
         name,
         file: "templates/" + id + ".html",
-        appliesTo: ["page"],
+        appliesTo: [this.maintenance ? "home" : "page"],
       });
     });
     this.selectTemplate(id);
@@ -1146,7 +1179,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     );
   }
   close() {
-    this.router.navigateByUrl("/themes");
+    this.router.navigateByUrl(this.editorHome);
   }
   @HostListener("window:dragend")
   @HostListener("window:drop")

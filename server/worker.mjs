@@ -14,6 +14,12 @@ import {
   adVerification,
 } from "./google-ads.mjs";
 import { handleConnections } from "./production-connections.mjs";
+import {
+  handleMaintenance,
+  maintenanceState,
+  maintenanceRender,
+  maintenanceHtml,
+} from "./maintenance.mjs";
 import { handleLoginSecurity, LOGIN_SECURITY_ID } from "./login-security.mjs";
 import { handleMedia, serveMedia } from "./media.mjs";
 import {
@@ -257,7 +263,7 @@ export default {
         if (
           isAdmin &&
           (!/\.[a-z0-9]+$/i.test(path) ||
-            /^\/admin\/themes\/edit\/[^/]+$/.test(path))
+            /^\/admin\/(?:themes|maintenance)\/edit\/[^/]+$/.test(path))
         )
           assetPath = "/admin/index.html";
         else if (!isAdmin && !/\.[a-z0-9]+$/i.test(path))
@@ -268,6 +274,35 @@ export default {
         const headers = new Headers(response.headers);
         headers.set("X-Content-Type-Options", "nosniff");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+        if (
+          !isAdmin &&
+          assetPath === "/index.html" &&
+          response.status === 200 &&
+          ["GET", "HEAD"].includes(request.method)
+        ) {
+          let maintenance = await maintenanceState(database(env), request);
+          if (maintenance && url.searchParams.has("themePreview")) {
+            await publicThemeRender(request, env); // Validate signed previews before allowing a bypass.
+            maintenance = null;
+          }
+          if (maintenance) {
+            const rendered = await maintenanceRender(
+              database(env),
+              maintenance,
+            );
+            headers.delete("Content-Length");
+            headers.delete("ETag");
+            headers.set("Cache-Control", "no-store");
+            headers.set("Retry-After", String(maintenance.settings.retryAfter));
+            headers.set("X-Robots-Tag", "noindex");
+            return new Response(
+              request.method === "HEAD"
+                ? null
+                : maintenanceHtml(await response.text(), rendered),
+              { status: 503, headers },
+            );
+          }
+        }
         if (
           !isAdmin &&
           assetPath === "/index.html" &&
@@ -294,8 +329,13 @@ export default {
         });
       }
       const db = database(env);
-      if (path === "/api/themes/render" && request.method === "GET")
+      if (path === "/api/themes/render" && request.method === "GET") {
+        const maintenance =
+          !url.searchParams.has("themePreview") &&
+          (await maintenanceState(db, request));
+        if (maintenance) return json(await maintenanceRender(db, maintenance));
         return await publicThemeRender(request, env);
+      }
       const themeAsset = path.match(/^\/api\/themes\/([^/]+)\/assets\/(.+)$/);
       if (themeAsset && request.method === "GET")
         return await serveThemeAsset(
@@ -332,6 +372,14 @@ export default {
           identity,
         );
       if (path === "/api/public" && request.method === "GET") {
+        if (await maintenanceState(db, request))
+          return json({
+            maintenance: true,
+            settings: {},
+            content: [],
+            plugins: [],
+            media: [],
+          });
         const s = await state(db, null);
         return json({
           settings: s.settings,
@@ -416,6 +464,8 @@ export default {
         return json({ user, passwordAuth: env.PASSWORD_AUTH === true });
       }
       const user = await identity(request, db);
+      if (path.startsWith("/api/maintenance"))
+        return await handleMaintenance(request, env, user, path);
       if (path.startsWith("/api/admin/connections"))
         return await handleConnections(request, env, user);
       if (path.startsWith("/api/admin/login-security"))

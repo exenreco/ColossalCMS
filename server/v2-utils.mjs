@@ -166,6 +166,39 @@ export async function references(db, id) {
         });
     }
   }
+  const maintenance = parse(
+    (
+      await db
+        .prepare("SELECT value FROM config WHERE id='maintenance'")
+        .first()
+    )?.value,
+  );
+  const maintenancePlugin = await db
+    .prepare("SELECT active FROM plugins WHERE id='com.colossal.maintenance'")
+    .first();
+  for (const layout of maintenance.layouts || []) {
+    for (const mode of ["published", "draft"]) {
+      if (themeMediaIds(layout[mode]).includes(id))
+        refs.push({
+          id: layout.id,
+          title: layout.name + " (" + mode + " maintenance layout)",
+          kind: "maintenance",
+          published:
+            mode === "published" &&
+            !!maintenancePlugin?.active &&
+            !!maintenance.settings?.enabled &&
+            maintenance.settings.layoutId === layout.id,
+        });
+    }
+    for (const history of layout.history || [])
+      if (themeMediaIds(history.snapshot).includes(id))
+        refs.push({
+          id: layout.id,
+          title: layout.name + " (maintenance history)",
+          kind: "maintenance-history",
+          published: false,
+        });
+  }
   for (const row of await all(
     db,
     "SELECT theme_id,snapshot FROM theme_history",

@@ -1,0 +1,26 @@
+{
+  "id": "com.colossal.maintenance",
+  "name": "Maintenance",
+  "description": "Create and publish maintenance layouts with the block editor.",
+  "isCore": false,
+  "version": "0.0.1",
+  "author": "Colossal Core Team",
+  "icon": "settings",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": ["com.colossal.media"] },
+  "admin": {
+    "entryComponent": "MaintenanceComponent",
+    "menu": {
+      "label": "Maintenance",
+      "icon": "settings",
+      "path": "/admin/maintenance",
+      "order": 960,
+      "group": "system"
+    },
+    "skeleton": {
+      "component": "ThemesListSkeletonComponent",
+      "variant": "grid"
+    }
+  },
+  "frontend": { "routes": [] }
+}

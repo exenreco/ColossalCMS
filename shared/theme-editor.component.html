@@ -1,6 +1,6 @@
 <section
   class="theme-editor"
-  aria-label="Theme editor"
+  [attr.aria-label]="maintenance ? 'Maintenance layout editor' : 'Theme editor'"
   [attr.data-view-mode]="mode"
   [attr.data-preview-width]="
     width === 1200 ? 'desktop' : width === 768 ? 'tablet' : 'mobile'
@@ -61,8 +61,12 @@
           >
             Show block toolbar
           </button>
-          <button (click)="clone()">Save as new theme</button>
-          <button (click)="exportTheme()">Export ZIP</button>
+          <button (click)="clone()">
+            {{ maintenance ? "Save as new layout" : "Save as new theme" }}
+          </button>
+          @if (!maintenance) {
+            <button (click)="exportTheme()">Export ZIP</button>
+          }
           <button (click)="revert()">Revert to published</button>
           <button (click)="history = !history">Version history</button>
         </div>
@@ -416,22 +420,25 @@
                   type="checkbox"
                   [ngModel]="t.isDefault || false"
                   (ngModelChange)="setDefault($event)"
-                />Theme default</label
-              ><label class="theme-field theme-check"
-                ><input
-                  type="checkbox"
-                  [ngModel]="t.isTypeDefault || false"
-                  (ngModelChange)="typeDefault($event)"
-                />Default for these content types</label
+                />{{ maintenance ? "Layout default" : "Theme default" }}</label
               >
-              @for (kind of kinds; track kind) {
+              @if (!maintenance) {
                 <label class="theme-field theme-check"
                   ><input
                     type="checkbox"
-                    [ngModel]="t.appliesTo.includes(kind)"
-                    (ngModelChange)="toggleKind(kind, $event)"
-                  />{{ kind }}</label
+                    [ngModel]="t.isTypeDefault || false"
+                    (ngModelChange)="typeDefault($event)"
+                  />Default for these content types</label
                 >
+                @for (kind of kinds; track kind) {
+                  <label class="theme-field theme-check"
+                    ><input
+                      type="checkbox"
+                      [ngModel]="t.appliesTo.includes(kind)"
+                      (ngModelChange)="toggleKind(kind, $event)"
+                    />{{ kind }}</label
+                  >
+                }
               }
             }
           </details>

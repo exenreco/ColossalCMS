@@ -55,7 +55,7 @@ const routes: Routes = [
             canDeactivate: [(component: any) => component.canLeave()],
           },
         ]
-      : p.id === "com.colossal.themes"
+      : ["com.colossal.themes", "com.colossal.maintenance"].includes(p.id)
         ? [
             {
               path: "edit/:id",

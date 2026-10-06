@@ -27,7 +27,11 @@ import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
     @if (themeMarkup) {
       @if (isPreview) {
         <div class="theme-preview-banner">
-          Theme preview · This link expires after 15 minutes.
+          {{
+            maintenancePreview
+              ? "Maintenance preview · Administrator only."
+              : "Theme preview · This link expires after 15 minutes."
+          }}
           <a href="/">Exit preview</a>
         </div>
       }
@@ -237,6 +241,7 @@ class FrontendComponent implements OnInit {
   themeMarkup: SafeHtml = "";
   isPreview = false;
   adsEnabled = false;
+  maintenancePreview = false;
   error = "";
   home = location.pathname === "/";
   entry: Content | undefined;
@@ -248,7 +253,17 @@ class FrontendComponent implements OnInit {
     try {
       const params = new URLSearchParams(location.search);
       params.set("path", location.pathname);
-      const theme = await fetch("/api/themes/render?" + params);
+      const maintenancePreviewId = document.querySelector<HTMLMetaElement>(
+        'meta[name="colossal-maintenance-preview"]',
+      )?.content;
+      const theme = await fetch(
+        maintenancePreviewId
+          ? "/api/maintenance/" +
+              encodeURIComponent(maintenancePreviewId) +
+              "/preview-render?templateId=" +
+              encodeURIComponent(params.get("templateId") || "")
+          : "/api/themes/render?" + params,
+      );
       if (theme.ok) {
         const rendered = await theme.json();
         // Only the server's sanitized theme renderer can cross this HTML boundary.
@@ -264,6 +279,7 @@ class FrontendComponent implements OnInit {
         document.body.dataset["themeTemplate"] =
           rendered.body?.templateId || "";
         this.isPreview = rendered.preview;
+        this.maintenancePreview = rendered.maintenancePreview === true;
         this.adsEnabled = rendered.adsEnabled === true;
         let styles = document.getElementById("theme-styles");
         if (!styles) {
@@ -276,6 +292,7 @@ class FrontendComponent implements OnInit {
         document
           .querySelector('meta[name="description"]')
           ?.setAttribute("content", rendered.description || "");
+        if (rendered.maintenance) return;
       } else if (params.has("themePreview")) {
         const result = await theme.json();
         throw new Error(result.error || "Preview is no longer available.");
