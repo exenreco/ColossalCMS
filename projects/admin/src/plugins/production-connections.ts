@@ -39,6 +39,9 @@ interface Run {
     .connection-panel {
       padding: 24px;
     }
+    .connection-heartbeat {
+      margin-top: 24px;
+    }
     .connection-panel h2 {
       margin-top: 0;
     }
@@ -178,123 +181,6 @@ interface Run {
             : "Cloudflare bindings"
         }}</span>
       </div>
-      @if (heartbeat) {
-        <form class="panel connection-panel" (ngSubmit)="saveHeartbeat()">
-          <h2>MongoDB heartbeat</h2>
-          <p>
-            Send a scheduled MongoDB ping even when nobody visits your site.
-            Once per day is recommended for Atlas Free's 30-day inactivity
-            window.
-          </p>
-          <label class="migration-choice">
-            <input
-              type="checkbox"
-              name="heartbeatEnabled"
-              [(ngModel)]="heartbeatSettings.enabled"
-              [disabled]="heartbeatBusy"
-            />
-            Enable scheduled heartbeat
-          </label>
-          <div class="env-field">
-            <label for="heartbeatInterval"
-              >Heartbeat interval
-              <small>1–14 days; default: 1 day</small></label
-            >
-            <input
-              id="heartbeatInterval"
-              type="number"
-              name="heartbeatInterval"
-              [(ngModel)]="heartbeatSettings.intervalDays"
-              min="1"
-              max="14"
-              required
-              [disabled]="heartbeatBusy"
-            />
-          </div>
-          @if (!heartbeat.supported) {
-            <p>
-              The running app uses SQLite or D1 without MongoDB storage. These
-              saved settings apply when the app runs on MongoDB or MongoDB
-              GridFS.
-            </p>
-          } @else if (heartbeat.mode === "vercel") {
-            <p>
-              Vercel checks daily around 12:00 UTC and pings only when the saved
-              interval is due. The admin page can be closed.
-            </p>
-            @if (!heartbeat.cronConfigured) {
-              <p class="error">
-                Background scheduling needs CRON_SECRET (at least 32 random
-                characters) in Vercel's Production environment. Add it and
-                redeploy.
-              </p>
-            }
-            <p class="hint">
-              Disabling stops explicit pings. Scheduled checks still read
-              settings from MongoDB. Remove the cron schedule from Vercel to
-              stop all scheduled database access.
-            </p>
-          } @else {
-            <p>
-              Runs in the production Node server while that process is running.
-              Sleeping or stopped hosts need an external scheduler.
-            </p>
-          }
-          <p>
-            Last result: <strong>{{ heartbeat.state.status }}</strong>
-          </p>
-          <p>
-            Last successful ping:
-            <strong>{{
-              heartbeat.state.lastSuccessAt
-                ? (heartbeat.state.lastSuccessAt | date: "medium")
-                : "No successful ping yet"
-            }}</strong>
-          </p>
-          @if (heartbeat.state.lastAttemptAt) {
-            <p>
-              Last attempt:
-              {{ heartbeat.state.lastAttemptAt | date: "medium" }} ·
-              {{ heartbeat.state.durationMs || 0 }} ms ·
-              {{ heartbeat.state.source }}
-            </p>
-          }
-          @if (heartbeatSettings.enabled && heartbeat.nextDueAt) {
-            <p>
-              Next eligible day: {{ heartbeat.nextDueAt | date: "mediumDate" }}
-            </p>
-          }
-          @if (heartbeat.state.message) {
-            <p [class.error]="heartbeat.state.status === 'failed'">
-              {{ heartbeat.state.message }}
-            </p>
-          }
-          <div class="connection-actions">
-            <button class="button primary" [disabled]="heartbeatBusy">
-              {{ heartbeatBusy ? "Working…" : "Save heartbeat settings" }}
-            </button>
-            <button
-              class="button"
-              type="button"
-              (click)="pingHeartbeat()"
-              [disabled]="heartbeatBusy || !heartbeat.supported"
-            >
-              Ping now
-            </button>
-            <button
-              class="button"
-              type="button"
-              (click)="refreshHeartbeat()"
-              [disabled]="heartbeatBusy"
-            >
-              Refresh status
-            </button>
-          </div>
-          @if (heartbeatError) {
-            <p class="error" role="alert">{{ heartbeatError }}</p>
-          }
-        </form>
-      }
       @if (info.readOnly) {
         <section class="panel connection-panel">
           <h2>Host-managed connections</h2>
@@ -534,6 +420,126 @@ interface Run {
             </form>
           </div>
         </div>
+      }
+      @if (heartbeat) {
+        <form
+          class="panel connection-panel connection-heartbeat"
+          (ngSubmit)="saveHeartbeat()"
+        >
+          <h2>MongoDB heartbeat</h2>
+          <p>
+            Send a scheduled MongoDB ping even when nobody visits your site.
+            Once per day is recommended for Atlas Free's 30-day inactivity
+            window.
+          </p>
+          <label class="migration-choice">
+            <input
+              type="checkbox"
+              name="heartbeatEnabled"
+              [(ngModel)]="heartbeatSettings.enabled"
+              [disabled]="heartbeatBusy"
+            />
+            Enable scheduled heartbeat
+          </label>
+          <div class="env-field">
+            <label for="heartbeatInterval"
+              >Heartbeat interval
+              <small>1–14 days; default: 1 day</small></label
+            >
+            <input
+              id="heartbeatInterval"
+              type="number"
+              name="heartbeatInterval"
+              [(ngModel)]="heartbeatSettings.intervalDays"
+              min="1"
+              max="14"
+              required
+              [disabled]="heartbeatBusy"
+            />
+          </div>
+          @if (!heartbeat.supported) {
+            <p>
+              The running app uses SQLite or D1 without MongoDB storage. These
+              saved settings apply when the app runs on MongoDB or MongoDB
+              GridFS.
+            </p>
+          } @else if (heartbeat.mode === "vercel") {
+            <p>
+              Vercel checks daily around 12:00 UTC and pings only when the saved
+              interval is due. The admin page can be closed.
+            </p>
+            @if (!heartbeat.cronConfigured) {
+              <p class="error">
+                Background scheduling needs CRON_SECRET (at least 32 random
+                characters) in Vercel's Production environment. Add it and
+                redeploy.
+              </p>
+            }
+            <p class="hint">
+              Disabling stops explicit pings. Scheduled checks still read
+              settings from MongoDB. Remove the cron schedule from Vercel to
+              stop all scheduled database access.
+            </p>
+          } @else {
+            <p>
+              Runs in the production Node server while that process is running.
+              Sleeping or stopped hosts need an external scheduler.
+            </p>
+          }
+          <p>
+            Last result: <strong>{{ heartbeat.state.status }}</strong>
+          </p>
+          <p>
+            Last successful ping:
+            <strong>{{
+              heartbeat.state.lastSuccessAt
+                ? (heartbeat.state.lastSuccessAt | date: "medium")
+                : "No successful ping yet"
+            }}</strong>
+          </p>
+          @if (heartbeat.state.lastAttemptAt) {
+            <p>
+              Last attempt:
+              {{ heartbeat.state.lastAttemptAt | date: "medium" }} ·
+              {{ heartbeat.state.durationMs || 0 }} ms ·
+              {{ heartbeat.state.source }}
+            </p>
+          }
+          @if (heartbeatSettings.enabled && heartbeat.nextDueAt) {
+            <p>
+              Next eligible day: {{ heartbeat.nextDueAt | date: "mediumDate" }}
+            </p>
+          }
+          @if (heartbeat.state.message) {
+            <p [class.error]="heartbeat.state.status === 'failed'">
+              {{ heartbeat.state.message }}
+            </p>
+          }
+          <div class="connection-actions">
+            <button class="button primary" [disabled]="heartbeatBusy">
+              {{ heartbeatBusy ? "Working…" : "Save heartbeat settings" }}
+            </button>
+            <button
+              class="button"
+              type="button"
+              (click)="pingHeartbeat()"
+              [disabled]="heartbeatBusy || !heartbeat.supported"
+            >
+              Ping now
+            </button>
+            <button
+              class="button"
+              type="button"
+              (click)="refreshHeartbeat()"
+              [disabled]="heartbeatBusy"
+            >
+              Refresh status
+            </button>
+          </div>
+          @if (heartbeatError) {
+            <p class="error" role="alert">{{ heartbeatError }}</p>
+          }
+        </form>
       }
     }
   `,
