@@ -1,6 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import worker from "../server/worker.mjs";
+import worker, { initialize } from "../server/worker.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
 const DB = localDatabase();
 const env = { DB, ASSETS: { fetch: async () => new Response("asset") } };
@@ -117,6 +117,16 @@ test("reserved and duplicate slugs are rejected", async () => {
   );
 });
 test("core plugins are protected on the server; extensions affect public configuration", async () => {
+  for (const action of ["activate", "deactivate", "install", "uninstall"])
+    assert.equal(
+      (
+        await call("/admin/plugins", "POST", {
+          id: "com.colossal.production-connections",
+          action,
+        })
+      ).status,
+      403,
+    );
   for (const action of ["deactivate", "uninstall"])
     assert.equal(
       (
@@ -150,6 +160,45 @@ test("core plugins are protected on the server; extensions affect public configu
       (p) => p.id === "com.colossal.announcement",
     ),
   );
+});
+test("existing installations restore Connections as active core without resetting settings", async () => {
+  const db = localDatabase();
+  const id = "com.colossal.production-connections";
+  try {
+    await initialize(db, { email: "owner@example.test" });
+    await db
+      .prepare("INSERT INTO config (id,value) VALUES ('mongodb-heartbeat',?)")
+      .bind(JSON.stringify({ enabled: true, intervalDays: 7 }))
+      .run();
+    for (const installed of [1, 0]) {
+      await db
+        .prepare("UPDATE plugins SET active=0,installed=? WHERE id=?")
+        .bind(installed, id)
+        .run();
+      await initialize(db, { email: "owner@example.test" });
+      assert.deepEqual(
+        {
+          ...(await db
+            .prepare("SELECT active,installed FROM plugins WHERE id=?")
+            .bind(id)
+            .first()),
+        },
+        { active: 1, installed: 1 },
+      );
+      assert.deepEqual(
+        JSON.parse(
+          (
+            await db
+              .prepare("SELECT value FROM config WHERE id='mongodb-heartbeat'")
+              .first()
+          ).value,
+        ),
+        { enabled: true, intervalDays: 7 },
+      );
+    }
+  } finally {
+    db.close();
+  }
 });
 test("site settings update the public API and unsafe logo URLs are rejected", async () => {
   const settings = (await call("/admin/state")).data.settings;

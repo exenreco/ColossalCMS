@@ -2,7 +2,7 @@
   "id": "com.colossal.production-connections",
   "name": "Production Connections",
   "description": "Manage MongoDB, Cloudflare D1, R2-compatible storage and server environment configuration.",
-  "isCore": false,
+  "isCore": true,
   "version": "0.0.1",
   "author": "Colossal Core Team",
   "icon": "globe",

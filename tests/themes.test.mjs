@@ -195,7 +195,7 @@ test("grouped navigation includes the locked Themes plugin in system", async () 
     state.plugins
       .filter((p) => p.isCore && p.admin.menu.group === "system")
       .map((p) => p.admin.menu.label),
-    ["Themes", "Plugins"],
+    ["Themes", "Plugins", "Connections"],
   );
   assert.equal(
     (await call("/themes/" + CORE_THEME_ID, "DELETE", {})).status,

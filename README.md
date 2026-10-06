@@ -747,11 +747,11 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
     <tbody>
         <tr>
             <td>Locked core</td>
-            <td>Dashboard, Media, Posts, Pages, Settings, Themes, Plugins</td>
+            <td>Dashboard, Media, Posts, Pages, Settings, Themes, Plugins, Production Connections</td>
         </tr>
         <tr>
             <td>Optional bundled</td>
-            <td>Reading time, Announcement bar, Google Ads, Production Connections, Login Security</td>
+            <td>Reading time, Announcement bar, Google Ads, Login Security</td>
         </tr>
     </tbody>
 </table>
@@ -764,14 +764,14 @@ Production Connections includes a **MongoDB heartbeat** panel at the bottom of t
 
 #### Enable and verify heartbeat
 
-1. Activate **Production Connections** in Plugins and open **Connections**.
+1. Open **Connections**. Production Connections is a core plugin that is automatically installed, always active, and cannot be deactivated or uninstalled. Existing installations are upgraded on startup without resetting connection or heartbeat settings.
 2. For Vercel, configure the Production `CRON_SECRET` and redeploy using the [Vercel setup instructions](#vercel). Persistent Node hosting starts its scheduler with `pnpm start`.
 3. Check **Enable scheduled heartbeat**, choose an interval, and save.
 4. Select **Ping now** to verify connectivity, then use **Refresh status** to check subsequent scheduled results.
 
 | Control                    | Default / behavior                                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Enable scheduled heartbeat | Disabled by default; the Connections plugin must remain active.                                                          |
+| Enable scheduled heartbeat | Disabled by default; the core Connections plugin is always active.                                                       |
 | Interval                   | Whole days from **1–14**; defaults to **1 day**.                                                                         |
 | Save                       | Persists the enable setting and interval without discarding the last result.                                             |
 | Ping now                   | Performs a manual ping, including when scheduled heartbeat is disabled. A successful ping updates the next eligible day. |
@@ -800,7 +800,7 @@ Disabling the checkbox stops explicit scheduled ping commands. On Vercel, the da
 
 #### Heartbeat API
 
-Admin endpoints require an authenticated administrator and an active Connections plugin; POST requests require same-origin JSON. Heartbeat settings remain writable on Vercel even though its environment-configuration panel is read-only.
+Admin endpoints require an authenticated administrator and the core Connections plugin; POST requests require same-origin JSON. Heartbeat settings remain writable on Vercel even though its environment-configuration panel is read-only.
 
 | Method | Endpoint                                | Purpose                                                         |
 | ------ | --------------------------------------- | --------------------------------------------------------------- |
@@ -913,7 +913,7 @@ D1 on Node uses the REST adapter and applies checked-in SQL migrations. R2-compa
 
 ### Connections workflow
 
-1. Activate Production Connections and open Connections.
+1. Open Connections; Production Connections is always active as a core plugin.
 2. Select database and storage independently, enter values, and save.
 3. Test connectivity/read access with **Test connections**.
 4. Optionally check **Migrate local data to production**.
@@ -1501,7 +1501,7 @@ Use the root `vercel.json` with Framework preset **Other**, Node **24.x**, and o
 
 2. In **Vercel → Project Settings → Environment Variables**, add the key **`CRON_SECRET`**, paste the generated value, and select **Production**. Use the value alone, without surrounding quotes. Keep it private; never commit it or paste it into logs.
 3. **Redeploy** after saving. Environment updates do not change an already-running deployment.
-4. Activate **Production Connections**, open **Connections → MongoDB heartbeat**, check **Enable scheduled heartbeat**, choose an interval, and save. The recommended default is **1 day**.
+4. Open **Connections → MongoDB heartbeat**, check **Enable scheduled heartbeat**, choose an interval, and save. The recommended default is **1 day**.
 5. Use **Ping now** to verify connectivity, then check Vercel's cron logs and the panel's last-success status after the scheduled run.
 
 The checked-in cron calls `/api/cron/mongodb-heartbeat` daily around **12:00 UTC**. Vercel automatically sends `Authorization: Bearer <CRON_SECRET>`; the application rejects missing/incorrect authorization before connecting to MongoDB. The saved interval controls which daily checks send a ping. Without `CRON_SECRET`, Vercel's scheduled heartbeat cannot run, although an authenticated admin can still use **Ping now**.

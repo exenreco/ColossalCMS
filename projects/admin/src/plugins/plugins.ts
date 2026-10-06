@@ -68,7 +68,9 @@ import { Plugin } from "../../../../shared/models";
           own.
         </p>
       </div>
-      <span class="badge core"><cl-icon name="lock" />7 core plugins</span>
+      <span class="badge core"
+        ><cl-icon name="lock" />{{ coreCount }} core plugins</span
+      >
     </div>
     <div class="content-toolbar standalone">
       <div class="tabs">
@@ -254,6 +256,9 @@ export class PluginsComponent {
   }
   get installedCount() {
     return this.api.state()!.plugins.filter((p) => p.installed).length;
+  }
+  get coreCount() {
+    return this.api.state()!.plugins.filter((p) => p.isCore).length;
   }
   get filtered() {
     return this.api

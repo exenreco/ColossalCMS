@@ -675,7 +675,7 @@ test("bcrypt credentials and hashed sessions persist, expire and are revoked on 
   }
 });
 
-test("connection management API is admin-only, origin-protected and requires plugin activation", async () => {
+test("connection management API is available as core, admin-only and origin-protected", async () => {
   const dir = await mkdtemp(join(tmpdir(), "colossal-api-env-")),
     db = localDatabase();
   const owner = {
@@ -710,11 +710,16 @@ test("connection management API is admin-only, origin-protected and requires plu
   };
   try {
     assert.equal((await call("/admin/setup", "POST", {})).status, 200);
-    assert.equal((await call("/admin/connections")).status, 409);
-    await call("/admin/plugins", "POST", {
-      id: "com.colossal.production-connections",
-      action: "install",
-    });
+    assert.equal((await call("/admin/connections")).status, 200);
+    assert.equal(
+      (
+        await call("/admin/plugins", "POST", {
+          id: "com.colossal.production-connections",
+          action: "deactivate",
+        })
+      ).status,
+      403,
+    );
     assert.equal((await call("/admin/connections")).status, 200);
     assert.equal(
       (await call("/admin/connections", "GET", undefined, {})).status,

@@ -4,11 +4,11 @@ The **Connections → MongoDB heartbeat** panel configures an optional scheduled
 
 ## Controls and defaults
 
-Activate Production Connections, open Connections, check **Enable scheduled heartbeat**, and save. The default interval is **1 day**, configurable from **1 to 14 days**. Once daily is the application recommendation: Atlas Free clusters can auto-pause after 30 days of inactivity, so daily activity provides ample margin without frequent polling. This is a CMS default, not an Atlas-required ping frequency. See [Atlas inactivity rules](https://www.mongodb.com/docs/atlas/pause-terminate-cluster/).
+Open Connections (Production Connections is an always-active core plugin), check **Enable scheduled heartbeat**, and save. The default interval is **1 day**, configurable from **1 to 14 days**. Once daily is the application recommendation: Atlas Free clusters can auto-pause after 30 days of inactivity, so daily activity provides ample margin without frequent polling. This is a CMS default, not an Atlas-required ping frequency. See [Atlas inactivity rules](https://www.mongodb.com/docs/atlas/pause-terminate-cluster/).
 
 The panel shows the last result, last attempt, last successful ping, duration, invocation source and next eligible day. **Ping now** performs a manual connectivity test even when scheduled pings are disabled. **Refresh status** reads the persisted result. Settings and status are saved separately in the existing `config` collection/table, so updating settings does not discard history or overwrite an in-flight result. Raw provider errors and credentials are never recorded in heartbeat status.
 
-The Connections plugin must remain active for scheduled and manual pings. Disabling the checkbox stops explicit scheduled ping commands. Existing live MongoDB clients, normal site requests, status reads and scheduler configuration reads still access MongoDB; disabling pings does not disconnect the CMS from its database. A paused Atlas cluster may require manual resumption in Atlas. Heartbeats cannot guarantee availability during hosting/database outages.
+Production Connections is automatically installed and always active as a core plugin; it cannot be deactivated or uninstalled. Disabling the checkbox stops explicit scheduled ping commands. Existing live MongoDB clients, normal site requests, status reads and scheduler configuration reads still access MongoDB; disabling pings does not disconnect the CMS from its database. A paused Atlas cluster may require manual resumption in Atlas. Heartbeats cannot guarantee availability during hosting/database outages.
 
 ## Vercel production
 
@@ -20,7 +20,7 @@ The committed `vercel.json` defines a production cron job:
 
 1. Add **`CRON_SECRET`** to Vercel's **Production** environment. Use a random secret of at least 32 characters.
 2. Deploy the updated application. Environment changes require a new deployment.
-3. Activate Production Connections and save the heartbeat checkbox/interval.
+3. Open Connections and save the heartbeat checkbox/interval.
 4. Use **Ping now** to test provider access. Verify scheduled invocations and results in Vercel logs and the panel.
 
 Vercel includes `Authorization: Bearer <CRON_SECRET>` on scheduled requests. The adapter validates it with a constant-time hash comparison before initializing the database runtime. Missing or incorrect authorization cannot connect to the database through this route. The secret is never sent to the admin panel. Do not put the secret in a query string or commit it to the repository.
@@ -37,7 +37,7 @@ A persisted compare-and-swap lease prevents simultaneous scheduler instances and
 
 ## API
 
-Admin endpoints require an authenticated administrator, an active Connections plugin, and same-origin JSON for POST requests. Heartbeat settings remain writable when Vercel's environment-configuration panel is read-only.
+Admin endpoints require an authenticated administrator, the core Connections plugin, and same-origin JSON for POST requests. Heartbeat settings remain writable when Vercel's environment-configuration panel is read-only.
 
 | Method | Endpoint                                | Behavior                                                          |
 | ------ | --------------------------------------- | ----------------------------------------------------------------- |

@@ -1,10 +1,10 @@
 # Production Connections
 
-Development continues to use `pnpm dev`, SQLite at `.local/colossal.sqlite`, and files in `.local/storage`. Installing this plugin does not change those providers or move existing content.
+Development continues to use `pnpm dev`, SQLite at `.local/colossal.sqlite`, and files in `.local/storage`. Production Connections is an automatically installed, always-active core plugin. It cannot be deactivated or uninstalled. Existing installations are upgraded on startup without resetting settings. Its core status does not change development providers or move existing content.
 
 ## Plugin workflow
 
-Install **Production Connections** in Plugins, then open **Connections**. Choose MongoDB or Cloudflare D1 independently of storage, enter credentials, and save the environment. Values go to the server's `.env.production` file; they never go into the CMS database or Angular bundles. This file and temporary environment files are Git-ignored. `.env.example` contains placeholders and is safe to commit.
+Open **Connections**; no plugin installation or activation is required. Choose MongoDB or Cloudflare D1 independently of storage, enter credentials, and save the environment. Values go to the server's `.env.production` file; they never go into the CMS database or Angular bundles. This file and temporary environment files are Git-ignored. `.env.example` contains placeholders and is safe to commit.
 
 Secret values are omitted from initial API responses. **Show** requests one allowlisted value through an admin-only, same-origin, non-cacheable endpoint. **Hide** masks it again. Blank secret fields preserve saved values. Hosting environment variables take precedence over file values; the UI marks those fields as host-managed and prevents editing them. Edit these values in Render or your hosting dashboard instead.
 

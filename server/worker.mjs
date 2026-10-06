@@ -113,6 +113,18 @@ export async function initialize(db, user) {
         ),
     ),
   );
+  // Promote existing bundled plugins to core without resetting their settings.
+  await db.batch(
+    catalog
+      .filter((p) => p.isCore)
+      .map((p) =>
+        db
+          .prepare(
+            "UPDATE plugins SET active=1,installed=1 WHERE id=? AND (active=0 OR installed=0)",
+          )
+          .bind(p.id),
+      ),
+  );
   if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) return;
   const time = now();
   const statements = [
