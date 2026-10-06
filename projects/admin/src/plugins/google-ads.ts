@@ -29,6 +29,7 @@ import { ApiService } from "../../../../shared/api.service";
     .settings-actions {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
       gap: 16px;
       margin-top: 20px;
@@ -177,6 +178,9 @@ import { ApiService } from "../../../../shared/api.service";
             blockers can prevent Google's script from loading; test with
             blocking disabled for your site.
           </p>
+          @if (error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
           <div class="settings-actions">
             <a
               href="https://support.google.com/adsense/answer/9183363"
@@ -184,9 +188,6 @@ import { ApiService } from "../../../../shared/api.service";
               rel="noopener noreferrer"
               >Find your publisher and ad slot IDs ↗</a
             >
-            @if (error) {
-              <p class="error" role="alert">{{ error }}</p>
-            }
             <button class="button primary" [disabled]="busy || loading">
               {{ busy ? "Saving…" : "Save Google Ads settings" }}
             </button>
