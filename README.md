@@ -921,6 +921,10 @@ Use [.env.example](.env.example) as a template. Never commit credentials or embe
             <td>Random 32–4096 character token until first owner credentials exist</td>
         </tr>
         <tr>
+            <td>`CRON_SECRET`</td>
+            <td>Random secret of at least 32 characters for authenticated MongoDB heartbeat scheduling. Set in Vercel Production and redeploy; Vercel sends it as a Bearer token.</td>
+        </tr>
+        <tr>
             <td>`CMS_ADMIN_EMAIL`</td>
             <td>Optional headless/legacy bootstrap email</td>
         </tr>
@@ -1437,6 +1441,23 @@ For curl mutations, authenticate through Node login, retain its cookie, and expl
 ### Vercel
 
 Use the root `vercel.json` with Framework preset **Other**, Node **24.x**, and output directory **`dist/client`**. Vercel uses the `api/cms.mjs` Function for authentication and the CMS API; it does not run `pnpm start`. Configure MongoDB/GridFS (or D1/R2) and the exact `CMS_PUBLIC_URL` in Vercel environment variables.
+
+#### Configure `CRON_SECRET` for MongoDB heartbeat
+
+1. Generate a random secret locally:
+
+   ```sh
+   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+   ```
+
+2. In **Vercel → Project Settings → Environment Variables**, add the key **`CRON_SECRET`**, paste the generated value, and select **Production**. Use the value alone, without surrounding quotes. Keep it private; never commit it or paste it into logs.
+3. **Redeploy** after saving. Environment updates do not change an already-running deployment.
+4. Activate **Production Connections**, open **Connections → MongoDB heartbeat**, check **Enable scheduled heartbeat**, choose an interval, and save. The recommended default is **1 day**.
+5. Use **Ping now** to verify connectivity, then check Vercel's cron logs and the panel's last-success status after the scheduled run.
+
+The checked-in cron calls `/api/cron/mongodb-heartbeat` daily around **12:00 UTC**. Vercel automatically sends `Authorization: Bearer <CRON_SECRET>`; the application rejects missing/incorrect authorization before connecting to MongoDB. The saved interval controls which daily checks send a ping. Without `CRON_SECRET`, Vercel's scheduled heartbeat cannot run, although an authenticated admin can still use **Ping now**.
+
+Do not remove `CRON_SECRET` after administrator setup: it is separate from the temporary `CMS_SETUP_TOKEN`. Disabling the heartbeat checkbox stops explicit pings; remove the cron schedule to stop all scheduled database access. See [heartbeat scheduling, limits and API](docs/developers/mongodb-heartbeat.md).
 
 See [Vercel deployment](docs/developers/vercel.md) for setup, preview configuration, and serverless differences. Local production storage, dotenv writes, and background connection jobs are unavailable there. The platform's 4.5 MB Function payload limit also restricts media transfers and package operations.
 
