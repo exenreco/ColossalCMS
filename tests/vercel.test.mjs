@@ -154,16 +154,20 @@ test("Vercel reuses connections, routes parsed JSON, enforces password identity 
 
 test("Vercel retries failed initialization without revealing secrets and rejects invalid configuration/paths", async () => {
   let starts = 0;
+  const logs = [];
   const handler = createVercelHandler(
     { CMS_PUBLIC_URL: "https://cms.test" },
     async () => {
       if (++starts === 1) throw new Error("provider-secret-value");
       return { AUTH: { setupNeeded: async () => false } };
     },
+    (message) => logs.push(message),
   );
   const failure = await call(handler, "/healthz");
   assert.equal(failure.status, 503);
   assert.ok(!failure.data.includes("provider-secret-value"));
+  assert.match(logs[0], /Raw provider errors are withheld/);
+  assert.ok(!logs.join(" ").includes("provider-secret-value"));
   assert.equal((await call(handler, "/healthz")).status, 200);
   assert.equal((await call(handler, "//evil.test/admin")).status, 400);
   assert.equal(

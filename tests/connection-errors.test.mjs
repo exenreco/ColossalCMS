@@ -38,6 +38,9 @@ test("connection errors give actionable diagnoses without leaking provider messa
     /DNS/,
   );
   const cases = [
+    [{ code: "CMS_PUBLIC_URL_INVALID" }, /CMS_PUBLIC_URL/],
+    [{ code: "CMS_SETUP_TOKEN_REQUIRED" }, /CMS_SETUP_TOKEN/],
+    [{ code: "CMS_SERVERLESS_STORAGE" }, /CMS_STORAGE_PROVIDER/],
     [{ code: 18 }, /authentication failed/],
     [{ code: 13 }, /denied/],
     [{ code: "ENOTFOUND" }, /DNS/],

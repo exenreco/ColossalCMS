@@ -3,6 +3,7 @@ import { resolve, extname, sep } from "node:path";
 import worker from "../server/worker.mjs";
 import { productionRuntime } from "./production-server.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { connectionFailure } from "./connection-errors.mjs";
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -16,6 +17,7 @@ const types = {
 export function createVercelHandler(
   config = process.env,
   runtimeFactory = productionRuntime,
+  logError = console.error,
 ) {
   let runtime;
   const getRuntime = async () => {
@@ -23,7 +25,12 @@ export function createVercelHandler(
       runtime = Promise.resolve()
         .then(async () => {
           if (config.CMS_STORAGE_PROVIDER === "local")
-            throw new Error("Vercel requires GridFS or R2-compatible storage.");
+            throw Object.assign(
+              new Error("Vercel requires GridFS or R2-compatible storage."),
+              {
+                code: "CMS_SERVERLESS_STORAGE",
+              },
+            );
           const env = await runtimeFactory(config);
           env.SERVERLESS = true;
           const root = resolve("dist/client");
@@ -56,7 +63,17 @@ export function createVercelHandler(
   };
   return async (req, res) => {
     try {
-      const origin = new URL(config.CMS_PUBLIC_URL || "");
+      let origin;
+      try {
+        origin = new URL(config.CMS_PUBLIC_URL || "");
+      } catch {
+        throw Object.assign(
+          new Error("Configure the exact HTTPS CMS_PUBLIC_URL."),
+          {
+            code: "CMS_PUBLIC_URL_INVALID",
+          },
+        );
+      }
       if (
         origin.protocol !== "https:" ||
         origin.pathname !== "/" ||
@@ -65,7 +82,12 @@ export function createVercelHandler(
         origin.username ||
         origin.password
       )
-        throw new Error("Configure the exact HTTPS CMS_PUBLIC_URL.");
+        throw Object.assign(
+          new Error("Configure the exact HTTPS CMS_PUBLIC_URL."),
+          {
+            code: "CMS_PUBLIC_URL_INVALID",
+          },
+        );
       const incoming = new URL(req.url, origin);
       if (incoming.origin !== origin.origin)
         throw Object.assign(new Error("Invalid request origin."), {
@@ -157,6 +179,9 @@ export function createVercelHandler(
           : Buffer.from(await response.arrayBuffer()),
       );
     } catch (error) {
+      // Fixed diagnoses only: never log a raw error, URI, stack or credentials.
+      if (!error.status)
+        logError("CMS startup/request failed: " + connectionFailure(error));
       res.writeHead(error.status || 503, {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",

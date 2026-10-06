@@ -55,8 +55,11 @@ export async function productionRuntime(config, log = console.log) {
         config.CMS_SETUP_TOKEN.length < 32 ||
         config.CMS_SETUP_TOKEN.length > 4096
       )
-        throw new Error(
-          "Set CMS_SETUP_TOKEN to a random token of at least 32 characters for first-run administrator setup.",
+        throw Object.assign(
+          new Error(
+            "Set CMS_SETUP_TOKEN to a random token of at least 32 characters for first-run administrator setup.",
+          ),
+          { code: "CMS_SETUP_TOKEN_REQUIRED" },
         );
       log(
         "Administrator setup required. Open /setup and use the hosting setup token.",

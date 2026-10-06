@@ -13,6 +13,12 @@ export function connectionFailure(error) {
   }
   visit(error);
   const has = (predicate) => errors.some(predicate);
+  if (has((e) => e.code === "CMS_PUBLIC_URL_INVALID"))
+    return "Set CMS_PUBLIC_URL to the exact HTTPS site origin in Vercel's Production environment, then redeploy.";
+  if (has((e) => e.code === "CMS_SETUP_TOKEN_REQUIRED"))
+    return "First-run setup requires CMS_SETUP_TOKEN with 32 to 4096 characters. Set it in the hosting environment and redeploy.";
+  if (has((e) => e.code === "CMS_SERVERLESS_STORAGE"))
+    return "Vercel requires CMS_STORAGE_PROVIDER=gridfs or r2. Local storage is not supported.";
   if (has((e) => e.code === "CMS_DNS_RESTART"))
     return "MongoDB DNS servers changed. Restart the Node server before testing or connecting again.";
   if (
