@@ -760,7 +760,56 @@ Core plugins stay active and cannot be changed through ordinary plugin managemen
 
 ### MongoDB heartbeat
 
-Production Connections includes a **MongoDB heartbeat** panel with an enable checkbox, a configurable 1–14 day interval (default: daily), a manual ping and persisted status. It runs independently of the browser. Vercel scheduling requires a Production `CRON_SECRET` of at least 32 random characters and a redeployment; persistent Node hosting uses a server timer. See [heartbeat workflows, scheduling limits and API](docs/developers/mongodb-heartbeat.md).
+Production Connections includes a **MongoDB heartbeat** panel at the bottom of the Connections page. It sends a native MongoDB `ping` command with a 10-second timeout to the configured MongoDB database, or to MongoDB GridFS storage when the database provider is Cloudflare D1. SQLite and D1 without GridFS have no MongoDB target. The heartbeat runs on the server, so the admin browser does not need to remain open.
+
+#### Enable and verify heartbeat
+
+1. Activate **Production Connections** in Plugins and open **Connections**.
+2. For Vercel, configure the Production `CRON_SECRET` and redeploy using the [Vercel setup instructions](#vercel). Persistent Node hosting starts its scheduler with `pnpm start`.
+3. Check **Enable scheduled heartbeat**, choose an interval, and save.
+4. Select **Ping now** to verify connectivity, then use **Refresh status** to check subsequent scheduled results.
+
+| Control                    | Default / behavior                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Enable scheduled heartbeat | Disabled by default; the Connections plugin must remain active.                                                          |
+| Interval                   | Whole days from **1–14**; defaults to **1 day**.                                                                         |
+| Save                       | Persists the enable setting and interval without discarding the last result.                                             |
+| Ping now                   | Performs a manual ping, including when scheduled heartbeat is disabled. A successful ping updates the next eligible day. |
+| Refresh status             | Loads the latest persisted result and scheduling capabilities.                                                           |
+
+Once daily is the CMS recommendation because Atlas Free clusters can auto-pause after 30 days of inactivity. It provides margin without frequent polling; it is not an Atlas-required frequency. See [Atlas inactivity rules](https://www.mongodb.com/docs/atlas/pause-terminate-cluster/).
+
+#### Scheduling and hosting
+
+| Hosting            | Scheduling behavior                                                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel Production  | `vercel.json` schedules `/api/cron/mongodb-heartbeat` daily around **12:00 UTC** (`0 12 * * *`). The saved interval determines whether a ping is due. Vercel Hobby timing can vary within the scheduled hour. |
+| Vercel Preview     | Production cron scheduling does not run automatically on preview deployments.                                                                                                                                 |
+| Persistent Node    | A server timer checks for due work once per minute and pings only at the saved day interval. It stops when the server shuts down and cannot run while the hosting process is asleep or stopped.               |
+| External scheduler | May call the authenticated cron endpoint on a running Node deployment. It requires `CRON_SECRET`; static-only hosting cannot execute the backend.                                                             |
+
+Vercel requires a random **`CRON_SECRET` of at least 32 characters** in its Production environment and a redeployment after changing it. Vercel sends `Authorization: Bearer <CRON_SECRET>`; the handler validates authorization before initializing the database runtime. Do not put this secret in a URL or commit it. It is separate from the initial-owner `CMS_SETUP_TOKEN` and remains necessary after setup.
+
+Intervals use **UTC calendar days** to accommodate cron timing variation. Changing the interval in Connections does not require redeployment. A persisted lease prevents simultaneous scheduled/manual invocations from duplicating work and expires after 10 minutes if a run terminates unexpectedly. Failed pings use a one-hour retry backoff on persistent Node; Vercel retries at its next daily invocation.
+
+#### Status and troubleshooting
+
+The panel displays **last result** (`never`, `running`, `success`, or `failed`), last attempt, last successful ping, duration, invocation source, and next eligible day. Settings and status are stored separately in the existing `config` collection/table. Failure messages omit credentials and raw provider errors. If MongoDB cannot be reached, saving the failed status may also fail; check server logs for the safe diagnostic.
+
+Disabling the checkbox stops explicit scheduled ping commands. On Vercel, the daily cron still reads settings and a cold invocation initializes MongoDB clients. To stop **all scheduled database access**, remove/disable the cron job or remove its configuration and redeploy. Normal site requests continue using the database. A paused Atlas cluster may need manual resumption in Atlas, and heartbeats cannot guarantee availability during database or hosting outages. `/healthz` reports application readiness and does not replace a fresh MongoDB ping.
+
+#### Heartbeat API
+
+Admin endpoints require an authenticated administrator and an active Connections plugin; POST requests require same-origin JSON. Heartbeat settings remain writable on Vercel even though its environment-configuration panel is read-only.
+
+| Method | Endpoint                                | Purpose                                                         |
+| ------ | --------------------------------------- | --------------------------------------------------------------- |
+| GET    | `/api/admin/connections/heartbeat`      | Read settings, status, and scheduling capabilities.             |
+| POST   | `/api/admin/connections/heartbeat`      | Save `{ "enabled": true, "intervalDays": 1 }`.                  |
+| POST   | `/api/admin/connections/heartbeat/ping` | Send a manual ping with an empty JSON body (`{}`).              |
+| GET    | `/api/cron/mongodb-heartbeat`           | Run scheduled work using `Authorization: Bearer <CRON_SECRET>`. |
+
+The cron endpoint returns **200** for successful or skipped runs and **503** for a failed ping. Skip reasons include `disabled`, `not-due`, `already-running`, `retry-backoff`, `plugin-inactive`, and `not-mongodb`. Responses use `Cache-Control: no-store`. See the [heartbeat developer guide](docs/developers/mongodb-heartbeat.md) for additional scheduling and API details.
 
 ### Login Security
 
