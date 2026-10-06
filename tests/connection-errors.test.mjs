@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { connectionFailure } from "../scripts/connection-errors.mjs";
+import {
+  connectionFailure,
+  connectionErrorFacts,
+} from "../scripts/connection-errors.mjs";
 
 test("connection errors give actionable diagnoses without leaking provider messages", () => {
   assert.match(
@@ -41,6 +44,8 @@ test("connection errors give actionable diagnoses without leaking provider messa
     [{ code: "CMS_PUBLIC_URL_INVALID" }, /CMS_PUBLIC_URL/],
     [{ code: "CMS_SETUP_TOKEN_REQUIRED" }, /CMS_SETUP_TOKEN/],
     [{ code: "CMS_SERVERLESS_STORAGE" }, /CMS_STORAGE_PROVIDER/],
+    [{ code: "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR" }, /TLS handshake/],
+    [{ code: "ENETUNREACH" }, /IPv4\/IPv6/],
     [{ code: 18 }, /authentication failed/],
     [{ code: 13 }, /denied/],
     [{ code: "ENOTFOUND" }, /DNS/],
@@ -75,4 +80,42 @@ test("connection errors give actionable diagnoses without leaking provider messa
   const cycle = { cause: null };
   cycle.cause = cycle;
   assert.match(connectionFailure(cycle), /Raw provider errors/);
+});
+
+test("network diagnostics inspect aggregate causes and retain only allowlisted metadata", () => {
+  const error = {
+    name: "MongoServerSelectionError",
+    message: "mongodb://private-user:private-secret@private-host",
+    reason: {
+      servers: new Map([
+        [
+          "private-host",
+          {
+            error: {
+              name: "AggregateError",
+              errors: [
+                {
+                  code: "ENETUNREACH",
+                  syscall: "connect",
+                  address: "private-address",
+                },
+                {
+                  name: "private-name",
+                  code: "private-code",
+                  syscall: "private-syscall",
+                },
+              ],
+            },
+          },
+        ],
+      ]),
+    },
+  };
+  assert.match(connectionFailure(error), /IPv4\/IPv6/);
+  assert.deepEqual(connectionErrorFacts(error), {
+    names: ["MongoServerSelectionError", "AggregateError"],
+    codes: ["ENETUNREACH"],
+    syscalls: ["connect"],
+  });
+  assert.doesNotMatch(JSON.stringify(connectionErrorFacts(error)), /private/);
 });

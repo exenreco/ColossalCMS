@@ -1,5 +1,5 @@
 // Classify errors into fixed messages. Never interpolate provider text or credentials.
-export function connectionFailure(error) {
+function nestedErrors(error) {
   const errors = [],
     seen = new Set();
   function visit(value) {
@@ -8,10 +8,78 @@ export function connectionFailure(error) {
     errors.push(value);
     visit(value.cause);
     visit(value.reason);
+    if (Array.isArray(value.errors))
+      for (const nested of value.errors) visit(nested);
     if (value.servers instanceof Map)
       for (const server of value.servers.values()) visit(server.error);
   }
   visit(error);
+  return errors;
+}
+
+// Allowlisted metadata helps diagnose network failures without exposing endpoints.
+export function connectionErrorFacts(error) {
+  const errors = nestedErrors(error);
+  const names = new Set([
+    "MongoServerSelectionError",
+    "MongoNetworkError",
+    "MongoNetworkTimeoutError",
+    "MongoServerError",
+    "MongoParseError",
+    "MongoInvalidArgumentError",
+    "AggregateError",
+  ]);
+  const codes = new Set([
+    "ECONNREFUSED",
+    "ETIMEDOUT",
+    "ECONNRESET",
+    "ENETUNREACH",
+    "EHOSTUNREACH",
+    "ENOTFOUND",
+    "ENODATA",
+    "ESERVFAIL",
+    "EREFUSED",
+    "EAI_AGAIN",
+    "ETIMEOUT",
+    "CERT_HAS_EXPIRED",
+    "DEPTH_ZERO_SELF_SIGNED_CERT",
+    "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+    "ERR_TLS_CERT_ALTNAME_INVALID",
+    "SELF_SIGNED_CERT_IN_CHAIN",
+    "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR",
+    "ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE",
+    "ERR_SSL_WRONG_VERSION_NUMBER",
+    13,
+    18,
+    121,
+    8000,
+    11000,
+  ]);
+  const syscalls = new Set([
+    "connect",
+    "getaddrinfo",
+    "querySrv",
+    "queryTxt",
+    "queryA",
+    "queryAaaa",
+  ]);
+  return {
+    names: [
+      ...new Set(errors.map((e) => e.name).filter((name) => names.has(name))),
+    ],
+    codes: [
+      ...new Set(errors.map((e) => e.code).filter((code) => codes.has(code))),
+    ],
+    syscalls: [
+      ...new Set(
+        errors.map((e) => e.syscall).filter((call) => syscalls.has(call)),
+      ),
+    ],
+  };
+}
+
+export function connectionFailure(error) {
+  const errors = nestedErrors(error);
   const has = (predicate) => errors.some(predicate);
   if (has((e) => e.code === "CMS_PUBLIC_URL_INVALID"))
     return "Set CMS_PUBLIC_URL to the exact HTTPS site origin in Vercel's Production environment, then redeploy.";
@@ -72,6 +140,18 @@ export function connectionFailure(error) {
     )
   )
     return "MongoDB TLS certificate validation failed. Check the system clock, trusted certificates and any network proxy. TLS verification remains enabled.";
+  if (
+    has((e) =>
+      [
+        "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR",
+        "ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE",
+        "ERR_SSL_WRONG_VERSION_NUMBER",
+      ].includes(e.code),
+    )
+  )
+    return "MongoDB TLS handshake failed. Check Atlas Network Access, the cluster connection endpoint and hosting network access. TLS verification remains enabled.";
+  if (has((e) => ["ENETUNREACH", "EHOSTUNREACH"].includes(e.code)))
+    return "MongoDB's network address is unreachable from this host. Check outbound connectivity and IPv4/IPv6 routing.";
   if (has((e) => e.code === "CMS_MONGO_REPLICA_SET"))
     return "MongoDB connected, but this server is standalone. Use Atlas or a replica set because CMS publishing and revisions require transactions.";
   if (has((e) => e.code === 11000 || e.codeName === "DuplicateKey"))

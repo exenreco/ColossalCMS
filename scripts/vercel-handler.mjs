@@ -3,7 +3,10 @@ import { resolve, extname, sep } from "node:path";
 import worker from "../server/worker.mjs";
 import { productionRuntime } from "./production-server.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
-import { connectionFailure } from "./connection-errors.mjs";
+import {
+  connectionFailure,
+  connectionErrorFacts,
+} from "./connection-errors.mjs";
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -180,8 +183,13 @@ export function createVercelHandler(
       );
     } catch (error) {
       // Fixed diagnoses only: never log a raw error, URI, stack or credentials.
-      if (!error.status)
+      if (!error.status) {
         logError("CMS startup/request failed: " + connectionFailure(error));
+        logError(
+          "CMS connection diagnostics: " +
+            JSON.stringify(connectionErrorFacts(error)),
+        );
+      }
       res.writeHead(error.status || 503, {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
