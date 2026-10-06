@@ -1,3 +1,3 @@
-import { createVercelHandler } from "../scripts/vercel-handler.mjs";
+import { createVercelHandler } from "../dist/server/vercel-runtime.mjs";
 
 export default createVercelHandler();

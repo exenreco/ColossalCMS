@@ -2,6 +2,8 @@
 
 Vercel reads **`vercel.json`**, not `vercel.yaml`. The root configuration builds both Angular applications into `dist/client` and routes dynamic requests to `api/cms.mjs`, a Node 24 Function. There is no persistent `pnpm start` process on this host.
 
+The server build also generates `dist/server/vercel-runtime.mjs`. This bundles the HTML sanitizer with its parser so Vercel does not need to load an ESM parser through CommonJS `require()`. Database and storage SDKs remain external dependencies. Run the build before importing the Function entry point.
+
 ## Project settings
 
 | Setting           | Value                                         |

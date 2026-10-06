@@ -3,6 +3,42 @@ import assert from "node:assert/strict";
 import { createVercelHandler } from "../scripts/vercel-handler.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
 import { passwordAuth, hashPassword } from "../scripts/password-auth.mjs";
+import { buildVercelRuntime } from "../scripts/build-vercel-runtime.mjs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { resolve, join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { spawnSync } from "node:child_process";
+
+test("Vercel bundle serves setup without CommonJS require of ESM support", async () => {
+  const directory = await mkdtemp(resolve("tests/.vercel-bundle-"));
+  try {
+    const file = join(directory, "runtime.mjs");
+    await buildVercelRuntime(file);
+    const code = `
+      import assert from 'node:assert/strict';
+      const { createVercelHandler } = await import(${JSON.stringify(pathToFileURL(file).href)});
+      const handler = createVercelHandler(
+        { CMS_PUBLIC_URL: 'https://cms.test' },
+        async () => ({ AUTH: { setupNeeded: async () => true } }),
+      );
+      let status, body;
+      await handler({ url: '/api/cms?__cmsPath=/setup', method: 'GET', headers: {} }, {
+        writeHead(value) { status = value; },
+        end(value) { body = Buffer.from(value).toString(); },
+      });
+      assert.equal(status, 200);
+      assert.match(body, /Create administrator/);
+    `;
+    const result = spawnSync(
+      process.execPath,
+      ["--no-experimental-require-module", "--input-type=module", "-e", code],
+      { encoding: "utf8", timeout: 30000 },
+    );
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 async function call(handler, path, options = {}) {
   let status, headers, data;

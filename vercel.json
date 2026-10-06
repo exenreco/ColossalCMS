@@ -7,7 +7,7 @@
   "functions": {
     "api/cms.mjs": {
       "maxDuration": 60,
-      "includeFiles": "{dist/client/**,drizzle/**}",
+      "includeFiles": "{dist/client/**,dist/server/**,drizzle/**}",
       "excludeFiles": "{.env,.env.*,.local/**,.production/**,ColossalCMS/**,tests/**,stories/**}"
     }
   },

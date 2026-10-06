@@ -1,6 +1,7 @@
 import { build } from "esbuild";
 import { cp, mkdir, rm } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
+import { buildVercelRuntime } from "./build-vercel-runtime.mjs";
 const clientRoot = resolve("dist/client");
 if (dirname(clientRoot) !== resolve("dist"))
   throw new Error("Unexpected build output path.");
@@ -16,4 +17,5 @@ await build({
   platform: "browser",
   target: "es2022",
 });
+await buildVercelRuntime();
 console.log("Both Angular applications and Worker API built successfully.");
