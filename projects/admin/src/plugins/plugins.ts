@@ -4,10 +4,82 @@ import { FormsModule } from "@angular/forms";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { Plugin } from "../../../../shared/models";
+import { PluginViewState } from "../plugin-view-state";
 @Component({
   selector: "cl-plugins",
   standalone: true,
   imports: [DialogFocusDirective, FormsModule, IconComponent],
+  styles: `
+    .plugin-search-tools {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .plugin-view-toggle {
+      display: flex;
+      padding: 3px;
+      gap: 3px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .plugin-view-toggle button {
+      border: 0;
+      border-radius: 5px;
+      padding: 6px 8px;
+      display: flex;
+      color: #647460;
+      background: transparent;
+    }
+    .plugin-view-toggle button.selected {
+      background: #edf3e9;
+      color: #336b45;
+    }
+    .plugin-table-wrap {
+      overflow-x: auto;
+    }
+    .plugin-table {
+      min-width: 720px;
+    }
+    .plugin-table tbody tr:nth-child(odd) {
+      background: #f2f5ef;
+    }
+    .plugin-table tbody tr:nth-child(even) {
+      background: #fff;
+    }
+    .plugin-table th,
+    .plugin-table td {
+      white-space: normal;
+      vertical-align: top;
+    }
+    .plugin-table .plugin-name {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .plugin-table .plugin-name strong {
+      font-size: 14px;
+    }
+    .plugin-table .description {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #647460;
+    }
+    .plugin-table .plugin-meta {
+      margin: 8px 0 0;
+    }
+    .plugin-table .plugin-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .plugin-table .actions-cell {
+      min-width: 190px;
+    }
+  `,
   template: `
     <div class="page-heading">
       <div>
@@ -80,107 +152,253 @@ import { Plugin } from "../../../../shared/models";
           </button>
         }
       </div>
-      <label class="search-field"
-        ><cl-icon name="search" /><input
-          [(ngModel)]="search"
-          placeholder="Find a plugin…"
-          aria-label="Find a plugin"
-      /></label>
+      <div class="plugin-search-tools">
+        <label class="search-field"
+          ><cl-icon name="search" /><input
+            [(ngModel)]="search"
+            placeholder="Find a plugin…"
+            aria-label="Find a plugin"
+        /></label>
+        <div
+          class="plugin-view-toggle"
+          role="group"
+          aria-label="Plugin display view"
+        >
+          <button
+            type="button"
+            aria-label="Grid view"
+            title="Grid view"
+            [attr.aria-pressed]="viewState.view() === 'grid'"
+            [class.selected]="viewState.view() === 'grid'"
+            (click)="viewState.view.set('grid')"
+          >
+            <cl-icon name="grid" />
+          </button>
+          <button
+            type="button"
+            aria-label="List view"
+            title="List view"
+            [attr.aria-pressed]="viewState.view() === 'list'"
+            [class.selected]="viewState.view() === 'list'"
+            (click)="viewState.view.set('list')"
+          >
+            <cl-icon name="list" />
+          </button>
+        </div>
+      </div>
     </div>
     @if (error) {
       <p class="error" role="alert">{{ error }}</p>
     }
-    <div class="plugin-grid">
-      @for (p of filtered; track p.id) {
-        <article class="plugin-card">
-          <div class="plugin-card-top">
-            <span class="plugin-tile" [class.extension]="!p.isCore"
-              ><cl-icon [name]="p.icon"
-            /></span>
-            @if (p.isCore) {
-              <span class="badge core"><cl-icon name="lock" />Core</span>
-            } @else {
-              <span [class]="'badge ' + (p.active ? 'published' : 'draft')"
-                ><span></span
-                >{{
-                  p.active ? "Active" : p.installed ? "Inactive" : "Available"
-                }}</span
-              >
+    @if (viewState.view() === "list") {
+      <div class="panel plugin-table-wrap">
+        <table class="plugin-table" aria-label="Plugins">
+          <thead>
+            <tr>
+              <th scope="col">Plugin</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filtered; track p.id) {
+              <tr>
+                <td>
+                  <div class="plugin-name">
+                    <span class="plugin-tile" [class.extension]="!p.isCore"
+                      ><cl-icon [name]="p.icon" /></span
+                    ><strong>{{ p.name }}</strong>
+                  </div>
+                  <p class="description">{{ p.description }}</p>
+                  <div class="plugin-meta">
+                    v{{ p.version }} <span>by {{ p.author }}</span>
+                  </div>
+                  @if (p.uploaded) {
+                    <p class="plugin-review-note">
+                      Uploaded archive · {{ p.license }}
+                      @if (p.pending) {
+                        · Awaiting activation
+                      }
+                    </p>
+                  }
+                </td>
+                <td>
+                  @if (p.isCore) {
+                    <span class="badge core"><cl-icon name="lock" />Core</span>
+                  } @else {
+                    <span
+                      [class]="'badge ' + (p.active ? 'published' : 'draft')"
+                      ><span></span
+                      >{{
+                        p.active
+                          ? "Active"
+                          : p.installed
+                            ? "Inactive"
+                            : "Available"
+                      }}</span
+                    >
+                  }
+                </td>
+                <td class="actions-cell">
+                  <div class="plugin-actions">
+                    @if (p.isCore) {
+                      <span class="locked-note"
+                        ><cl-icon name="lock" />Always active</span
+                      >
+                    } @else if (p.installed) {
+                      <button
+                        class="text-button"
+                        [disabled]="busy || !isAdmin || !!p.uploaded"
+                        (click)="
+                          change(p, p.active ? 'deactivate' : 'activate')
+                        "
+                      >
+                        {{
+                          p.uploaded
+                            ? "Activation disabled"
+                            : p.active
+                              ? "Deactivate"
+                              : "Activate"
+                        }}
+                      </button>
+                      <button
+                        class="text-button danger-text"
+                        [disabled]="busy || !isAdmin"
+                        (click)="removing = p"
+                      >
+                        Uninstall
+                      </button>
+                    } @else {
+                      <button
+                        class="button small primary"
+                        [disabled]="busy || !isAdmin"
+                        (click)="change(p, 'install')"
+                      >
+                        <cl-icon name="plus" />Install plugin
+                      </button>
+                    }
+                    @if (p.uploaded && p.previousRevision) {
+                      <button
+                        class="text-button"
+                        [disabled]="busy || !isAdmin"
+                        (click)="change(p, 'rollback')"
+                      >
+                        Restore previous version
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="empty-cell">
+                  <h3>
+                    {{
+                      search ? "No matching plugins" : "No plugins in this view"
+                    }}
+                  </h3>
+                  <p>
+                    Try another search, switch tabs, or show core plugins using
+                    the visibility toggle next to View site.
+                  </p>
+                </td>
+              </tr>
             }
-          </div>
-          <h2>{{ p.name }}</h2>
-          <p>{{ p.description }}</p>
-          <div class="plugin-meta">
-            v{{ p.version }} <span>by {{ p.author }}</span>
-          </div>
-          @if (p.uploaded) {
-            <p class="plugin-review-note">
-              Uploaded archive · {{ p.license }}
-              @if (p.pending) {
-                · Awaiting activation
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="plugin-grid">
+        @for (p of filtered; track p.id) {
+          <article class="plugin-card">
+            <div class="plugin-card-top">
+              <span class="plugin-tile" [class.extension]="!p.isCore"
+                ><cl-icon [name]="p.icon"
+              /></span>
+              @if (p.isCore) {
+                <span class="badge core"><cl-icon name="lock" />Core</span>
+              } @else {
+                <span [class]="'badge ' + (p.active ? 'published' : 'draft')"
+                  ><span></span
+                  >{{
+                    p.active ? "Active" : p.installed ? "Inactive" : "Available"
+                  }}</span
+                >
               }
-            </p>
-          }
-          <div class="plugin-card-footer">
-            @if (p.isCore) {
-              <span class="locked-note"
-                ><cl-icon name="lock" />Always active</span
-              ><span class="subtle-label">Essential</span>
-            } @else if (p.installed) {
-              <button
-                class="text-button"
-                [disabled]="busy || !isAdmin || !!p.uploaded"
-                (click)="change(p, p.active ? 'deactivate' : 'activate')"
-              >
-                {{
-                  p.uploaded
-                    ? "Activation disabled"
-                    : p.active
-                      ? "Deactivate"
-                      : "Activate"
-                }}</button
-              ><button
-                class="text-button danger-text"
-                [disabled]="busy || !isAdmin"
-                (click)="removing = p"
-              >
-                Uninstall
-              </button>
-            } @else {
-              <button
-                class="button small primary"
-                [disabled]="busy || !isAdmin"
-                (click)="change(p, 'install')"
-              >
-                <cl-icon name="plus" />Install plugin
-              </button>
-            }
-          </div>
-          @if (p.uploaded && p.previousRevision) {
-            <div class="plugin-card-footer">
-              <button
-                class="text-button"
-                [disabled]="busy || !isAdmin"
-                (click)="change(p, 'rollback')"
-              >
-                Restore previous version
-              </button>
             </div>
-          }
-        </article>
-      } @empty {
-        <div class="empty-cell panel">
-          <h3>{{ search ? "No matching plugins" : "You’re all set." }}</h3>
-          <p>
-            {{
-              search
-                ? "Try another search."
-                : "All bundled extensions are installed."
-            }}
-          </p>
-        </div>
-      }
-    </div>
+            <h2>{{ p.name }}</h2>
+            <p>{{ p.description }}</p>
+            <div class="plugin-meta">
+              v{{ p.version }} <span>by {{ p.author }}</span>
+            </div>
+            @if (p.uploaded) {
+              <p class="plugin-review-note">
+                Uploaded archive · {{ p.license }}
+                @if (p.pending) {
+                  · Awaiting activation
+                }
+              </p>
+            }
+            <div class="plugin-card-footer">
+              @if (p.isCore) {
+                <span class="locked-note"
+                  ><cl-icon name="lock" />Always active</span
+                ><span class="subtle-label">Essential</span>
+              } @else if (p.installed) {
+                <button
+                  class="text-button"
+                  [disabled]="busy || !isAdmin || !!p.uploaded"
+                  (click)="change(p, p.active ? 'deactivate' : 'activate')"
+                >
+                  {{
+                    p.uploaded
+                      ? "Activation disabled"
+                      : p.active
+                        ? "Deactivate"
+                        : "Activate"
+                  }}</button
+                ><button
+                  class="text-button danger-text"
+                  [disabled]="busy || !isAdmin"
+                  (click)="removing = p"
+                >
+                  Uninstall
+                </button>
+              } @else {
+                <button
+                  class="button small primary"
+                  [disabled]="busy || !isAdmin"
+                  (click)="change(p, 'install')"
+                >
+                  <cl-icon name="plus" />Install plugin
+                </button>
+              }
+            </div>
+            @if (p.uploaded && p.previousRevision) {
+              <div class="plugin-card-footer">
+                <button
+                  class="text-button"
+                  [disabled]="busy || !isAdmin"
+                  (click)="change(p, 'rollback')"
+                >
+                  Restore previous version
+                </button>
+              </div>
+            }
+          </article>
+        } @empty {
+          <div class="empty-cell panel">
+            <h3>
+              {{ search ? "No matching plugins" : "No plugins in this view" }}
+            </h3>
+            <p>
+              Try another search, switch tabs, or show core plugins using the
+              visibility toggle next to View site.
+            </p>
+          </div>
+        }
+      </div>
+    }
     <p class="catalog-note">
       <cl-icon name="book" />Bundle extensions or upload a V2 ZIP. Uploaded
       archives are validated and stored inactive.
@@ -215,6 +433,7 @@ import { Plugin } from "../../../../shared/models";
   `,
 })
 export class PluginsComponent {
+  viewState = inject(PluginViewState);
   api = inject(ApiService);
   tab = "Installed";
   search = "";
@@ -265,6 +484,7 @@ export class PluginsComponent {
       .state()!
       .plugins.filter(
         (p) =>
+          (this.viewState.showCore() || !p.isCore) &&
           p.installed === (this.tab === "Installed") &&
           (p.name + " " + p.description)
             .toLowerCase()

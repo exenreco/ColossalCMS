@@ -11,6 +11,7 @@ import {
 } from "@angular/router";
 import { ApiService } from "../../../shared/api.service";
 import { IconComponent } from "../../../shared/icon.component";
+import { PluginViewState } from "./plugin-view-state";
 @Component({
   selector: "cl-admin",
   standalone: true,
@@ -132,9 +133,29 @@ import { IconComponent } from "../../../shared/icon.component";
                 section
               }}</strong>
             </div>
-            <a class="button subtle" href="/" target="_blank"
-              >View site <cl-icon name="external"
-            /></a>
+            <div class="topbar-actions">
+              @if (section === "Plugins") {
+                <button
+                  type="button"
+                  class="icon-button core-visibility-toggle"
+                  role="switch"
+                  aria-label="Show core plugins"
+                  [attr.aria-checked]="pluginView.showCore()"
+                  [attr.title]="
+                    pluginView.showCore()
+                      ? 'Hide core plugins'
+                      : 'Show core plugins'
+                  "
+                  [class.selected]="pluginView.showCore()"
+                  (click)="pluginView.showCore.set(!pluginView.showCore())"
+                >
+                  <cl-icon [name]="pluginView.showCore() ? 'eye' : 'eye-off'" />
+                </button>
+              }
+              <a class="button subtle" href="/" target="_blank"
+                >View site <cl-icon name="external"
+              /></a>
+            </div>
           </header>
           <main><router-outlet /></main>
           <footer class="app-footer">
@@ -210,6 +231,7 @@ import { IconComponent } from "../../../shared/icon.component";
   `,
 })
 export class AdminComponent implements OnInit {
+  pluginView = inject(PluginViewState);
   api = inject(ApiService);
   router = inject(Router);
   setup = false;

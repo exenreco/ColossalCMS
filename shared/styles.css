@@ -973,6 +973,15 @@ td:last-child {
   gap: 16px;
   flex-wrap: wrap;
 }
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.core-visibility-toggle.selected {
+  background: #edf3e9;
+  color: #336b45;
+}
 .content-toolbar.standalone {
   padding: 0 0 24px;
 }

@@ -758,6 +758,8 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 
 Core plugins stay active and cannot be changed through ordinary plugin management. Optional extensions expose menus/features when activated.
 
+The Plugins page opens in **List view**, with alternating table row colors. Use the **Grid/List** icon buttons beside search to switch layouts. Core plugins are hidden initially; the visibility icon to the left of **View site** shows or hides them in either layout. Search and Installed/Available tabs apply to both views. Display preferences stay in the current admin session and reset to list view with core plugins hidden on a full reload.
+
 ### MongoDB heartbeat
 
 Production Connections includes a **MongoDB heartbeat** panel at the bottom of the Connections page. It sends a native MongoDB `ping` command with a 10-second timeout to the configured MongoDB database, or to MongoDB GridFS storage when the database provider is Cloudflare D1. SQLite and D1 without GridFS have no MongoDB target. The heartbeat runs on the server, so the admin browser does not need to remain open.
