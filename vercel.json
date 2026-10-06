@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile --prod=false",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/client",
+  "functions": {
+    "api/cms.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "{dist/client/**,drizzle/**}",
+      "excludeFiles": "{.env,.env.*,.local/**,.production/**,ColossalCMS/**,tests/**,stories/**}"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(admin(?:/.*)?|api/.*|login|setup|healthz)",
+      "dest": "/api/cms?__cmsPath=/$1"
+    },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/api/cms?__cmsPath=/$1" }
+  ]
+}

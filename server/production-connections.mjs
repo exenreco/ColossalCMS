@@ -18,6 +18,23 @@ export async function handleConnections(request, env, user) {
     fail("Activate the Production Connections plugin first.", 409);
   const path = new URL(request.url).pathname,
     manager = env.CONNECTIONS;
+  if (env.SERVERLESS) {
+    if (request.method === "GET" && path === "/api/admin/connections")
+      return json({
+        ...(await manager.describe()),
+        readOnly: true,
+        message:
+          "Vercel uses hosting environment variables. Configure providers in Project Settings and redeploy. Startup initializes schemas automatically. Run local migration from the development server; background console jobs are unavailable on this host.",
+      });
+    if (
+      path !== "/api/admin/connections/password" &&
+      path !== "/api/admin/connections/reveal"
+    )
+      fail(
+        "Configure Vercel environment variables and redeploy. Connection jobs and local dotenv writes require the persistent Node server.",
+        409,
+      );
+  }
   if (!manager) {
     if (path === "/api/admin/connections" && request.method === "GET")
       return json({

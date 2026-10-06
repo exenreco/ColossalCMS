@@ -58,7 +58,6 @@ All application files live at the **repository root**. Run commands in the direc
 - [Troubleshooting](#troubleshooting)
   - [Documentation index](#documentation-index)
 
-
 <table>
     <caption>Requirements and quick start</caption>
     <thead>
@@ -387,6 +386,7 @@ Record stores include `content`, `config`, `members`, `plugins`, `activity`, `ap
 Content blocks live in `details.contentBlocks`, Main settings in `details.contentMain`, and supplemental rich-text data in `details.richText`. `body` retains a text representation for integrations and older records. Media references use stable IDs. Themes retain separate draft/published documents and history. Passwords, sessions, and API keys persist as appropriate hashes rather than plaintext secrets.
 
 ## Administration and publishing
+
 <table>
     <caption>Administration screens</caption>
     <thead>
@@ -1161,17 +1161,16 @@ Content preview accepts `{ content, contentBlocks?, mainSettings?, mainId? }` wi
 
 For block-based integrations, populate `details.contentBlocks` with declarative nodes rather than treating `body` as the complete layout. For example:
 
-
 ```json
 {
-    "contentBlocks": [
-        {
-            "id": "blk_intro",
-            "type": "core/heading",
-            "settings": { "text": "Welcome", "level": "h1" }
-        }
-    ],
-    "contentMain": {}
+  "contentBlocks": [
+    {
+      "id": "blk_intro",
+      "type": "core/heading",
+      "settings": { "text": "Welcome", "level": "h1" }
+    }
+  ],
+  "contentMain": {}
 }
 ```
 
@@ -1221,7 +1220,6 @@ Place this object under `details` in a content write. Block IDs must be unique w
         </tr>
     </tbody>
 </table>
-
 
 ### Themes
 
@@ -1427,6 +1425,12 @@ console.log(result.id, result.updatedAt);
 For curl mutations, authenticate through Node login, retain its cookie, and explicitly send the exact `Origin` and required content type. A read key cannot authorize those writes.
 
 ## Deployment
+
+### Vercel
+
+Use the root `vercel.json` with Framework preset **Other**, Node **24.x**, and output directory **`dist/client`**. Vercel uses the `api/cms.mjs` Function for authentication and the CMS API; it does not run `pnpm start`. Configure MongoDB/GridFS (or D1/R2) and the exact `CMS_PUBLIC_URL` in Vercel environment variables.
+
+See [Vercel deployment](docs/developers/vercel.md) for setup, preview configuration, and serverless differences. Local production storage, dotenv writes, and background connection jobs are unavailable there. The platform's 4.5 MB Function payload limit also restricts media transfers and package operations.
 
 ### Node / Render
 
