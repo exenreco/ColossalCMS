@@ -42,6 +42,9 @@ interface Run {
     .connection-heartbeat {
       margin-top: 24px;
     }
+    .connection-heartbeat .heartbeat-status-start {
+      margin-top: 24px;
+    }
     .connection-panel h2 {
       margin-top: 0;
     }
@@ -486,7 +489,7 @@ interface Run {
               Sleeping or stopped hosts need an external scheduler.
             </p>
           }
-          <p>
+          <p class="heartbeat-status-start">
             Last result: <strong>{{ heartbeat.state.status }}</strong>
           </p>
           <p>
