@@ -13,6 +13,17 @@ import { Component, OnInit, signal } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { IconComponent } from "../../../shared/icon.component";
 import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
+function initialMaintenanceRender() {
+  try {
+    const payload = document.getElementById("maintenance-render")?.textContent;
+    const rendered = payload ? JSON.parse(payload) : null;
+    return rendered?.maintenance === true && typeof rendered.html === "string"
+      ? rendered
+      : null;
+  } catch {
+    return null;
+  }
+}
 @Component({
   selector: "cl-frontend",
   standalone: true,
@@ -24,7 +35,7 @@ import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
     PostSingleSkeletonComponent,
   ],
   template: `
-    @if (themeMarkup) {
+    @if (themeMarkup()) {
       @if (isPreview) {
         <div class="theme-preview-banner">
           {{
@@ -40,7 +51,7 @@ import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
           <div class="announcement">{{ site.settings.announcement }}</div>
         }
       }
-      <div [innerHTML]="themeMarkup"></div>
+      <div [innerHTML]="themeMarkup()"></div>
     } @else if (data(); as site) {
       <div class="public-site" [style.--site-accent]="site.settings.accent">
         @if (active("announcement") && site.settings.announcement) {
@@ -199,7 +210,7 @@ import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
           ><span>Powered by Colossal</span>
         </footer>
       </div>
-    } @else if (!error) {
+    } @else if (!error()) {
       <div
         class="public-skeleton"
         role="status"
@@ -216,7 +227,7 @@ import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
       <div class="auth-page">
         <div class="auth-card">
           <h1>We’ll be right back.</h1>
-          <p>{{ error }}</p>
+          <p>{{ error() }}</p>
           <button class="button" (click)="load()">Try again</button>
         </div>
       </div>
@@ -238,18 +249,23 @@ class FrontendComponent implements OnInit {
     media: MediaItem[];
   } | null>(null);
   sanitizer = inject(DomSanitizer);
-  themeMarkup: SafeHtml = "";
-  isPreview = false;
+  private initialRender = initialMaintenanceRender();
+  themeMarkup = signal<SafeHtml>(
+    this.initialRender
+      ? this.sanitizer.bypassSecurityTrustHtml(this.initialRender.html)
+      : "",
+  );
+  isPreview = this.initialRender?.preview === true;
   adsEnabled = false;
-  maintenancePreview = false;
-  error = "";
+  maintenancePreview = this.initialRender?.maintenancePreview === true;
+  error = signal("");
   home = location.pathname === "/";
   entry: Content | undefined;
   ngOnInit() {
     this.load();
   }
   async load() {
-    this.error = "";
+    this.error.set("");
     try {
       const params = new URLSearchParams(location.search);
       params.set("path", location.pathname);
@@ -267,8 +283,8 @@ class FrontendComponent implements OnInit {
       if (theme.ok) {
         const rendered = await theme.json();
         // Only the server's sanitized theme renderer can cross this HTML boundary.
-        this.themeMarkup = this.sanitizer.bypassSecurityTrustHtml(
-          rendered.html,
+        this.themeMarkup.set(
+          this.sanitizer.bypassSecurityTrustHtml(rendered.html),
         );
         document.body.className = ["theme-root", rendered.body?.className]
           .filter(Boolean)
@@ -339,7 +355,7 @@ class FrontendComponent implements OnInit {
             site.settings.tagline,
         );
     } catch (e) {
-      this.error = (e as Error).message;
+      this.error.set((e as Error).message);
     }
   }
   get postsPage() {

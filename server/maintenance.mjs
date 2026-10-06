@@ -196,11 +196,16 @@ export async function maintenanceRender(db, state) {
 }
 export function maintenanceHtml(shell, rendered) {
   const body = rendered.body;
+  // Hand the sanitized render to Angular before it replaces the server markup.
+  const initial = JSON.stringify({ ...rendered, maintenance: true }).replace(
+    /</g,
+    "\\u003c",
+  );
   return shell
     .replace(/<title>[^<]*<\/title>/i, `<title>${esc(rendered.title)}</title>`)
     .replace(
       /<\/head>/i,
-      `<meta name="robots" content="noindex"><style>${rendered.css.replace(/</g, "\\3c ")}</style></head>`,
+      `<meta name="robots" content="noindex"><style>${rendered.css.replace(/</g, "\\3c ")}</style><script type="application/json" id="maintenance-render">${initial}</script></head>`,
     )
     .replace(
       /<body[^>]*>/i,
@@ -357,6 +362,8 @@ export async function handleMaintenance(request, env, user, path) {
       maintenanceHtml(await shell.text(), {
         ...rendered,
         title: record.name + " · Preview",
+        preview: true,
+        maintenancePreview: true,
       }).replace(
         /<\/head>/i,
         `<meta name="colossal-maintenance-preview" content="${esc(id)}"></head>`,

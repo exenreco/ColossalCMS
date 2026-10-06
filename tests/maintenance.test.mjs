@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../server/worker.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
-import { MAINTENANCE_ID } from "../server/maintenance.mjs";
+import { MAINTENANCE_ID, maintenanceHtml } from "../server/maintenance.mjs";
 import { references } from "../server/v2-utils.mjs";
 import { CORE_THEME_ID } from "../server/theme-engine.mjs";
 
@@ -66,6 +66,28 @@ const enable = async (call, enabled = true, extra = {}) => {
     revision: current.revision,
   });
 };
+
+test("maintenance startup payload preserves markup and cannot close its JSON script", () => {
+  const rendered = {
+    html: "<h1>Maintenance</h1><p>&lt;sample&gt;</p>",
+    css: "/* </style><script>bad()</script> */",
+    title: "</script><script>bad()</script>",
+    body: { className: "maintenance-body", style: "" },
+    preview: true,
+    maintenancePreview: true,
+  };
+  const html = maintenanceHtml(
+    "<html><head><title>Site</title></head><body><cl-frontend></cl-frontend></body></html>",
+    rendered,
+  );
+  const payload = html.match(
+    /<script type="application\/json" id="maintenance-render">([\s\S]*?)<\/script>/,
+  )[1];
+  assert.doesNotMatch(payload, /</);
+  assert.deepEqual(JSON.parse(payload), { ...rendered, maintenance: true });
+  assert.ok(html.includes("<cl-frontend>" + rendered.html + "</cl-frontend>"));
+  assert.doesNotMatch(html, /<script>bad\(\)<\/script>/);
+});
 
 test("maintenance seeds three independent layouts, stays off and protects management", async () => {
   const { DB, call } = await fixture();
