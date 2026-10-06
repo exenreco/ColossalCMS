@@ -44,6 +44,37 @@ const config = {
   R2_SECRET_ACCESS_KEY: "private-secret",
 };
 
+test("hosting enum values normalize dotenv-style quotes, spaces and capitalization without changing secrets", () => {
+  const input = {
+    ...config,
+    CMS_DB_PROVIDER: '  "MongoDB"  ',
+    CMS_STORAGE_PROVIDER: " 'GridFS' ",
+    MONGODB_DATABASE: "ColossalCMS",
+    CMS_SETUP_TOKEN: " setup-token-with-intentional-spaces-12345 ",
+  };
+  const normalized = validateConnectionConfig(input, true);
+  assert.equal(normalized.CMS_DB_PROVIDER, "mongodb");
+  assert.equal(normalized.CMS_STORAGE_PROVIDER, "gridfs");
+  assert.equal(normalized.MONGODB_DATABASE, input.MONGODB_DATABASE);
+  assert.equal(normalized.CMS_SETUP_TOKEN, input.CMS_SETUP_TOKEN);
+  assert.equal(normalized.MONGODB_URI, input.MONGODB_URI);
+  assert.equal(input.CMS_DB_PROVIDER, '  "MongoDB"  ');
+  assert.throws(
+    () =>
+      validateConnectionConfig({
+        ...config,
+        CMS_DB_PROVIDER: "private-secret",
+      }),
+    (error) =>
+      /CMS_DB_PROVIDER.*mongodb, d1/.test(error.message) &&
+      !error.message.includes("private-secret"),
+  );
+  assert.throws(
+    () => validateConnectionConfig({ ...config, CMS_DB_PROVIDER: "mongodb\n" }),
+    /Invalid value for CMS_DB_PROVIDER/,
+  );
+});
+
 test("production dotenv values are masked, persisted, selectively revealed and host overrides remain protected", async () => {
   const dir = await mkdtemp(join(tmpdir(), "colossal-env-"));
   try {

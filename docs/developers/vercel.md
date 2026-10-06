@@ -23,6 +23,8 @@ The committed JSON supplies build settings and routing. Admin navigation/assets,
 
 Set these in **Project Settings → Environment Variables**, then deploy:
 
+Changes to environment variables apply to new deployments. Verify the Production scope and any branch overrides, then redeploy. Provider option values tolerate surrounding spaces, paired quotes and capitalization; credentials and database names are kept exactly as entered.
+
 | Variable                | Value                                                                    |
 | ----------------------- | ------------------------------------------------------------------------ |
 | `CMS_PUBLIC_URL`        | Exact HTTPS production origin, such as `https://your-project.vercel.app` |

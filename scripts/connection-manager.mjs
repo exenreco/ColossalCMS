@@ -97,6 +97,7 @@ const fail = (message) => {
   throw Object.assign(new Error(message), { status: 400 });
 };
 export function validateConnectionConfig(config, complete = false) {
+  config = { ...config };
   for (const f of ENV_FIELDS) {
     const value = config[f.key];
     if (
@@ -105,8 +106,16 @@ export function validateConnectionConfig(config, complete = false) {
       /[\r\n\0]/.test(value)
     )
       fail("Invalid value for " + f.key);
-    if (f.options && !f.options.includes(value))
-      fail("Choose a valid " + f.label);
+    if (f.options) {
+      // Dotenv removes surrounding quotes; hosting dashboards retain them.
+      // Normalize only enum settings, never credentials or database names.
+      let option = value.trim();
+      if (/^(".*"|'.*')$/.test(option)) option = option.slice(1, -1).trim();
+      option = option.toLowerCase();
+      if (!f.options.includes(option))
+        fail("Set " + f.key + " to one of: " + f.options.join(", ") + ".");
+      config[f.key] = option;
+    }
   }
   if (config.CMS_SETUP_TOKEN && config.CMS_SETUP_TOKEN.length < 32)
     fail("Use a random administrator setup token of at least 32 characters.");
