@@ -1018,7 +1018,37 @@
         "key": "sceneVeilOpacity",
         "label": "Glass overlay opacity (0–0.85)",
         "type": "number",
-        "default": 0.5
+        "default": 0.75
+      },
+      {
+        "key": "sceneVeilColor",
+        "label": "Overlay / rain color (hex)",
+        "type": "text",
+        "default": "#17191bc9"
+      },
+      {
+        "key": "sceneRainEnabled",
+        "label": "Rain lines",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "sceneRainDensity",
+        "label": "Rain line density (0–96)",
+        "type": "number",
+        "default": 36
+      },
+      {
+        "key": "sceneRainSpeed",
+        "label": "Rain line speed (0.25–3)",
+        "type": "number",
+        "default": 1
+      },
+      {
+        "key": "sceneRainWidth",
+        "label": "Rain line width (0.3–1.5 px)",
+        "type": "number",
+        "default": 0.75
       },
       {
         "key": "scenePixelsEnabled",

@@ -27,6 +27,11 @@ export function modelFieldVisible(
       "backgroundZoom",
       "sceneVeilEnabled",
       "sceneVeilOpacity",
+      "sceneVeilColor",
+      "sceneRainEnabled",
+      "sceneRainDensity",
+      "sceneRainSpeed",
+      "sceneRainWidth",
       "scenePixelsEnabled",
       "scenePixelSize",
     ].includes(key)
@@ -38,6 +43,13 @@ export function modelFieldVisible(
       return settings["moonEnabled"] !== false;
     if (["snowDensity", "snowSize", "snowSpeed", "snowFlutter"].includes(key))
       return settings["snowEnabled"] !== false;
+    if (["sceneRainDensity", "sceneRainSpeed", "sceneRainWidth"].includes(key))
+      return settings["sceneRainEnabled"] !== false;
+    if (key === "sceneVeilColor")
+      return (
+        settings["sceneVeilEnabled"] !== false ||
+        settings["sceneRainEnabled"] !== false
+      );
     if (
       ["sceneVeilOpacity", "scenePixelsEnabled", "scenePixelSize"].includes(key)
     ) {

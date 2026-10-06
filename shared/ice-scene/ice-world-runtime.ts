@@ -11,6 +11,7 @@ import { SkyComponent } from "./sky-component";
 import { ThroneComponent } from "./throne-component";
 import { IceFragmentsComponent } from "./ice-fragments-component";
 import { GlassVeilComponent } from "./glass-veil-component";
+import { RainLinesComponent } from "./rain-lines-component";
 import { SceneComponent, SceneFrame } from "./scene-component";
 import { clamp, scrollProgress, easeTo } from "./scene-math";
 
@@ -161,9 +162,23 @@ export async function mountIceWorld(host: HTMLElement) {
       host.dataset["sceneVeilEnabled"] !== "false"
         ? add(
             new GlassVeilComponent(
-              clamp(Number(host.dataset["sceneVeilOpacity"] ?? 0.5), 0, 0.85),
+              clamp(Number(host.dataset["sceneVeilOpacity"] ?? 0.75), 0, 0.85),
               host.dataset["scenePixelsEnabled"] !== "false",
               clamp(Number(host.dataset["scenePixelSize"] ?? 3), 1, 8),
+              host.dataset["sceneVeilColor"] || "#17191bc9",
+            ),
+          )
+        : null;
+    const rain =
+      host.dataset["sceneRainEnabled"] !== "false"
+        ? add(
+            new RainLinesComponent(
+              host.dataset["sceneVeilColor"] || "#17191bc9",
+              Math.round(
+                clamp(Number(host.dataset["sceneRainDensity"] ?? 36), 0, 96),
+              ),
+              clamp(Number(host.dataset["sceneRainSpeed"] ?? 1), 0.25, 3),
+              clamp(Number(host.dataset["sceneRainWidth"] ?? 0.75), 0.3, 1.5),
             ),
           )
         : null;
@@ -207,6 +222,7 @@ export async function mountIceWorld(host: HTMLElement) {
       fragments.resize(throne.object);
       snow?.resize(height);
       veil?.resize(width, height);
+      rain?.resize(width, height);
       dirty = true;
     };
     resizeObserver = new ResizeObserver(resize);

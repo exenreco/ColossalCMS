@@ -1,6 +1,17 @@
 export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
 
+/** Keep the authored RGB tint and its optional alpha separate from layer opacity. */
+export function sceneTint(value: string | undefined) {
+  const hex = /^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(value || "")
+    ? value!
+    : "#17191bc9";
+  return {
+    color: hex.slice(0, 7),
+    alpha: hex.length === 9 ? parseInt(hex.slice(7), 16) / 255 : 1,
+  };
+}
+
 export function seededRandom(seed = 2027) {
   return () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;

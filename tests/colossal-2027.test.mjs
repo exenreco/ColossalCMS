@@ -25,6 +25,7 @@ import {
   moonCornerFrame,
   easeTo,
   flakeMotion,
+  sceneTint,
 } from "../shared/ice-scene/scene-math.ts";
 import { modelFieldVisible } from "../shared/model-field-visibility.ts";
 
@@ -91,6 +92,9 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.match(home.html, /data-moon-placement="top-left"/);
     assert.match(home.html, /data-scene-veil-enabled="true"/);
     assert.match(home.html, /data-scene-pixels-enabled="true"/);
+    assert.match(home.html, /data-scene-veil-color="#17191bc9"/);
+    assert.match(home.html, /data-scene-veil-opacity="0.75"/);
+    assert.match(home.html, /data-scene-rain-enabled="true"/);
     assert.match(home.html, /data-snow-enabled="true"/);
     assert.match(home.html, /data-wind-enabled="true"/);
     assert.match(home.css, /height:100vh/);
@@ -146,6 +150,10 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
     snowSpeed: -1,
     snowFlutter: 100,
     moonPlacement: "javascript:bad()",
+    sceneVeilColor: "red;bad()",
+    sceneRainDensity: 9999,
+    sceneRainSpeed: 99,
+    sceneRainWidth: -1,
   });
   const result = renderTheme(
     validateDocument(d, true),
@@ -173,6 +181,10 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
   assert.match(result.html, /data-scene-speed="3"/);
   assert.match(result.html, /data-background-zoom="0.25"/);
   assert.match(result.html, /data-scene-veil-opacity="0.85"/);
+  assert.match(result.html, /data-scene-veil-color="#17191bc9"/);
+  assert.match(result.html, /data-scene-rain-density="96"/);
+  assert.match(result.html, /data-scene-rain-speed="3"/);
+  assert.match(result.html, /data-scene-rain-width="0.3"/);
   assert.match(result.html, /data-scene-pixel-size="1"/);
   assert.match(result.html, /data-snow-size="2"/);
   assert.match(result.html, /data-snow-speed="0.25"/);
@@ -241,7 +253,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 4);
+  assert.equal(upgraded.manifest.bundledRevision, 5);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -339,6 +351,27 @@ test("shared Inspector only exposes world controls for ice scenes and hides disa
     true,
   );
   assert.equal(showModelField("moonEnabled", { source: "url" }), false);
+  for (const key of ["sceneRainDensity", "sceneRainSpeed", "sceneRainWidth"])
+    assert.equal(
+      showModelField(key, { ...world, sceneRainEnabled: false }),
+      false,
+    );
+  assert.equal(
+    showModelField("sceneVeilColor", {
+      ...world,
+      sceneVeilEnabled: false,
+      sceneRainEnabled: true,
+    }),
+    true,
+  );
+  assert.equal(
+    showModelField("sceneVeilColor", {
+      ...world,
+      sceneVeilEnabled: false,
+      sceneRainEnabled: false,
+    }),
+    false,
+  );
   assert.equal(
     showModelField("sceneVeilOpacity", { ...world, sceneVeilEnabled: false }),
     false,
@@ -454,7 +487,7 @@ test("existing glass themes place the shared footer above the fixed scene withou
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 4);
+  assert.equal(updated.manifest.bundledRevision, 5);
   assert.deepEqual(updated.templates, original.templates);
   assert.deepEqual(updated.parts, original.parts);
   assert.ok(updated.css.startsWith(original.css));
@@ -471,4 +504,73 @@ test("existing glass themes place the shared footer above the fixed scene withou
     rendered.css,
     /\.theme-root \.theme-part-footer\{position:relative;z-index:2\}/,
   );
+});
+
+test("glass card and rain upgrades style the requested IDs and project cards while retaining content and custom motion", () => {
+  const document = colossal2027Theme();
+  document.manifest.bundledRevision = 4;
+  const scene = document.templates.home.children[1].children[1].children[0];
+  scene.settings.sceneVeilOpacity = 0.5;
+  delete scene.settings.sceneVeilColor;
+  delete scene.settings.sceneRainEnabled;
+  scene.settings.sceneRainSpeed = 2;
+  const cards = document.templates.home.children[5].children[2].children;
+  const ids = [
+    "blk_9f42fdd6-cedf-4642-895d-2c3a7e8b0219",
+    "blk_81908474-c778-4d34-92de-e22b12ed11cc",
+    "blk_38df1b56-6d44-40cf-a933-5cd258005b66",
+  ];
+  cards.forEach((card, i) => {
+    card.id = ids[i];
+    card.settings.classes = "my-resume-card";
+    card.settings.background = "#ffffff08";
+    card.settings.glassEnabled = false;
+  });
+  const original = structuredClone(document);
+  const upgraded = migrateThemeDocument(document);
+  assert.deepEqual(document, original);
+  assert.equal(upgraded.manifest.bundledRevision, 5);
+  assert.deepEqual(upgraded.parts, original.parts);
+  const next = upgraded.templates.home.children[1].children[1].children[0];
+  assert.equal(next.settings.sceneVeilOpacity, 0.75);
+  assert.equal(next.settings.sceneVeilColor, "#17191bc9");
+  assert.equal(next.settings.sceneRainEnabled, true);
+  assert.equal(next.settings.sceneRainSpeed, 2);
+  const selected = upgraded.templates.home.children[5].children[2].children;
+  selected.forEach((card, i) => {
+    assert.equal(card.id, ids[i]);
+    assert.deepEqual(card.children, cards[i].children);
+    assert.equal(card.settings.background, "#17191bc9");
+    assert.equal(card.settings.glassEnabled, true);
+  });
+  const projects = upgraded.templates.home.children[3].children[2].children;
+  projects.forEach((card) => {
+    assert.equal(card.settings.background, "#17191bc9");
+    assert.equal(card.settings.glassEnabled, true);
+  });
+  const rendered = renderTheme(validateDocument(upgraded, true), {
+    settings: {},
+    allContent: [],
+    media: [],
+    kind: "home",
+    path: "/",
+  });
+  for (const id of ids)
+    assert.match(
+      rendered.html,
+      new RegExp(
+        `data-block-id="${id}"[^>]*background-color:#17191bc9;backdrop-filter:blur\\(20px\\)`,
+      ),
+    );
+  assert.deepEqual(migrateThemeDocument(upgraded), upgraded);
+});
+
+test("scene tint preserves optional hex alpha and rejects unsupported colors", () => {
+  assert.deepEqual(sceneTint("#17191bc9"), {
+    color: "#17191b",
+    alpha: 201 / 255,
+  });
+  assert.deepEqual(sceneTint("#00000000"), { color: "#000000", alpha: 0 });
+  assert.deepEqual(sceneTint("#aabbcc"), { color: "#aabbcc", alpha: 1 });
+  assert.deepEqual(sceneTint("red;bad()"), sceneTint(undefined));
 });

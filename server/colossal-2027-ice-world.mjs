@@ -1,6 +1,6 @@
 /** Upgrade the bundled hero without rebuilding authored copy, other templates or shared parts. */
 export function upgradeColossal2027Document(input) {
-  if (!input?.templates?.home || input.manifest?.bundledRevision >= 4)
+  if (!input?.templates?.home || input.manifest?.bundledRevision >= 5)
     return input;
   const d = structuredClone(input);
   const hero = d.templates.home.children?.find((node) =>
@@ -81,12 +81,52 @@ export function upgradeColossal2027Document(input) {
     d.css = (d.css || "") + COLOSSAL_2027_GLASS_CSS;
     d.manifest.bundledRevision = 3;
   }
-  // Shared-part wrappers do not compile the template reference's block settings.
-  // Raise the actual footer wrapper above the hero's fixed scene stacking context.
-  d.css = (d.css || "") + COLOSSAL_2027_FOOTER_CSS;
-  d.manifest.bundledRevision = 4;
+  if (!(d.manifest.bundledRevision >= 4)) {
+    // Shared-part wrappers do not compile the template reference's block settings.
+    // Raise the actual footer wrapper above the hero's fixed scene stacking context.
+    d.css = (d.css || "") + COLOSSAL_2027_FOOTER_CSS;
+    d.manifest.bundledRevision = 4;
+  }
+  scene.settings.sceneVeilColor ??= "#17191bc9";
+  if (
+    scene.settings.sceneVeilOpacity == null ||
+    scene.settings.sceneVeilOpacity === 0.5
+  )
+    scene.settings.sceneVeilOpacity = 0.75;
+  scene.settings.sceneRainEnabled ??= true;
+  scene.settings.sceneRainDensity ??= 36;
+  scene.settings.sceneRainSpeed ??= 1;
+  scene.settings.sceneRainWidth ??= 0.75;
+  const glassIds = new Set([
+    "blk_9f42fdd6-cedf-4642-895d-2c3a7e8b0219",
+    "blk_81908474-c778-4d34-92de-e22b12ed11cc",
+    "blk_38df1b56-6d44-40cf-a933-5cd258005b66",
+  ]);
+  const glass = (node) => {
+    const classes = String(node.settings?.classes || "").split(/\s+/);
+    if (
+      glassIds.has(node.id) ||
+      classes.some((c) => ["c27-project", "c27-glass-card"].includes(c))
+    ) {
+      node.settings ||= {};
+      node.settings.background = "#17191bc9";
+      node.settings.glassEnabled = true;
+      node.settings.glassBlur ??= classes.includes("c27-project") ? 24 : 20;
+      node.settings.glassSaturation ??= 130;
+      delete node.settings.backgroundGradient;
+    }
+    (node.children || []).forEach(glass);
+  };
+  [...Object.values(d.templates), ...Object.values(d.parts)].forEach(glass);
+  d.css = (d.css || "") + COLOSSAL_2027_RAIN_GLASS_CSS;
+  d.manifest.bundledRevision = 5;
   return d;
 }
+
+export const COLOSSAL_2027_RAIN_GLASS_CSS = `
+/* Colossal 2027 / consistent charcoal glass cards */
+.theme-root .c27-project,.theme-root .c27-glass-card{background-image:none}
+`;
 
 export const COLOSSAL_2027_FOOTER_CSS = `
 /* Colossal 2027 / footer above the persistent scene */
