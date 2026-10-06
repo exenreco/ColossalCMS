@@ -6,6 +6,7 @@ import { ApiService } from "../../../../shared/api.service";
 import { ThemeSummary } from "../../../../shared/theme-models";
 import { ThemesListSkeletonComponent } from "../../../../shared/skeleton-compositions";
 import { themeBodyAttributes } from "../../../../shared/theme-body";
+import { MaintenanceState } from "../maintenance-state";
 
 @Component({
   selector: "cl-maintenance",
@@ -30,14 +31,6 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
       display: grid;
       gap: 8px;
       font-size: 13px;
-    }
-    .maintenance-controls label.enabled-toggle {
-      display: flex;
-      align-items: center;
-      align-self: center;
-    }
-    .maintenance-controls input[type="checkbox"] {
-      width: auto;
     }
     .maintenance-controls select {
       max-width: 260px;
@@ -88,13 +81,6 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
             stay private until published.
           </p>
           <div class="maintenance-controls">
-            <label class="enabled-toggle"
-              ><input
-                name="enabled"
-                type="checkbox"
-                [(ngModel)]="settings.enabled"
-              />Enable maintenance mode</label
-            >
             <label
               >Published layout<select
                 name="layout"
@@ -129,10 +115,11 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
             </button>
           </div>
           <small
-            >Maintenance begins only after saving. Login, setup, admin, health
-            checks, cron jobs, and static/media assets remain available.
-            Deactivating the plugin turns maintenance off without deleting
-            layouts.</small
+            >Use the Maintenance On/Off switch beside View site to change mode
+            immediately. Save these settings to change the published layout and
+            retry timing. Login, setup, admin, health checks, cron jobs, and
+            static/media assets remain available. Deactivating the plugin turns
+            maintenance off without deleting layouts.</small
           >
         </form>
       }
@@ -197,6 +184,7 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
   `,
 })
 export class MaintenanceComponent implements OnInit {
+  maintenance = inject(MaintenanceState);
   api = inject(ApiService);
   cdr = inject(ChangeDetectorRef);
   sanitizer = inject(DomSanitizer);
@@ -222,7 +210,7 @@ export class MaintenanceComponent implements OnInit {
   async load() {
     this.loading = true;
     try {
-      const data = await this.api.request("/maintenance");
+      const data = await this.maintenance.load();
       this.layouts = data.layouts;
       this.settings = data.settings;
       this.revision = data.revision;
@@ -268,7 +256,8 @@ export class MaintenanceComponent implements OnInit {
     await this.run(async () => {
       await this.api.request("/maintenance/settings", "POST", {
         ...this.settings,
-        revision: this.revision,
+        enabled: this.maintenance.data().settings.enabled,
+        revision: this.maintenance.data().revision,
       });
       await this.load();
       this.api.toast("Maintenance settings saved.");

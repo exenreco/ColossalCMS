@@ -767,8 +767,8 @@ Install and activate **Maintenance** from Plugins, then open its admin menu. It 
 
 1. Choose **Edit** on a layout, or **New layout** to start blank. The shared Theme Editor provides blocks, Canvas, Outline, Inspector, responsive previews, CSS, and template settings.
 2. Save drafts, preview privately as an administrator, then publish. Add templates through the editor's template menu; **Save as new layout** duplicates a layout. Version history supports restoring a published version as a draft.
-3. Select the published layout and template, set **Retry after** (60–86,400 seconds; default 3,600), enable maintenance mode, and save settings.
-4. Clear the checkbox and save to reopen the site. Deactivating the plugin also stops maintenance without deleting layouts.
+3. Select the published layout and template, set **Retry after** (60–86,400 seconds; default 3,600), and save settings.
+4. Use the **Maintenance On/Off** switch immediately left of **View site** on the Maintenance page. Green means on; red means off. Switching saves immediately using the published layout settings. Switch off to reopen the site. Deactivating the plugin also stops maintenance without deleting layouts.
 
 Anonymous visitors receive the published maintenance page with **HTTP 503**, `Retry-After`, `Cache-Control: no-store`, and `X-Robots-Tag: noindex`. Signed-in administrators retain normal site access. Login, setup, admin, health checks, cron, and assets remain reachable. Public content listing is suppressed during maintenance. Drafts and maintenance previews require administrator access; publishing a draft updates the active layout immediately.
 

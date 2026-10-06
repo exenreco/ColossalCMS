@@ -12,6 +12,7 @@ import {
 import { ApiService } from "../../../shared/api.service";
 import { IconComponent } from "../../../shared/icon.component";
 import { PluginViewState } from "./plugin-view-state";
+import { MaintenanceState } from "./maintenance-state";
 @Component({
   selector: "cl-admin",
   standalone: true,
@@ -24,6 +25,53 @@ import { PluginViewState } from "./plugin-view-state";
     RouterOutlet,
     IconComponent,
   ],
+  styles: `
+    .maintenance-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      background: transparent;
+      padding: 6px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .maintenance-switch:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .maintenance-switch:focus-visible {
+      outline: 2px solid #22634e;
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+    .maintenance-switch-track {
+      display: flex;
+      align-items: center;
+      width: 44px;
+      height: 26px;
+      padding: 3px;
+      border-radius: 99px;
+      background: #b63838;
+      transition: background 0.15s;
+    }
+    .maintenance-switch-track::after {
+      content: "";
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 3px #0003;
+      transition: transform 0.15s;
+    }
+    .maintenance-switch.on .maintenance-switch-track {
+      background: #23764f;
+    }
+    .maintenance-switch.on .maintenance-switch-track::after {
+      transform: translateX(18px);
+    }
+  `,
   template: `
     @if (api.state()) {
       <div class="app-shell">
@@ -152,6 +200,33 @@ import { PluginViewState } from "./plugin-view-state";
                   <cl-icon [name]="pluginView.showCore() ? 'eye' : 'eye-off'" />
                 </button>
               }
+              @if (
+                section === "Maintenance" && api.state()!.user.role === "admin"
+              ) {
+                <button
+                  type="button"
+                  class="maintenance-switch"
+                  role="switch"
+                  aria-label="Enable maintenance mode"
+                  [attr.aria-checked]="
+                    maintenance.data()?.settings.enabled || false
+                  "
+                  [class.on]="maintenance.data()?.settings.enabled"
+                  [disabled]="!maintenance.data() || maintenance.busy()"
+                  (click)="maintenance.toggle()"
+                >
+                  <span
+                    >Maintenance
+                    {{
+                      maintenance.data()?.settings.enabled ? "On" : "Off"
+                    }}</span
+                  >
+                  <span
+                    class="maintenance-switch-track"
+                    aria-hidden="true"
+                  ></span>
+                </button>
+              }
               <a class="button subtle" href="/" target="_blank"
                 >View site <cl-icon name="external"
               /></a>
@@ -231,6 +306,7 @@ import { PluginViewState } from "./plugin-view-state";
   `,
 })
 export class AdminComponent implements OnInit {
+  maintenance = inject(MaintenanceState);
   pluginView = inject(PluginViewState);
   api = inject(ApiService);
   router = inject(Router);
