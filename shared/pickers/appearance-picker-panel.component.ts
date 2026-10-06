@@ -10,6 +10,7 @@ import { DimensionsPickerComponent } from "./dimensions-picker.component";
 import { LinkPickerComponent } from "./link-picker.component";
 import { AnimationPickerComponent } from "./animation-picker.component";
 import { SlideBackgroundPickerComponent } from "./slide-background-picker.component";
+import { GlassPickerComponent } from "./glass-picker.component";
 import { PickerChange } from "./picker-base";
 
 /** Shared Inspector surface for theme templates and post/page block content. */
@@ -28,6 +29,7 @@ import { PickerChange } from "./picker-base";
     LinkPickerComponent,
     AnimationPickerComponent,
     SlideBackgroundPickerComponent,
+    GlassPickerComponent,
   ],
   template: `
     <div class="cl-appearance-panel" aria-label="Appearance pickers">
@@ -53,6 +55,10 @@ import { PickerChange } from "./picker-base";
       <cl-gradient-picker
         [settings]="settings"
         [palette]="palette"
+        (settingChange)="settingChange.emit($event)"
+      />
+      <cl-glass-picker
+        [settings]="settings"
         (settingChange)="settingChange.emit($event)"
       />
       @if (blockType === "core/slide") {

@@ -104,7 +104,12 @@ export function mediaIds(details) {
   };
   if (!Array.isArray(details?.contentBlocks)) visit(details?.richText);
   const visitBlock = (node) => {
-    for (const key of ["mediaId", "poster", "backgroundMediaId"])
+    for (const key of [
+      "mediaId",
+      "poster",
+      "backgroundMediaId",
+      "portraitImage",
+    ])
       if (typeof node?.settings?.[key] === "string" && node.settings[key])
         ids.add(node.settings[key]);
     node?.children?.forEach(visitBlock);

@@ -46,6 +46,7 @@ export interface ThemeManifest {
   blocks: { type: string; file: string; icon?: string }[];
   assets: { styles: string[]; scripts: string[] };
   palette?: string[];
+  homeTemplate?: string;
 }
 export interface ThemeDocument {
   notices?: string[];

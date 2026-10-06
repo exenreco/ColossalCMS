@@ -12,6 +12,7 @@ Place `theme.manifest.json` at the ZIP root. It contains a reverse-domain `id`, 
 - `blocks`: objects with namespaced `type`, HTML `file`, and an `icon` token (for example `fas fa-heading`). Every block must declare an icon, and no two blocks in a theme may share one. The icon appears in the Block Library popover, the canvas outline and the Inspector header.
 - `assets`: `{ "styles": ["assets/theme.css"], "scripts": [] }`.
 - Optional `palette`: up to 12 hex colors.
+- Optional `homeTemplate`: a declared template ID whose `appliesTo` includes `home`. Public rendering uses it at `/` when site routing otherwise resolves to `post-index`; content routes and separate post-index pages keep their existing resolution. The Theme Editor exposes it as **Landing page at /**.
 
 The easiest starter package is **Themes → Colossal Default → Export**. Export changes the protected core ID to an installable non-core ID. Change the ID when installing multiple copies.
 

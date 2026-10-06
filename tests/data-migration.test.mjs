@@ -236,7 +236,7 @@ async function localContent(source, files) {
 test("built-in themes/plugins/settings/sample data initialize without a local source and preserve edits", async () =>
   fixture(async ({ target }) => {
     await seedBuiltInData(target);
-    assert.equal((await rows(target, "themes")).length, 1);
+    assert.equal((await rows(target, "themes")).length, 2);
     assert.ok((await rows(target, "plugins")).length >= 10);
     assert.equal((await rows(target, "content")).length, 3);
     await target

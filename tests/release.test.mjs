@@ -26,8 +26,9 @@ test("release version, bundled manifests and default theme agree and Brilliant i
   try {
     await seedBuiltInData(db);
     const themes = (await db.prepare("SELECT * FROM themes").all()).results;
-    assert.equal(themes.length, 1);
-    assert.equal(themes[0].id, CORE_THEME_ID);
+    assert.equal(themes.length, 2);
+    assert.ok(themes.some((t) => t.id === CORE_THEME_ID));
+    assert.ok(themes.some((t) => t.id === "com.colossal.theme.colossal-2027"));
     assert.equal(
       validateDocument(defaultTheme(), true).manifest.version,
       CMS_VERSION,
@@ -122,7 +123,7 @@ test("release restoration replaces content and Brilliant while preserving admini
     );
     assert.equal(
       (await db.prepare("SELECT * FROM themes").all()).results.length,
-      2,
+      3,
     );
     assert.ok(
       await db.prepare("SELECT id FROM themes WHERE id='custom-theme'").first(),

@@ -41,6 +41,7 @@ import { UnitInputComponent } from "./unit-input.component";
             <option value="relative">Relative</option>
             <option value="absolute">Absolute</option>
             <option value="fixed">Fixed</option>
+            <option value="sticky">Sticky</option>
           </select>
         </label>
         @if (settings["position"] && settings["position"] !== "static") {

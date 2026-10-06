@@ -3827,6 +3827,9 @@ progress {
   height: 100%;
   object-fit: contain;
 }
+.gltf-viewer.cl-portrait-scene {
+  background: transparent;
+}
 .gltf-viewer canvas {
   display: block;
   max-width: 100%;

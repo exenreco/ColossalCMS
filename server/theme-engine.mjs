@@ -142,7 +142,7 @@ const styles = {
     "border-color": [/^(?:(?:#[a-f0-9]{3,8}|currentColor)(?: |$)){1,4}$/i],
     "border-radius": [
       new RegExp(
-        `^(?:${positiveLengthCssPattern})(?: ${positiveLengthCssPattern}){3}$`,
+        `^(?:${positiveLengthCssPattern})(?: ${positiveLengthCssPattern}){0,3}$`,
       ),
     ],
     height: [/^[0-9]+(px|vh|rem)$/],
@@ -150,7 +150,7 @@ const styles = {
     "justify-content": [/^(flex-start|center|flex-end)$/],
     "max-width": [new RegExp(`^${positiveLengthCssPattern}$`)],
     display: [/^(grid|flex|block)$/],
-    position: [/^(relative|absolute|fixed)$/],
+    position: [/^(relative|absolute|fixed|sticky)$/],
     top: [new RegExp(`^${lengthCssPattern}$`)],
     right: [new RegExp(`^${lengthCssPattern}$`)],
     bottom: [new RegExp(`^${lengthCssPattern}$`)],
@@ -164,6 +164,7 @@ const styles = {
     flex: [/^\d+(?:\.\d+)? \d+(?:\.\d+)? (?:auto|\d+px|\d+%)$/],
     "flex-wrap": [/^(nowrap|wrap|wrap-reverse)$/],
     "flex-shrink": [/^\d+(?:\.\d+)?$/],
+    "backdrop-filter": [/^blur\(\d+(?:\.\d+)?px\) saturate\(\d+(?:\.\d+)?%\)$/],
     gap: [new RegExp(`^${positiveLengthCssPattern}$`)],
     "grid-template-columns": [
       /^repeat\((?:[1-9]|1[0-2]), ?minmax\(0, ?1fr\)\)$/,
@@ -195,6 +196,12 @@ export function sanitizeTemplate(
         "aria-label",
         "aria-hidden",
         "data-model-url",
+        "data-portrait-url",
+        "data-fragment-count",
+        "data-pointer-interactive",
+        "data-motion-strength",
+        "data-ice-tint",
+        "data-light-intensity",
         "data-controls",
         "data-auto-rotate",
         "data-rotate-speed",
@@ -335,6 +342,21 @@ export function sanitizeCss(css, report = []) {
     "overflow",
     "list-style",
     "opacity",
+    "box-sizing",
+    "border-top",
+    "border-bottom",
+    "transition",
+    "transform",
+    "aspect-ratio",
+    "object-position",
+    "text-transform",
+    "text-wrap",
+    "white-space",
+    "outline",
+    "outline-offset",
+    "align-self",
+    "justify-items",
+    "cursor",
   ]);
   let ast;
   try {
@@ -426,6 +448,13 @@ export function validateThemeManifest(m, files, core = false) {
         typeDefaults.add(type);
       }
   }
+  if (
+    m.homeTemplate &&
+    !m.templates.some(
+      (t) => t.id === m.homeTemplate && t.appliesTo.includes("home"),
+    )
+  )
+    fail("The landing template must support Home.");
   if (
     !m.parts ||
     typeof m.parts !== "object" ||
@@ -779,6 +808,19 @@ export function validateDocument(input, core = false) {
         if (url.protocol !== "https:" || url.username || url.password)
           fail("Model URLs must use HTTPS without credentials.");
       }
+      if (node.settings.source === "portrait" && node.settings.portraitUrl) {
+        const src = String(node.settings.portraitUrl);
+        if (!/^\/themes\/colossal-2027\/[a-z0-9-]+\.png$/.test(src)) {
+          let url;
+          try {
+            url = new URL(src);
+          } catch {
+            fail("Use an HTTPS portrait URL or choose an image.");
+          }
+          if (url.protocol !== "https:" || url.username || url.password)
+            fail("Portrait URLs must use HTTPS without credentials.");
+        }
+      }
     }
     if (
       ["core/image", "core/media"].includes(node.type) &&
@@ -893,6 +935,8 @@ function styleSettings(s) {
         .join(" ") +
       ";";
   if (color(s.background)) css += "background-color:" + s.background + ";";
+  if (s.glassEnabled === true)
+    css += `backdrop-filter:blur(${num(s.glassBlur ?? 24, 0, 48)}px) saturate(${num(s.glassSaturation ?? 130, 50, 200)}%);`;
   const gradient = s.backgroundGradient;
   const stops = Array.isArray(gradient?.stops)
     ? gradient.stops
@@ -987,7 +1031,7 @@ function styleSettings(s) {
     css += "display:" + s.display + ";";
   if (s.display === "grid" && s.gridColumns)
     css += `grid-template-columns:repeat(${num(s.gridColumns, 1, 12)},minmax(0,1fr));`;
-  if (["relative", "absolute", "fixed"].includes(s.position)) {
+  if (["relative", "absolute", "fixed", "sticky"].includes(s.position)) {
     css += "position:" + s.position + ";";
     for (const side of ["top", "right", "bottom", "left"])
       if (s.offsets?.[side] !== undefined && s.offsets[side] !== "auto")
@@ -1275,6 +1319,7 @@ export function themeMediaIds(d) {
     if (b?.settings?.mediaId) ids.add(b.settings.mediaId);
     if (b?.settings?.backgroundMediaId) ids.add(b.settings.backgroundMediaId);
     if (b?.settings?.poster) ids.add(b.settings.poster);
+    if (b?.settings?.portraitImage) ids.add(b.settings.portraitImage);
     b?.children?.forEach(visit);
   };
   Object.values(d?.templates || {}).forEach(visit);
@@ -1491,6 +1536,17 @@ function dynamic(type, s, ctx) {
     return `<div class="cl-slide-background" aria-hidden="true"><div class="gltf-viewer" data-model-url="${esc(url)}" data-controls="false" data-auto-rotate="${s.backgroundAutoRotate === true}" data-rotate-speed="2" data-lazy-load="true" aria-label="Slide background model"></div></div>`;
   }
   if (type === "core/gltf") {
+    if (s.source === "portrait") {
+      const image = ctx.media.find(
+        (m) => m.id === s.portraitImage && m.type === "image",
+      );
+      const url = image?.url || s.portraitUrl || "";
+      const safe =
+        image ||
+        /^\/themes\/colossal-2027\/[a-z0-9-]+\.png$/.test(url) ||
+        /^https:\/\//.test(url);
+      return `<div class="gltf-viewer cl-portrait-scene" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "Interactive crystal portrait")}" ${url && safe ? `data-portrait-url="${esc(url)}"` : ""} data-fragment-count="${num(s.fragmentCount ?? 18, 0, 40)}" data-pointer-interactive="${s.pointerInteractive !== false}" data-motion-strength="${num(s.motionStrength ?? 0.6, 0, 2)}" data-ice-tint="${color(s.iceTint) || "#c5e5ff"}" data-light-intensity="${num(s.lightIntensity ?? 2, 0, 5)}" data-scroll-interactive="${s.scrollInteractive !== false}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${num(s.height || 680, 100, 1600)}px">${url && safe ? `<img src="${esc(url)}" alt="${esc(s.alt)}" class="cl-portrait-fallback">` : "<p>Choose a transparent portrait in the Inspector.</p>"}</div>`;
+    }
     const media = ctx.media.find(
       (m) => m.id === s.mediaId && m.type === "model",
     );
@@ -1811,6 +1867,7 @@ export function renderTheme(d, ctx, override, options = {}) {
         ) +
         "</main>";
   const tokens = {
+    year: String(new Date().getUTCFullYear()),
     "content.title": ctx.content?.title || "",
     "content.excerpt": ctx.content?.excerpt || "",
     "site.title": ctx.settings.title,

@@ -100,7 +100,7 @@ test("maintenance seeds three independent layouts, stays off and protects manage
     assert.equal(data.settings.enabled, false);
     assert.equal((await call("/", "GET", undefined, {})).status, 200);
     assert.equal((await call("/api/maintenance")).data.layouts.length, 3);
-    assert.equal((await call("/api/themes")).data.length, 1);
+    assert.equal((await call("/api/themes")).data.length, 2);
     assert.equal(
       (await call("/admin/maintenance/edit/" + data.settings.layoutId)).status,
       200,

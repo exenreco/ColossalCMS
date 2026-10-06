@@ -27,6 +27,7 @@ import { ContextualBlockToolbarComponent } from "./contextual-block-toolbar.comp
 import { hydrateModels } from "./gltf-host";
 import { hydrateSliders } from "./swiper-host";
 import { themeBodyAttributes } from "./theme-body";
+import { modelFieldVisible } from "./model-field-visibility";
 import {
   AppearancePickerPanelComponent,
   PICKER_FIELD_KEYS,
@@ -187,6 +188,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       [];
     return all.filter(
       (f) =>
+        modelFieldVisible(
+          this.state.node?.type,
+          this.state.node?.settings || {},
+          f.key,
+        ) &&
         !PICKER_FIELD_KEYS.has(f.key) &&
         !(
           f.key === "align" &&
@@ -979,7 +985,14 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     }
   }
   replaceBlockMedia(type: string) {
-    this.chooseMedia({ key: "mediaId", label: "Media file", type });
+    const portrait =
+      this.state.node?.type === "core/gltf" &&
+      this.state.node.settings["source"] === "portrait";
+    this.chooseMedia({
+      key: portrait ? "portraitImage" : "mediaId",
+      label: "Media file",
+      type,
+    });
   }
   /** Inline selections are stored in the block HTML; no selection formats the entire block. */
   formatText(key: string) {
@@ -1117,6 +1130,13 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       (this.currentTemplate as any)[key] = value;
     });
   }
+  setLandingTemplate(id: string) {
+    this.state.commit(() => {
+      const manifest = this.state.document()!.manifest;
+      if (id) manifest.homeTemplate = id;
+      else delete manifest.homeTemplate;
+    });
+  }
   setDefault(on: boolean) {
     if (!on) return;
     this.state.commit(() => {
@@ -1144,6 +1164,12 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         ? [...t.appliesTo, kind]
         : t.appliesTo.filter((x) => x !== kind);
       t.isTypeDefault = false;
+      if (
+        kind === "home" &&
+        !on &&
+        this.state.document()!.manifest.homeTemplate === t.id
+      )
+        delete this.state.document()!.manifest.homeTemplate;
     });
   }
   newTemplate() {

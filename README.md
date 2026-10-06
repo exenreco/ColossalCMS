@@ -538,7 +538,7 @@ A Slider contains Slide blocks and uses Swiper settings for behavior/navigation.
 
 ### Appearance controls
 
-Reusable popovers cover color, gradients, background, typography, layout, dimensions, margin, padding, border, link, animation, and slide backgrounds. Color uses a custom drag wheel. Gradient stops slide along their track; clicking the track adds a stop. Applicable numeric controls expose units and `auto` values.
+Reusable popovers cover color, gradients, background, typography, layout, dimensions, margin, padding, border, link, animation, glass, and slide backgrounds. Color uses a custom drag wheel. Gradient stops slide along their track; clicking the track adds a stop. Applicable numeric controls expose units and `auto` values.
 
 Layout includes display-dependent flex controls, position/offsets, z-index, and transform ranges/inputs. Supported blocks expose max width and optional min height. Generic animation supports looping but is not used for Slider animation, which Swiper controls.
 
@@ -598,7 +598,11 @@ Segmented controls support arrow-key navigation. Editor shortcuts defer to typin
 
 ## Themes and templates
 
-**Colossal Default** is the protected bundled core theme. Themes supply declarative presentation; plugins supply capabilities.
+**Colossal Default** and **Colossal 2027** are protected bundled core themes. Themes supply declarative presentation; plugins supply capabilities.
+
+**Colossal 2027** is an editable dark portfolio with silver liquid glass panels, sticky navigation, a three-column footer, Projects and Resume templates, and a transparent ice portrait surrounded by interactive Three.js crystals. It is seeded inactive without changing existing content or the active theme. Its shared Glass popover exposes blur and saturation; the 3D model block's `portrait` source exposes image, fragment, lighting, pointer, scroll, and framing controls in theme, post, and page Inspectors. See the [Colossal 2027 guide](docs/guides/colossal-2027.md) for activation, sample content, assets, and controls.
+
+**Template settings → Landing page at /** selects an optional Home template when `/` normally renders the post index. Choose **Follow site routing** to remove that preference. Colossal 2027 selects Home by default; separately configured post-index pages retain their normal routing.
 
 <table>
     <caption>Default Theme</caption>

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ThemeEditorState } from "./theme-editor-state";
 import { BlockIconComponent } from "./block-icon.component";
+import { modelFieldVisible } from "./model-field-visibility";
 
 /** Floating controls share the Inspector's state and undo journal. */
 @Component({
@@ -104,7 +105,9 @@ import { BlockIconComponent } from "./block-icon.component";
           (click)="
             replace.emit(
               node.type === 'core/gltf'
-                ? 'model'
+                ? node.settings['source'] === 'portrait'
+                  ? 'image'
+                  : 'model'
                 : node.type === 'core/image'
                   ? 'image'
                   : 'media'
@@ -183,6 +186,11 @@ export class ContextualBlockToolbarComponent {
       block?.fields.filter(
         (f) =>
           block.toolbar?.includes(f.key) &&
+          modelFieldVisible(
+            block.type,
+            this.state.node?.settings || {},
+            f.key,
+          ) &&
           !(this.textBlock && ["align", "color"].includes(f.key)),
       ) || []
     );

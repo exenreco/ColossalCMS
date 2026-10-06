@@ -423,6 +423,24 @@
                 />{{ maintenance ? "Layout default" : "Theme default" }}</label
               >
               @if (!maintenance) {
+                <label class="theme-field"
+                  >Landing page at /<select
+                    [ngModel]="doc.manifest.homeTemplate || ''"
+                    (ngModelChange)="setLandingTemplate($event)"
+                  >
+                    <option value="">Follow site routing</option>
+                    @for (
+                      candidate of doc.manifest.templates;
+                      track candidate.id
+                    ) {
+                      @if (candidate.appliesTo.includes("home")) {
+                        <option [value]="candidate.id">
+                          {{ candidate.name }}
+                        </option>
+                      }
+                    }
+                  </select></label
+                >
                 <label class="theme-field theme-check"
                   ><input
                     type="checkbox"

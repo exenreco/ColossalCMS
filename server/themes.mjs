@@ -1,6 +1,7 @@
 import { zipSync, strToU8 } from "fflate";
 import semver from "semver";
 import { migrateThemeDocument } from "./theme-migrations.mjs";
+import { COLOSSAL_2027_ID, colossal2027Theme } from "./colossal-2027.mjs";
 import { readAdSettings } from "./google-ads.mjs";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
 import { inspectZip } from "./plugin-installer.mjs";
@@ -36,6 +37,20 @@ import {
 const dec = new TextDecoder();
 const rowDoc = (r) => compileDocument(migrateThemeDocument(parse(r.published)));
 export async function ensureThemes(db) {
+  if (
+    !(await db
+      .prepare("SELECT id FROM themes WHERE id=?")
+      .bind(COLOSSAL_2027_ID)
+      .first())
+  ) {
+    const d = colossal2027Theme();
+    await db
+      .prepare(
+        "INSERT OR IGNORE INTO themes (id,manifest,published,draft,active,is_core,revision,updated_at) VALUES (?,?,?,NULL,0,1,1,?)",
+      )
+      .bind(d.manifest.id, JSON.stringify(d.manifest), JSON.stringify(d), now())
+      .run();
+  }
   if (
     !(await db
       .prepare("SELECT id FROM themes WHERE id=?")
@@ -326,9 +341,18 @@ export async function publicThemeRender(request, env) {
     Number(u.searchParams.get("page")) || 1,
   );
   ctx.previewToken = token;
+  // Portfolio themes may opt into their Home template when the journal normally occupies /.
+  const landingTemplate =
+    ctx.path === "/" && ctx.kind === "post-index"
+      ? d.manifest.homeTemplate
+      : undefined;
   try {
     return json({
-      ...renderTheme(d, ctx),
+      ...renderTheme(
+        d,
+        landingTemplate ? { ...ctx, kind: "home" } : ctx,
+        landingTemplate,
+      ),
       adsEnabled:
         !token &&
         ctx.adSettings?.liveAds === true &&

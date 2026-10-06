@@ -155,8 +155,10 @@ export class ThemesComponent implements OnInit {
               {
                 document: record.published,
                 templateId:
+                  record.published.manifest.homeTemplate ||
                   t.templates.find((x) => x.appliesTo.includes("post-index"))
-                    ?.id || t.templates[0].id,
+                    ?.id ||
+                  t.templates[0].id,
               },
             );
             this.thumbnails[t.id] = this.sanitizer.bypassSecurityTrustHtml(

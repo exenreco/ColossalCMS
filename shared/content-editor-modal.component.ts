@@ -28,6 +28,7 @@ import { ThemeEditorState } from "./theme-editor-state";
 import { ThemeBlockTreeComponent } from "./theme-block-tree.component";
 import { hydrateSliders } from "./swiper-host";
 import { hydrateModels } from "./gltf-host";
+import { modelFieldVisible } from "./model-field-visibility";
 import { themeBodyAttributes } from "./theme-body";
 import { BlockLibraryDrawerComponent } from "./block-library-drawer.component";
 import { BlockListDrawerComponent } from "./block-list-drawer.component";
@@ -791,6 +792,11 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
       )?.fields || []
     ).filter(
       (field) =>
+        modelFieldVisible(
+          this.themeState.node?.type,
+          this.themeState.node?.settings || {},
+          field.key,
+        ) &&
         !PICKER_FIELD_KEYS.has(field.key) &&
         !(
           this.themeState.node?.type === "core/container" &&
@@ -1457,7 +1463,14 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
     if (item) this.themeState.set(field.key, item.id);
   }
   replaceBlockMedia(type: string) {
-    void this.selectBlockMedia({ key: "mediaId", label: "Media file", type });
+    const portrait =
+      this.themeState.node?.type === "core/gltf" &&
+      this.themeState.node.settings["source"] === "portrait";
+    void this.selectBlockMedia({
+      key: portrait ? "portraitImage" : "mediaId",
+      label: "Media file",
+      type,
+    });
   }
   formatBlockText(key: string) {
     const node = this.themeState.node;

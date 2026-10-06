@@ -891,8 +891,48 @@
         "key": "source",
         "label": "Source",
         "type": "select",
-        "options": ["media", "url"],
+        "options": ["media", "url", "portrait"],
         "default": "media"
+      },
+      {
+        "key": "portraitImage",
+        "label": "Transparent portrait",
+        "type": "image"
+      },
+      {
+        "key": "portraitUrl",
+        "label": "Portrait image URL",
+        "type": "text"
+      },
+      {
+        "key": "fragmentCount",
+        "label": "Crystal fragments (0–40)",
+        "type": "number",
+        "default": 18
+      },
+      {
+        "key": "pointerInteractive",
+        "label": "Respond to pointer",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "motionStrength",
+        "label": "Pointer motion strength (0–2)",
+        "type": "number",
+        "default": 0.6
+      },
+      {
+        "key": "iceTint",
+        "label": "Crystal tint (hex)",
+        "type": "text",
+        "default": "#c5e5ff"
+      },
+      {
+        "key": "lightIntensity",
+        "label": "Light intensity (0–5)",
+        "type": "number",
+        "default": 2
       },
       {
         "key": "mediaId",
