@@ -817,7 +817,7 @@ Login Security is an optional bundled plugin activated by default. It provides p
 
 ### Google Ads
 
-The extension integrates **AdSense display ads**, not campaign management. Set publisher ID, numeric default slot, format, and sizing. Ads blocks inherit defaults and allow overrides. Live ads are off by default.
+The extension integrates **AdSense display ads**, not campaign management or Google Ad Manager. Set publisher ID, numeric default slot, format, and sizing. Ads blocks inherit defaults and allow overrides. Live ads are off by default. With the plugin active, saving a valid publisher ID publishes a verification meta tag in public HTML and a plain-text `/ads.txt` file, even without an ad slot or live ads. Verify ownership in **AdSense → Sites** using the meta tag or ads.txt method and request review. See [site verification and browser-blocking troubleshooting](docs/developers/google-ads.md#site-verification-and-adstxt).
 
 On public pages, valid visible units load the validated asynchronous AdSense script once and initialize each unit once. Previews use placeholders. Deactivation suppresses live rendering but retains settings. Account approval and ad availability are outside the CMS.
 

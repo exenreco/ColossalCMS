@@ -11,3 +11,11 @@ Live ads are disabled by default. With **Enable live ads on public pages** off, 
 The public frontend loads Google's asynchronous script once when a valid, visible ad unit has space to render. It initializes each unit once. Script URLs are generated from validated publisher IDs; users cannot enter arbitrary scripts. Settings are stored in a separate configuration record through the administrator-only `/api/admin/google-ads` endpoint.
 
 Reference: [Google's responsive AdSense ad code](https://support.google.com/adsense/answer/9183363).
+
+## Site verification and ads.txt
+
+With the plugin active and a valid publisher ID saved, public HTML includes `<meta name="google-adsense-account" content="ca-pub-…">` in the document head. `/ads.txt` returns `google.com, pub-…, DIRECT, f08c47fec0942fa0` as plain text. These work without JavaScript, an Ads block, an ad slot, or enabling live ads. Vercel routes the homepage, `/index.html`, and `/ads.txt` through the CMS so static assets do not bypass saved configuration. Admin pages do not receive the verification tag. Deactivation or an invalid/missing publisher ID removes the tag and makes `/ads.txt` return 404.
+
+In **AdSense → Sites**, add your domain, select **Meta tag** or **Ads.txt snippet** as the verification method, verify ownership, and request review. The root domain must serve or redirect to the same ads.txt file. Website availability alone does not establish account ownership or approval. See [Google's site verification instructions](https://support.google.com/adsense/answer/7584263) and [ads.txt crawler requirements](https://support.google.com/adsense/answer/7679060).
+
+`ERR_BLOCKED_BY_CLIENT` usually means a browser extension or privacy feature blocked an ad request. Test with site-specific ad blocking disabled or a clean browser profile. Extension message-channel errors require checking the console source/stack; they do not establish a server or database failure. The CMS catches AdSense script-load failures and marks the affected block with `data-ad-error="true"`. It cannot bypass browser blocking or grant Google approval. Google Ad Manager, Google Ads campaign management, and Google AdSense are separate products; this plugin integrates AdSense display units only.

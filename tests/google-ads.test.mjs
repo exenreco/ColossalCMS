@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker from "../server/worker.mjs";
+import worker, { initialize } from "../server/worker.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
 import {
   adDefaults,
@@ -41,6 +41,80 @@ const ctx = (extra = {}) => ({
   allContent: [],
   path: "/ads-page",
   ...extra,
+});
+
+test("AdSense verification is visible without JavaScript or live ads and follows plugin state", async () => {
+  const DB = localDatabase();
+  const env = {
+    DB,
+    ASSETS: {
+      fetch: async () =>
+        new Response("<html><head></head><body>CMS</body></html>", {
+          headers: {
+            "Content-Type": "text/html",
+            "Content-Length": "49",
+            ETag: "static",
+          },
+        }),
+    },
+  };
+  const call = (path, method = "GET") =>
+    worker.fetch(new Request("https://cms.test" + path, { method }), env);
+  try {
+    await initialize(DB, { email: "owner@example.test" });
+    assert.equal((await call("/ads.txt")).status, 404);
+    await DB.prepare("UPDATE plugins SET active=1,installed=1 WHERE id=?")
+      .bind(GOOGLE_ADS_ID)
+      .run();
+    await DB.prepare("INSERT INTO config (id,value) VALUES ('google-ads',?)")
+      .bind(JSON.stringify({ ...adDefaults, publisherId: config.publisherId }))
+      .run();
+    for (const path of ["/", "/index.html", "/about"]) {
+      const html = await call(path);
+      assert.match(
+        await html.text(),
+        /<meta name="google-adsense-account" content="ca-pub-1234567890123456"><\/head>/,
+      );
+      assert.equal(html.headers.get("Content-Length"), null);
+      assert.equal(html.headers.get("ETag"), null);
+    }
+    const ads = await call("/ads.txt");
+    assert.equal(ads.status, 200);
+    assert.match(ads.headers.get("Content-Type"), /text\/plain/);
+    assert.equal(
+      await ads.text(),
+      "google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n",
+    );
+    assert.equal(await (await call("/ads.txt", "HEAD")).text(), "");
+    const admin = await worker.fetch(
+      new Request("https://cms.test/admin/", {
+        headers: { "oai-authenticated-user-id": "owner" },
+      }),
+      env,
+    );
+    assert.doesNotMatch(await admin.text(), /google-adsense-account/);
+    await DB.prepare("UPDATE config SET value=? WHERE id='google-ads'")
+      .bind(JSON.stringify({ publisherId: "<script>bad</script>" }))
+      .run();
+    assert.equal((await call("/ads.txt")).status, 404);
+    assert.doesNotMatch(
+      await (await call("/")).text(),
+      /<script>|google-adsense-account/,
+    );
+    await DB.prepare("UPDATE config SET value=? WHERE id='google-ads'")
+      .bind(JSON.stringify(config))
+      .run();
+    await DB.prepare("UPDATE plugins SET active=0 WHERE id=?")
+      .bind(GOOGLE_ADS_ID)
+      .run();
+    assert.equal((await call("/ads.txt")).status, 404);
+    assert.doesNotMatch(
+      await (await call("/")).text(),
+      /google-adsense-account/,
+    );
+  } finally {
+    DB.close();
+  }
 });
 
 test("AdSense settings validate identifiers, live-mode requirements, and inherited sizing", () => {

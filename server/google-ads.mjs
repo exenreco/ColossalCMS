@@ -51,6 +51,15 @@ export async function readAdSettings(db) {
     .first();
   return { ...adDefaults, ...parse(row?.value) };
 }
+export async function adPublisher(db) {
+  const plugin = await db
+    .prepare("SELECT active FROM plugins WHERE id=?")
+    .bind(GOOGLE_ADS_ID)
+    .first();
+  if (!plugin?.active) return null;
+  const { publisherId } = await readAdSettings(db);
+  return /^ca-pub-\d{16}$/.test(publisherId) ? publisherId : null;
+}
 export function resolveAdUnit(config, block = {}) {
   const settings = { ...adDefaults, ...config };
   const slotId = String(block.slotId || settings.slotId).trim();

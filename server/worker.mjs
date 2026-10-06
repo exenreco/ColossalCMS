@@ -8,7 +8,11 @@ import {
   context as themeContext,
 } from "./themes.mjs";
 import { renderContentCanvas } from "./theme-engine.mjs";
-import { readAdSettings, validateAdSettings } from "./google-ads.mjs";
+import {
+  readAdSettings,
+  validateAdSettings,
+  adPublisher,
+} from "./google-ads.mjs";
 import { handleConnections } from "./production-connections.mjs";
 import { handleLoginSecurity, LOGIN_SECURITY_ID } from "./login-security.mjs";
 import { handleMedia, serveMedia } from "./media.mjs";
@@ -221,6 +225,24 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     try {
+      if (path === "/ads.txt" && ["GET", "HEAD"].includes(request.method)) {
+        const publisher = await adPublisher(database(env));
+        return new Response(
+          request.method === "HEAD"
+            ? null
+            : publisher
+              ? `google.com, ${publisher.slice(3)}, DIRECT, f08c47fec0942fa0\n`
+              : "No AdSense publisher configured.\n",
+          {
+            status: publisher ? 200 : 404,
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+              "X-Content-Type-Options": "nosniff",
+            },
+          },
+        );
+      }
       if (!path.startsWith("/api/")) {
         if (path === "/admin")
           return Response.redirect(url.origin + "/admin/", 302);
@@ -247,6 +269,26 @@ export default {
         const headers = new Headers(response.headers);
         headers.set("X-Content-Type-Options", "nosniff");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+        if (
+          !isAdmin &&
+          assetPath === "/index.html" &&
+          response.status === 200 &&
+          request.method === "GET"
+        ) {
+          const publisher = await adPublisher(database(env));
+          if (publisher) {
+            headers.delete("Content-Length");
+            headers.delete("ETag");
+            headers.set("Cache-Control", "no-store");
+            return new Response(
+              (await response.text()).replace(
+                /<\/head>/i,
+                `<meta name="google-adsense-account" content="${publisher}"></head>`,
+              ),
+              { status: response.status, headers },
+            );
+          }
+        }
         return new Response(response.body, {
           status: response.status,
           headers,

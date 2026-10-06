@@ -66,6 +66,15 @@ import { ApiService } from "../../../../shared/api.service";
               maxlength="20"
             /><small>Each Ads block can override this slot.</small></label
           >
+          <p class="field-note">
+            Saving a publisher ID publishes an AdSense verification meta tag on
+            public pages and an ads.txt file, even before live ads are enabled.
+            In AdSense Sites, add your domain and choose the meta tag or ads.txt
+            verification method, then request review. An ad slot is only needed
+            to enable live display ads. This plugin does not connect Google Ad
+            Manager or manage Google Ads campaigns.
+            <a href="/ads.txt" target="_blank" rel="noopener">View ads.txt</a>
+          </p>
           <label
             >Default format<select name="format" [(ngModel)]="settings.format">
               <option value="auto">Automatic</option>
@@ -109,7 +118,9 @@ import { ApiService } from "../../../../shared/api.service";
           <p class="field-note">
             When disabled, public pages show a preview placeholder. Editor
             canvases and theme previews always use placeholders. Google
-            determines ad availability for your account and site.
+            determines ad availability for your account and site. Browser ad
+            blockers can prevent Google's script from loading; test with
+            blocking disabled for your site.
           </p>
           <div class="settings-actions">
             <a
