@@ -35,6 +35,7 @@ Changes to environment variables apply to new deployments. Verify the Production
 | `MONGODB_GRIDFS_BUCKET` | `colossal_media`                                                         |
 | `MONGODB_DNS_SERVERS`   | `1.1.1.1,8.8.8.8`, or empty for system DNS                               |
 | `CMS_SETUP_TOKEN`       | Random token of at least 32 characters for first setup                   |
+| `CRON_SECRET`           | Random secret of at least 32 characters for scheduled MongoDB heartbeat  |
 
 D1 and R2-compatible storage are also supported using the variables in `.env.example`. Local storage is rejected because Function filesystems are not durable. Do not upload `.env.production`; the Function uses hosting variables only. Private dotenv/local data are excluded from the deployment bundle.
 
@@ -49,6 +50,10 @@ After deployment, open `/setup`, create the administrator, and sign in at `/logi
 - Vercel Function request **and response** payloads are limited to **4.5 MB**. Multipart overhead counts. Existing large media uploads, ZIP installation/export, and large file downloads can exceed this limit; range requests may help playback but do not provide a complete large-file transfer solution. Direct-to-storage large uploads are not implemented here.
 - The Function has a configured 60-second maximum duration. Initialization and synchronous operations must complete within it; large maintenance jobs belong on a persistent runtime.
 - Git preview deployments require their own exact `CMS_PUBLIC_URL` and isolated provider configuration. Using the production origin on a preview URL causes browser mutation-origin checks to fail. Do not point an unreviewed preview at production data.
+
+## MongoDB heartbeat
+
+The Connections panel includes an optional daily MongoDB heartbeat, adjustable from 1 to 14 days. Set `CRON_SECRET` in Production and redeploy, then enable the checkbox in Connections. The checked-in cron runs daily around 12:00 UTC, authenticates before database initialization and sends a real ping only when due. See [heartbeat setup, limits and API](mongodb-heartbeat.md). This continues independently of the browser. Disabling explicit pings still leaves scheduled configuration reads; remove the cron schedule to stop all scheduled database access.
 
 ## Verification
 

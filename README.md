@@ -758,6 +758,10 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 
 Core plugins stay active and cannot be changed through ordinary plugin management. Optional extensions expose menus/features when activated.
 
+### MongoDB heartbeat
+
+Production Connections includes a **MongoDB heartbeat** panel with an enable checkbox, a configurable 1–14 day interval (default: daily), a manual ping and persisted status. It runs independently of the browser. Vercel scheduling requires a Production `CRON_SECRET` of at least 32 random characters and a redeployment; persistent Node hosting uses a server timer. See [heartbeat workflows, scheduling limits and API](docs/developers/mongodb-heartbeat.md).
+
 ### Login Security
 
 Login Security is an optional bundled plugin activated by default. It provides persistent IP attempt limits, automatic timed blocks, admin-managed blocks, sign-in activity monitoring and login-form retry countdowns. Open **Admin → Login Security** to configure it. See [Login Security workflows, hosting behavior and API](docs/developers/login-security.md).

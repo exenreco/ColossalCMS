@@ -1,3 +1,5 @@
+import { mongodbHeartbeat } from "./mongodb-heartbeat.mjs";
+
 const fail = (message, status = 400) => {
   throw Object.assign(new Error(message), { status });
 };
@@ -18,10 +20,28 @@ export async function handleConnections(request, env, user) {
     fail("Activate the Production Connections plugin first.", 409);
   const path = new URL(request.url).pathname,
     manager = env.CONNECTIONS;
+  const heartbeat = env.HEARTBEAT || mongodbHeartbeat({ db: env.DB });
+  if (path === "/api/admin/connections/heartbeat" && request.method === "GET")
+    return json(await heartbeat.describe());
+  if (
+    path === "/api/admin/connections/heartbeat" &&
+    request.method === "POST"
+  ) {
+    await heartbeat.save(await request.json());
+    return json(await heartbeat.describe());
+  }
+  if (
+    path === "/api/admin/connections/heartbeat/ping" &&
+    request.method === "POST"
+  ) {
+    await heartbeat.run({ force: true, source: "admin" });
+    return json(await heartbeat.describe());
+  }
   if (env.SERVERLESS) {
     if (request.method === "GET" && path === "/api/admin/connections")
       return json({
         ...(await manager.describe()),
+        heartbeat: await heartbeat.describe(),
         readOnly: true,
         message:
           "Vercel uses hosting environment variables. Configure providers in Project Settings and redeploy. Startup initializes schemas automatically. Run local migration from the development server; background console jobs are unavailable on this host.",
@@ -39,6 +59,7 @@ export async function handleConnections(request, env, user) {
     if (path === "/api/admin/connections" && request.method === "GET")
       return json({
         runtime: "cloudflare",
+        heartbeat: await heartbeat.describe(),
         active: { database: "d1", storage: "r2" },
         fields: [],
         restartRequired: false,
@@ -53,7 +74,10 @@ export async function handleConnections(request, env, user) {
   }
   if (request.method === "GET") {
     if (path === "/api/admin/connections")
-      return json(await manager.describe());
+      return json({
+        ...(await manager.describe()),
+        heartbeat: await heartbeat.describe(),
+      });
     const match = path.match(/^\/api\/admin\/connections\/runs\/([a-f0-9-]+)$/);
     if (match) return json(manager.job(match[1]));
   }

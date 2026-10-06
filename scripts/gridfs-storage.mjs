@@ -145,12 +145,15 @@ export async function connectGridFS(
         "GridFS read access succeeded. No files or collections were changed.",
       );
     }
-    return gridfsStorage(
-      new GridFSBucket(db, { bucketName: name }),
-      db.collection(collections[2]),
-      () => client.close(),
-      log,
-    );
+    return {
+      ...gridfsStorage(
+        new GridFSBucket(db, { bucketName: name }),
+        db.collection(collections[2]),
+        () => client.close(),
+        log,
+      ),
+      ping: () => db.command({ ping: 1 }, { timeoutMS: 10000 }),
+    };
   } catch (error) {
     await client.close().catch(() => {});
     throw error;

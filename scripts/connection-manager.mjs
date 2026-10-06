@@ -16,6 +16,12 @@ import {
 
 export const ENV_FIELDS = [
   {
+    key: "CRON_SECRET",
+    label: "Scheduled heartbeat secret",
+    group: "heartbeat",
+    secret: true,
+  },
+  {
     key: "CMS_SETUP_TOKEN",
     label: "First-run administrator setup token",
     group: "setup",

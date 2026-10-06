@@ -17,6 +17,13 @@ import { localStorage } from "./local-storage.mjs";
 import { passwordAuth } from "./password-auth.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
 import { clientIp } from "./client-ip.mjs";
+import { mongodbHeartbeat } from "../server/mongodb-heartbeat.mjs";
+import {
+  HEARTBEAT_PATH,
+  authorizeHeartbeat,
+  heartbeatResponse,
+  startHeartbeatScheduler,
+} from "./heartbeat-runtime.mjs";
 
 export async function productionRuntime(config, log = console.log) {
   config = validateConnectionConfig({ ...connectionDefaults, ...config }, true);
@@ -72,6 +79,19 @@ export async function productionRuntime(config, log = console.log) {
       STORAGE,
       AUTH,
       PASSWORD_AUTH: true,
+      HEARTBEAT: mongodbHeartbeat({
+        db: DB,
+        ping: DB.ping
+          ? () => DB.ping()
+          : STORAGE.ping
+            ? () => STORAGE.ping()
+            : null,
+        mode: config.VERCEL === "1" ? "vercel" : "node",
+        cronConfigured:
+          typeof config.CRON_SECRET === "string" &&
+          config.CRON_SECRET.length >= 32,
+        log,
+      }),
       CONNECTIONS: connectionManager({
         active: {
           database: config.CMS_DB_PROVIDER,
@@ -168,11 +188,18 @@ export async function startProductionServer(
           status: 400,
         });
       let response;
-      const authResponse = await handleNodeAuth(request, env.AUTH, ip);
-      if (path === "/healthz") response = Response.json({ ok: true });
-      else if (authResponse) {
+      if (path === HEARTBEAT_PATH) {
+        authorizeHeartbeat(request, config.CRON_SECRET);
+        response = await heartbeatResponse(env);
+      }
+      const authResponse = response
+        ? null
+        : await handleNodeAuth(request, env.AUTH, ip);
+      if (!response && path === "/healthz")
+        response = Response.json({ ok: true });
+      else if (!response && authResponse) {
         response = authResponse;
-      } else {
+      } else if (!response) {
         const member = await env.AUTH.identify(request);
         if (member) {
           headers.set("oai-authenticated-user-id", member.id);
@@ -209,6 +236,8 @@ export async function startProductionServer(
     "0.0.0.0",
     () => console.log("Production CMS is listening."),
   );
+  const stopHeartbeat =
+    config.VERCEL === "1" ? () => {} : startHeartbeatScheduler(env.HEARTBEAT);
   const close = () =>
     server.close(async () => {
       await env.DB.close?.();
@@ -218,6 +247,7 @@ export async function startProductionServer(
   process.on("SIGTERM", close);
   process.on("SIGINT", close);
   server.on("close", () => {
+    stopHeartbeat();
     process.off("SIGTERM", close);
     process.off("SIGINT", close);
   });

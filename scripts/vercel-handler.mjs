@@ -5,6 +5,11 @@ import { productionRuntime } from "./production-server.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
 import { clientIp } from "./client-ip.mjs";
 import {
+  HEARTBEAT_PATH,
+  authorizeHeartbeat,
+  heartbeatResponse,
+} from "./heartbeat-runtime.mjs";
+import {
   connectionFailure,
   connectionErrorFacts,
 } from "./connection-errors.mjs";
@@ -152,8 +157,14 @@ export function createVercelHandler(
         headers,
         body,
       });
+      // Reject unauthenticated cron calls before opening database connections.
+      if (path === HEARTBEAT_PATH)
+        authorizeHeartbeat(request, config.CRON_SECRET);
       const env = await getRuntime();
-      let response = await handleNodeAuth(request, env.AUTH, ip);
+      let response =
+        path === HEARTBEAT_PATH
+          ? await heartbeatResponse(env)
+          : await handleNodeAuth(request, env.AUTH, ip);
       if (path === "/healthz") response = Response.json({ ok: true });
       if (!response) {
         const member = await env.AUTH.identify(request);

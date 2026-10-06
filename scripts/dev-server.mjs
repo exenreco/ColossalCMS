@@ -1,5 +1,6 @@
 import { localStorage } from "./local-storage.mjs";
 import { clientIp } from "./client-ip.mjs";
+import { mongodbHeartbeat } from "../server/mongodb-heartbeat.mjs";
 import http from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -39,6 +40,7 @@ if (!bypass && (await passwordAuth(DB).setupNeeded())) {
   );
 }
 const AUTH = passwordAuth(DB, { secure: false, setupToken });
+const HEARTBEAT = mongodbHeartbeat({ db: DB });
 const root = resolve("dist/client");
 const types = {
   ".html": "text/html",
@@ -104,6 +106,7 @@ const cmsServer = http
         STORAGE,
         CONNECTIONS,
         AUTH,
+        HEARTBEAT,
         PASSWORD_AUTH: !bypass,
       };
       let response = await handleNodeAuth(request, AUTH, ip);

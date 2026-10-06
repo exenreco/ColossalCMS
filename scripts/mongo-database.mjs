@@ -371,6 +371,7 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
   });
   return {
     prepare: prepared,
+    ping: () => database.command({ ping: 1 }, { timeoutMS: 10000 }),
     batch: async (statements) => {
       const session = client.startSession();
       try {

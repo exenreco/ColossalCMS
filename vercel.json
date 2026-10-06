@@ -4,6 +4,9 @@
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/client",
+  "crons": [
+    { "path": "/api/cron/mongodb-heartbeat", "schedule": "0 12 * * *" }
+  ],
   "functions": {
     "api/cms.mjs": {
       "maxDuration": 60,
