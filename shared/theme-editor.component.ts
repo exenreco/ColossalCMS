@@ -427,7 +427,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       if (this.state.find(id)) element.tabIndex = 0;
     const style = doc.createElement("style");
     style.textContent = `
-      .theme-root [data-block-id]{position:relative}
+      :where(.theme-root [data-block-id]){position:relative}
       .theme-root [data-block-id].cl-overlay-block{pointer-events:auto}
       .theme-root [data-block-id].cl-block-hover::after,
       .theme-root [data-block-id].cl-block-selected::after,

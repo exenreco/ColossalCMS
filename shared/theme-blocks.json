@@ -905,6 +905,73 @@
         "type": "text"
       },
       {
+        "key": "scenePreset",
+        "label": "Portrait scene",
+        "type": "select",
+        "options": ["portrait", "ice-world"],
+        "default": "portrait"
+      },
+      {
+        "key": "fullViewport",
+        "label": "Full viewport background",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "moonEnabled",
+        "label": "Moon",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "moonSize",
+        "label": "Moon size (1–7)",
+        "type": "number",
+        "default": 4.5
+      },
+      {
+        "key": "moonElevation",
+        "label": "Moon elevation (−4–5)",
+        "type": "number",
+        "default": 0
+      },
+      {
+        "key": "moonTint",
+        "label": "Moon tint (hex)",
+        "type": "text",
+        "default": "#b9dcef"
+      },
+      {
+        "key": "terrainEnabled",
+        "label": "Icy terrain",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "snowEnabled",
+        "label": "Snow",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "snowDensity",
+        "label": "Snow density (0–1800)",
+        "type": "number",
+        "default": 700
+      },
+      {
+        "key": "windEnabled",
+        "label": "Wind",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "windStrength",
+        "label": "Wind strength (0–3)",
+        "type": "number",
+        "default": 1
+      },
+      {
         "key": "fragmentCount",
         "label": "Crystal fragments (0–40)",
         "type": "number",

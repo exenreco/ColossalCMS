@@ -1,5 +1,6 @@
 /** Non-destructive compatibility upgrade, applied when old snapshots are opened. */
 import { defaultTheme, CMS_VERSION } from "./theme-engine.mjs";
+import { upgradeColossal2027Document } from "./colossal-2027-ice-world.mjs";
 
 export function migrateThemeDocument(input) {
   if (!input?.manifest || !input.templates || !input.parts) return input;
@@ -200,5 +201,5 @@ export function migrateThemeDocument(input) {
   }
   if (added)
     d.notices.push(`${added} standard templates were added to this theme.`);
-  return d;
+  return upgradeColossal2027Document(d);
 }

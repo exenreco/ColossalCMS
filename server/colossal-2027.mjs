@@ -1,4 +1,5 @@
 import { defaultTheme, validateDocument } from "./theme-engine.mjs";
+import { upgradeColossal2027Document } from "./colossal-2027-ice-world.mjs";
 
 export const COLOSSAL_2027_ID = "com.colossal.theme.colossal-2027";
 const block = (type, settings = {}, children) => ({
@@ -184,7 +185,7 @@ export function colossal2027Theme() {
     isCore: true,
     author: "Colossal CMS",
     description:
-      "An expressive portfolio in charcoal, silver, and liquid glass. A transparent ice portrait meets an interactive Three.js crystal scene.",
+      "An expressive portfolio in silver and liquid glass. A full-screen ice throne meets a moonlit Three.js landscape with wind and snow.",
     palette: ["#0c0d10", "#f1f2f4", "#9ca1aa", "#c5e5ff", "#ffffff14"],
   });
   d.parts.header = box(
@@ -398,5 +399,5 @@ export function colossal2027Theme() {
 @media(max-width:600px){.theme-root .theme-part-header{padding:0 16px;top:10px;margin-top:10px}.theme-root .c27-header-inner{padding:14px 16px;gap:10px}.theme-root .c27-brand{font-size:8px;letter-spacing:.6px;gap:8px}.theme-root .c27-brand-monogram{font-size:30px}.theme-root .c27-header-inner nav{gap:14px;font-size:11px}.theme-root .c27-header-inner nav a:nth-child(2),.theme-root .c27-header-inner nav a:nth-child(3){display:none}.theme-root .c27-nav-contact{padding:7px 10px}.theme-root .c27-hero{display:flex;flex-direction:column;padding:28px 24px;gap:0}.theme-root .c27-hero-copy{width:100%;padding:16px 0}.theme-root.c27-body h1{font-size:clamp(46px,16vw,64px)}.theme-root .c27-hero-art{width:100%}.theme-root .c27-hero-art .gltf-viewer{height:460px!important}.theme-root .c27-hero-footnote{margin-top:18px}.theme-root .c27-availability{margin-bottom:24px}.theme-root .c27-art-caption p{font-size:6px}.theme-root .c27-section,.theme-root .c27-intro-line{margin-left:24px;margin-right:24px}.theme-root .c27-section-heading,.theme-root .c27-about-grid{display:block}.theme-root .c27-section-heading p{max-width:none}.theme-root .c27-project{display:block}.theme-root .c27-project-image img{height:250px;min-height:0}.theme-root .c27-about-copy{margin-top:32px}.theme-root .c27-contact{padding:28px;margin-bottom:64px}.theme-root .c27-contact h2{font-size:38px}.theme-root .theme-part-footer{padding:0 24px}.theme-root .c27-footer-bottom p{display:block}.theme-root .c27-footer-bottom span{display:block;margin-top:8px}.theme-root .c27-intro-line{font-size:10px;gap:16px}.theme-root .c27-intro-line p:last-child{font-size:7px;letter-spacing:1px}}
 @media(prefers-reduced-motion:reduce){.theme-root.c27-body a,.theme-root .c27-project,.theme-root .c27-project-image img{transition:none}.theme-root .c27-project:hover,.theme-root .c27-project:hover img,.theme-root .c27-cta:hover{transform:none}}
 `;
-  return validateDocument(d, true);
+  return validateDocument(upgradeColossal2027Document(d), true);
 }

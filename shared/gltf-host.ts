@@ -7,9 +7,13 @@ export function hydrateModels(root: ParentNode) {
       host.dataset["modelMounted"] = "true";
       const load = () =>
         host.dataset["portraitUrl"]
-          ? import("./portrait-scene-runtime").then((m) =>
-              m.mountPortraitScene(host),
-            )
+          ? host.dataset["scenePreset"] === "ice-world"
+            ? import("./ice-scene/ice-world-runtime").then((m) =>
+                m.mountIceWorld(host),
+              )
+            : import("./portrait-scene-runtime").then((m) =>
+                m.mountPortraitScene(host),
+              )
           : import("./gltf-runtime").then((m) => m.mountModel(host));
       if (host.dataset["lazyLoad"] === "false") {
         void load();

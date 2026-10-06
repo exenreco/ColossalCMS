@@ -47,6 +47,7 @@ export interface ThemeManifest {
   assets: { styles: string[]; scripts: string[] };
   palette?: string[];
   homeTemplate?: string;
+  bundledRevision?: number;
 }
 export interface ThemeDocument {
   notices?: string[];

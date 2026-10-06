@@ -202,6 +202,17 @@ export function sanitizeTemplate(
         "data-motion-strength",
         "data-ice-tint",
         "data-light-intensity",
+        "data-scene-preset",
+        "data-full-viewport",
+        "data-moon-enabled",
+        "data-moon-size",
+        "data-moon-elevation",
+        "data-moon-tint",
+        "data-terrain-enabled",
+        "data-snow-enabled",
+        "data-snow-density",
+        "data-wind-enabled",
+        "data-wind-strength",
         "data-controls",
         "data-auto-rotate",
         "data-rotate-speed",
@@ -1545,7 +1556,11 @@ function dynamic(type, s, ctx) {
         image ||
         /^\/themes\/colossal-2027\/[a-z0-9-]+\.png$/.test(url) ||
         /^https:\/\//.test(url);
-      return `<div class="gltf-viewer cl-portrait-scene" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "Interactive crystal portrait")}" ${url && safe ? `data-portrait-url="${esc(url)}"` : ""} data-fragment-count="${num(s.fragmentCount ?? 18, 0, 40)}" data-pointer-interactive="${s.pointerInteractive !== false}" data-motion-strength="${num(s.motionStrength ?? 0.6, 0, 2)}" data-ice-tint="${color(s.iceTint) || "#c5e5ff"}" data-light-intensity="${num(s.lightIntensity ?? 2, 0, 5)}" data-scroll-interactive="${s.scrollInteractive !== false}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${num(s.height || 680, 100, 1600)}px">${url && safe ? `<img src="${esc(url)}" alt="${esc(s.alt)}" class="cl-portrait-fallback">` : "<p>Choose a transparent portrait in the Inspector.</p>"}</div>`;
+      const world = s.scenePreset === "ice-world";
+      const worldData = world
+        ? ` data-full-viewport="${s.fullViewport === true}" data-moon-enabled="${s.moonEnabled !== false}" data-moon-size="${num(s.moonSize ?? 4.5, 1, 7)}" data-moon-elevation="${num(s.moonElevation ?? 0, -4, 5)}" data-moon-tint="${color(s.moonTint) || "#b9dcef"}" data-terrain-enabled="${s.terrainEnabled !== false}" data-snow-enabled="${s.snowEnabled !== false}" data-snow-density="${Math.round(num(s.snowDensity ?? 700, 0, 1800))}" data-wind-enabled="${s.windEnabled !== false}" data-wind-strength="${num(s.windStrength ?? 1, 0, 3)}"`
+        : "";
+      return `<div class="gltf-viewer cl-portrait-scene${world ? " cl-ice-world" : ""}" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "Interactive crystal portrait")}" ${url && safe ? `data-portrait-url="${esc(url)}"` : ""} data-scene-preset="${world ? "ice-world" : "portrait"}"${worldData} data-fragment-count="${num(s.fragmentCount ?? 18, 0, 40)}" data-pointer-interactive="${s.pointerInteractive !== false}" data-motion-strength="${num(s.motionStrength ?? 0.6, 0, 2)}" data-ice-tint="${color(s.iceTint) || "#c5e5ff"}" data-light-intensity="${num(s.lightIntensity ?? 2, 0, 5)}" data-scroll-interactive="${s.scrollInteractive !== false}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${world && s.fullViewport === true ? "100vh" : `${num(s.height || 680, 100, 1600)}px`}">${url && safe ? `<img src="${esc(url)}" alt="${esc(s.alt)}" class="cl-portrait-fallback">` : "<p>Choose a transparent portrait in the Inspector.</p>"}</div>`;
     }
     const media = ctx.media.find(
       (m) => m.id === s.mediaId && m.type === "model",
