@@ -10,6 +10,9 @@ export const adDefaults = {
   width: 300,
   height: 250,
   liveAds: false,
+  verificationMeta: true,
+  adsTxtEnabled: true,
+  adsTxtContent: "",
 };
 const formats = ["auto", "horizontal", "rectangle", "vertical"];
 export function validateAdSettings(input) {
@@ -35,6 +38,19 @@ export function validateAdSettings(input) {
     fail("Choose whether live ads are enabled.");
   if (input.liveAds && (!publisherId || !slotId))
     fail("Add a publisher ID and default ad slot before enabling live ads.");
+  for (const key of ["verificationMeta", "adsTxtEnabled"])
+    if (input[key] !== undefined && typeof input[key] !== "boolean")
+      fail("Choose whether verification metadata and ads.txt are enabled.");
+  const adsTxtContent =
+    input.adsTxtContent === undefined ? "" : input.adsTxtContent;
+  if (
+    typeof adsTxtContent !== "string" ||
+    adsTxtContent.length > 20000 ||
+    /[<>\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(adsTxtContent)
+  )
+    fail(
+      "ads.txt must be plain text, without HTML, and no longer than 20,000 characters.",
+    );
   return {
     publisherId,
     slotId,
@@ -43,6 +59,9 @@ export function validateAdSettings(input) {
     width: input.width,
     height: input.height,
     liveAds: input.liveAds,
+    verificationMeta: input.verificationMeta ?? true,
+    adsTxtEnabled: input.adsTxtEnabled ?? true,
+    adsTxtContent: adsTxtContent.replace(/\r\n?/g, "\n").trim(),
   };
 }
 export async function readAdSettings(db) {
@@ -51,14 +70,25 @@ export async function readAdSettings(db) {
     .first();
   return { ...adDefaults, ...parse(row?.value) };
 }
-export async function adPublisher(db) {
+export async function adVerification(db) {
   const plugin = await db
     .prepare("SELECT active FROM plugins WHERE id=?")
     .bind(GOOGLE_ADS_ID)
     .first();
-  if (!plugin?.active) return null;
-  const { publisherId } = await readAdSettings(db);
-  return /^ca-pub-\d{16}$/.test(publisherId) ? publisherId : null;
+  if (!plugin?.active) return { publisher: null, adsTxt: null };
+  const settings = await readAdSettings(db);
+  const valid = /^ca-pub-\d{16}$/.test(settings.publisherId);
+  const custom =
+    typeof settings.adsTxtContent === "string" ? settings.adsTxtContent : "";
+  return {
+    publisher: valid && settings.verificationMeta ? settings.publisherId : null,
+    adsTxt:
+      settings.adsTxtEnabled && valid
+        ? (custom.trim() ||
+            `google.com, ${settings.publisherId.slice(3)}, DIRECT, f08c47fec0942fa0`) +
+          "\n"
+        : null,
+  };
 }
 export function resolveAdUnit(config, block = {}) {
   const settings = { ...adDefaults, ...config };

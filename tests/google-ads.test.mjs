@@ -93,6 +93,29 @@ test("AdSense verification is visible without JavaScript or live ads and follows
       env,
     );
     assert.doesNotMatch(await admin.text(), /google-adsense-account/);
+    const custom =
+      "# Advertising partners\ngoogle.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\nexample.com, seller-42, RESELLER";
+    await DB.prepare("UPDATE config SET value=? WHERE id='google-ads'")
+      .bind(
+        JSON.stringify(
+          validateAdSettings({
+            ...config,
+            verificationMeta: false,
+            adsTxtContent: custom.replace(/\n/g, "\r\n"),
+          }),
+        ),
+      )
+      .run();
+    assert.doesNotMatch(
+      await (await call("/")).text(),
+      /google-adsense-account/,
+    );
+    assert.equal(await (await call("/ads.txt")).text(), custom + "\n");
+    await DB.prepare("UPDATE config SET value=? WHERE id='google-ads'")
+      .bind(JSON.stringify({ ...config, adsTxtEnabled: false }))
+      .run();
+    assert.equal((await call("/ads.txt")).status, 404);
+    assert.match(await (await call("/")).text(), /google-adsense-account/);
     await DB.prepare("UPDATE config SET value=? WHERE id='google-ads'")
       .bind(JSON.stringify({ publisherId: "<script>bad</script>" }))
       .run();
@@ -131,6 +154,12 @@ test("AdSense settings validate identifiers, live-mode requirements, and inherit
     { height: 250.1 },
     { liveAds: "true" },
     { publisherId: "" },
+    { verificationMeta: "true" },
+    { adsTxtEnabled: 1 },
+    { adsTxtContent: "<script>bad()</script>" },
+    { adsTxtContent: "bad\u0000content" },
+    { adsTxtContent: "x".repeat(20001) },
+    { adsTxtContent: [] },
   ])
     assert.throws(() => validateAdSettings({ ...config, ...changed }));
   const fixed = resolveAdUnit(
@@ -270,6 +299,20 @@ test("Google Ads settings are admin-only, persist separately, and Ads blocks rou
       tagline: "Updated",
     });
     assert.deepEqual((await call("/admin/google-ads")).body, config);
+    const verificationSettings = {
+      ...config,
+      verificationMeta: false,
+      adsTxtEnabled: false,
+      adsTxtContent: "# Custom partners",
+    };
+    assert.equal(
+      (await call("/admin/google-ads", "POST", verificationSettings)).status,
+      200,
+    );
+    assert.deepEqual(
+      (await call("/admin/google-ads")).body,
+      verificationSettings,
+    );
     await call("/admin/plugins", "POST", {
       id: GOOGLE_ADS_ID,
       action: "deactivate",

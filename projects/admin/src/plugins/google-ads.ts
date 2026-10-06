@@ -8,6 +8,14 @@ import { ApiService } from "../../../../shared/api.service";
   standalone: true,
   imports: [FormsModule, RouterLink],
   styles: `
+    .verification-preview {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      padding: 12px;
+      background: var(--canvas, #f5f6f7);
+      border-radius: 8px;
+      font-size: 12px;
+    }
     .form-content label.live-ads-toggle {
       display: flex;
       flex-direction: row;
@@ -66,10 +74,57 @@ import { ApiService } from "../../../../shared/api.service";
               maxlength="20"
             /><small>Each Ads block can override this slot.</small></label
           >
+          <h2>Site verification</h2>
+          <label class="live-ads-toggle">
+            <input
+              name="verificationMeta"
+              type="checkbox"
+              [(ngModel)]="settings.verificationMeta"
+            />
+            Publish AdSense verification metadata
+          </label>
+          <small
+            >The meta tag uses the Publisher ID above. No ad slot or live ads
+            are required.</small
+          >
+          @if (settings.verificationMeta && normalizedPublisher) {
+            <pre
+              class="verification-preview"
+            ><code>{{ metadataPreview }}</code></pre>
+          }
+          <label class="live-ads-toggle">
+            <input
+              name="adsTxtEnabled"
+              type="checkbox"
+              [(ngModel)]="settings.adsTxtEnabled"
+            />
+            Publish /ads.txt
+          </label>
+          @if (settings.adsTxtEnabled) {
+            <label
+              >Custom ads.txt content (optional)
+              <textarea
+                name="adsTxtContent"
+                [(ngModel)]="settings.adsTxtContent"
+                rows="6"
+                maxlength="20000"
+                placeholder="Leave blank to generate the Google entry from your Publisher ID"
+              ></textarea>
+              <small
+                >Custom content replaces the generated file. Include the exact
+                publisher entry supplied by Google. Plain text only; comments
+                and additional advertising partners are supported.</small
+              >
+            </label>
+            <p class="field-note">ads.txt preview (save to publish)</p>
+            <pre
+              class="verification-preview"
+            ><code>{{ adsTxtPreview }}</code></pre>
+          }
           <p class="field-note">
-            Saving a publisher ID publishes an AdSense verification meta tag on
-            public pages and an ads.txt file, even before live ads are enabled.
-            In AdSense Sites, add your domain and choose the meta tag or ads.txt
+            Save these settings to publish changes. Disabling ads.txt makes its
+            URL return 404; disabling metadata removes the verification tag. In
+            AdSense Sites, add your domain and choose the meta tag or ads.txt
             verification method, then request review. An ad slot is only needed
             to enable live display ads. This plugin does not connect Google Ad
             Manager or manage Google Ads campaigns.
@@ -152,10 +207,28 @@ export class GoogleAdsComponent implements OnInit {
     width: 300,
     height: 250,
     liveAds: false,
+    verificationMeta: true,
+    adsTxtEnabled: true,
+    adsTxtContent: "",
   };
   loading = true;
   busy = false;
   error = "";
+  get normalizedPublisher() {
+    const value = this.settings.publisherId.trim().replace(/^pub-/, "ca-pub-");
+    return /^ca-pub-\d{16}$/.test(value) ? value : "";
+  }
+  get metadataPreview() {
+    return `<meta name="google-adsense-account" content="${this.normalizedPublisher}">`;
+  }
+  get adsTxtPreview() {
+    if (!this.normalizedPublisher)
+      return "Enter a valid Publisher ID to publish ads.txt.";
+    return (
+      this.settings.adsTxtContent.trim() ||
+      `google.com, ${this.normalizedPublisher.slice(3)}, DIRECT, f08c47fec0942fa0`
+    );
+  }
   get enabled() {
     return (
       this.api.state()?.user.role === "admin" &&

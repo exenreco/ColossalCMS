@@ -11,7 +11,7 @@ import { renderContentCanvas } from "./theme-engine.mjs";
 import {
   readAdSettings,
   validateAdSettings,
-  adPublisher,
+  adVerification,
 } from "./google-ads.mjs";
 import { handleConnections } from "./production-connections.mjs";
 import { handleLoginSecurity, LOGIN_SECURITY_ID } from "./login-security.mjs";
@@ -226,15 +226,14 @@ export default {
     const path = url.pathname;
     try {
       if (path === "/ads.txt" && ["GET", "HEAD"].includes(request.method)) {
-        const publisher = await adPublisher(database(env));
+        const { adsTxt } = await adVerification(database(env));
         return new Response(
           request.method === "HEAD"
             ? null
-            : publisher
-              ? `google.com, ${publisher.slice(3)}, DIRECT, f08c47fec0942fa0\n`
-              : "No AdSense publisher configured.\n",
+            : adsTxt ||
+                "ads.txt is disabled or no AdSense publisher is configured.\n",
           {
-            status: publisher ? 200 : 404,
+            status: adsTxt ? 200 : 404,
             headers: {
               "Content-Type": "text/plain; charset=utf-8",
               "Cache-Control": "no-store",
@@ -275,7 +274,7 @@ export default {
           response.status === 200 &&
           request.method === "GET"
         ) {
-          const publisher = await adPublisher(database(env));
+          const { publisher } = await adVerification(database(env));
           if (publisher) {
             headers.delete("Content-Length");
             headers.delete("ETag");
