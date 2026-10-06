@@ -758,7 +758,7 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 
 Core plugins stay active and cannot be changed through ordinary plugin management. Optional extensions expose menus/features when activated.
 
-The Plugins page opens in **List view**, with alternating table row colors. Use the **Grid/List** icon buttons beside search to switch layouts. Core plugins are hidden initially; the visibility icon to the left of **View site** shows or hides them in either layout. Search and Installed/Available tabs apply to both views. Display preferences stay in the current admin session and reset to list view with core plugins hidden on a full reload.
+The Plugins page initially opens in **List view**, with alternating table row colors. Use the **Grid/List** icon buttons beside search to switch layouts. Core plugins are hidden initially; the visibility icon to the left of **View site** shows or hides them in either layout. Search and Installed/Available tabs apply to both views. Both display preferences are saved in browser local storage and restored after reloads and browser restarts on the same site. Clearing site storage restores the defaults. If browser storage is unavailable, the controls still work for the current admin session.
 
 ### MongoDB heartbeat
 
