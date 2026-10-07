@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { SceneComponent, SceneFrame } from "./scene-component";
 import { sceneTint } from "./scene-math";
 
-/** Thin, translucent full-width bands, drawn over the world and pixel veil. */
+/** Thin, translucent 45-degree bands, drawn over the world and pixel veil. */
 export class RainLinesComponent implements SceneComponent {
   object: any;
   constructor(
@@ -36,7 +36,10 @@ export class RainLinesComponent implements SceneComponent {
             if(density<=0.) discard;
             float rows=max(1.,round(resolution.y/900.*density));
             float cellHeight=resolution.y/rows;
-            float fall=mod(vUv.y*resolution.y+time*speed*65.,resolution.y);
+            // Rotate in pixels so the angle stays 45 degrees at every aspect ratio.
+            vec2 p=vUv*resolution;
+            float diagonal=dot(p,vec2(.70710678));
+            float fall=mod(diagonal+time*speed*65.,resolution.y);
             float row=floor(fall/cellHeight);
             float seed=hash(row);
             float center=cellHeight*(.15+hash(row+13.)*.7);
