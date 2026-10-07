@@ -134,6 +134,8 @@ The development server binds to loopback and serves compiled files from `dist/cl
 
 There is no shared default root password. Passwords require at least 12 characters and at most 72 UTF-8 bytes. Setup closes once owner credentials exist, including after restart. A setup token cannot reset an existing account.
 
+After sign-in, **Preparing your workspace** replaces the dashboard skeleton. The CMS streams completed database milestones for themes, core plugins, site settings/built-in content, and dashboard data. The bar starts indeterminate while the connection/session is checked, then advances as each of the four operations finishes. The dashboard opens only after its complete state arrives. Failures display a retry action; a stalled request times out after 90 seconds. Existing records are preserved on retries and later logins. Production schemas are initialized before setup is available; the progress view reports workspace preparation rather than a database migration percentage.
+
 <table>
     <caption>Local Paths</caption>
     <thead>
@@ -598,13 +600,13 @@ Segmented controls support arrow-key navigation. Editor shortcuts defer to typin
 
 ## Themes and templates
 
-**Colossal Default** and **Colossal 2027** are protected bundled core themes. Themes supply declarative presentation; plugins supply capabilities.
+**Colossal Default** is the protected core theme. **Glassey** is bundled as a regular theme and can be deleted when inactive. Themes supply declarative presentation; plugins supply capabilities.
 
-**Colossal 2027** is an editable dark portfolio with silver liquid glass panels, sticky navigation, a three-column footer, and Projects and Resume templates. Its hero fills the viewport and displays a transparent full-body ice figure seated on a slender carved royal throne, preserving the artwork's aspect ratio. A persistent Three.js background has a partially cropped top-left moon, independently tumbling snowflakes, wind, terrain, stars, and an animated charcoal pixel veil. Smooth camera zoom and parallax respond to scrolling; transparent section backgrounds keep the scene visible. It is seeded inactive without changing existing content or the active theme; earlier Colossal 2027 trees receive the scene and glass upgrades while preserving authored copy, custom images, and scene settings. The shared Glass popover exposes blur and saturation. The 3D model block's `portrait` source exposes scene speed, zoom, veil, pixels, image, moon, snow, wind, lighting, pointer, scroll, and framing controls in theme, post, and page Inspectors. Reduced-motion preferences stop scene animation. See the [Colossal 2027 guide](docs/guides/colossal-2027.md) for activation, sample content, assets, and controls, and [artwork provenance](docs/guides/colossal-2027-artwork.md) for the exact image prompt and snowflake source.
+**Glassey** is an editable dark portfolio with silver liquid glass panels, sticky navigation, a three-column footer, and Projects and Resume templates. Its hero fills the viewport and displays a transparent full-body ice figure seated on a slender carved royal throne, preserving the artwork's aspect ratio. A persistent Three.js background has a partially cropped top-left moon, independently tumbling snowflakes, wind, terrain, stars, and an animated charcoal pixel veil. Smooth camera zoom and parallax respond to scrolling; transparent section backgrounds keep the scene visible. It is seeded inactive without changing existing content or the active theme; earlier Glassey trees receive the scene and glass upgrades while preserving authored copy, custom images, and scene settings. The shared Glass popover exposes blur and saturation. The 3D model block's `portrait` source exposes scene speed, zoom, veil, pixels, image, moon, snow, wind, lighting, pointer, scroll, and framing controls in theme, post, and page Inspectors. Reduced-motion preferences stop scene animation. See the [Glassey guide](docs/guides/colossal-2027.md) for activation, sample content, assets, and controls, and [artwork provenance](docs/guides/colossal-2027-artwork.md) for the exact image prompt and snowflake source.
 
-Colossal 2027 project, education, and toolkit cards use `#17191bc9` glass backgrounds. Its pixel veil and animated rain lines share the same editable tint; the overlay defaults to 0.75 opacity. Lines extend across the canvas at 45 degrees and default to 2 px thickness and 0.35 opacity. The angle is calculated in pixels so it stays consistent on wide and narrow screens. Rain controls cover density, falling speed, stroke thickness from 0.3–4 px, and opacity. These controls appear in theme, post, and page Inspectors, and reduced-motion preferences stop their animation. The persistent background stretches between all four viewport edges with zero margin, including during scrolling and mobile viewport resizing. On the public site it fades in over 1.2 seconds after its first rendered frame; reduced-motion preferences reveal it immediately.
+Glassey project, education, and toolkit cards use `#17191bc9` glass backgrounds. Its pixel veil and animated rain lines share the same editable tint; the overlay defaults to 0.75 opacity. Lines extend across the canvas at 45 degrees and default to 2 px thickness and 0.35 opacity. The angle is calculated in pixels so it stays consistent on wide and narrow screens. Rain controls cover density, falling speed, stroke thickness from 0.3–4 px, and opacity. These controls appear in theme, post, and page Inspectors, and reduced-motion preferences stop their animation. The persistent background stretches between all four viewport edges with zero margin, including during scrolling and mobile viewport resizing. On the public site it fades in over 1.2 seconds after its first rendered frame; reduced-motion preferences reveal it immediately.
 
-**Template settings → Landing page at /** selects an optional Home template when `/` normally renders the post index. Choose **Follow site routing** to remove that preference. Colossal 2027 selects Home by default; separately configured post-index pages retain their normal routing.
+**Template settings → Landing page at /** selects an optional Home template when `/` normally renders the post index. Choose **Follow site routing** to remove that preference. Glassey selects Home by default; separately configured post-index pages retain their normal routing.
 
 <table>
     <caption>Default Theme</caption>
@@ -648,7 +650,7 @@ Older themes gain missing role templates while retaining layouts and additional 
 
 Public pages include their sanitized theme content, CSS and metadata in the first HTML response. Angular reuses that render, so the page does not switch to a generic journal skeleton while starting. Images, sliders and 3D scenes load independently; normal links and content remain available without JavaScript. Missing routes return HTTP 404, and maintenance retains HTTP 503.
 
-Configure **Inspector → Theme loading appearance** to set theme-wide loading background, text, accent and placeholder animation. These settings are stored in `manifest.loading`, support older themes through defaults and respect reduced motion. The CMS owns failures and retries. Colossal 2027 uses its dark palette and keeps the background's independent first-render fade. See [Public loading and initial HTML](docs/developers/themes.md#public-loading-and-initial-html) for the presentation contract and fallback behavior.
+Configure **Inspector → Theme loading appearance** to set theme-wide loading background, text, accent and placeholder animation. These settings are stored in `manifest.loading`, support older themes through defaults and respect reduced motion. The CMS owns failures and retries. Glassey uses its dark palette and keeps the background's independent first-render fade. See [Public loading and initial HTML](docs/developers/themes.md#public-loading-and-initial-html) for the presentation contract and fallback behavior.
 
 1. Install a ZIP or create an independent copy of the default theme.
 2. Open the editor, which starts with Home by default.
@@ -1180,6 +1182,11 @@ All paths are relative to the site's origin. IDs identify persisted records. `/a
             <td>GET</td>
             <td>`/api/admin/session`</td>
             <td>Verified session and auth mode</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>`/api/admin/bootstrap`</td>
+            <td>Authenticated NDJSON stream of real workspace/database progress, followed by role-filtered state; returns JSON `{ setup: true }` when gateway setup is needed</td>
         </tr>
         <tr>
             <td>POST</td>

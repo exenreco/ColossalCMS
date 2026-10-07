@@ -11,7 +11,7 @@ const guard: CanActivateFn = async (route) => {
   const api = inject(ApiService),
     router = inject(Router);
   try {
-    if (!api.state()) await api.load();
+    if (!api.state() && (await api.openWorkspace()).setup) return false;
     const state = api.state()!;
     const plugin = state.plugins.find((p) => p.id === route.data["pluginId"]);
     if (

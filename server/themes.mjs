@@ -2,6 +2,11 @@ import { zipSync, strToU8 } from "fflate";
 import semver from "semver";
 import { migrateThemeDocument } from "./theme-migrations.mjs";
 import { COLOSSAL_2027_ID, colossal2027Theme } from "./colossal-2027.mjs";
+import {
+  isGlasseyTheme,
+  migrateGlasseyManifest,
+  migrateGlasseyDocument,
+} from "./glassey-migration.mjs";
 import { readAdSettings } from "./google-ads.mjs";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
 import { inspectZip } from "./plugin-installer.mjs";
@@ -36,7 +41,14 @@ import {
 } from "./theme-engine.mjs";
 const dec = new TextDecoder();
 const rowDoc = (r) => compileDocument(migrateThemeDocument(parse(r.published)));
-export async function ensureThemes(db) {
+async function ensureGlassey(db) {
+  if (
+    await db
+      .prepare("SELECT id FROM config WHERE id='glassey-theme-v1'")
+      .first()
+  )
+    return true;
+  // Seed once so deleting the regular theme does not reinstall it on startup.
   if (
     !(await db
       .prepare("SELECT id FROM themes WHERE id=?")
@@ -46,11 +58,57 @@ export async function ensureThemes(db) {
     const d = colossal2027Theme();
     await db
       .prepare(
-        "INSERT OR IGNORE INTO themes (id,manifest,published,draft,active,is_core,revision,updated_at) VALUES (?,?,?,NULL,0,1,1,?)",
+        "INSERT OR IGNORE INTO themes (id,manifest,published,draft,active,is_core,revision,updated_at) VALUES (?,?,?,NULL,0,0,1,?)",
       )
       .bind(d.manifest.id, JSON.stringify(d.manifest), JSON.stringify(d), now())
       .run();
   }
+  const changes = [];
+  for (const row of await all(db, "SELECT * FROM themes")) {
+    if (!isGlasseyTheme(row.id)) continue;
+    const manifest = migrateGlasseyManifest(parse(row.manifest));
+    const published = parse(row.published);
+    const draft = parse(row.draft, null);
+    migrateGlasseyDocument(published);
+    if (draft) migrateGlasseyDocument(draft);
+    const values = [
+      JSON.stringify(manifest),
+      JSON.stringify(published),
+      draft ? JSON.stringify(draft) : null,
+    ];
+    if (
+      !row.is_core &&
+      values[0] === row.manifest &&
+      values[1] === row.published &&
+      values[2] === row.draft
+    )
+      continue;
+    changes.push(
+      db
+        .prepare(
+          "UPDATE themes SET manifest=?,published=?,draft=?,is_core=0,revision=revision+1,updated_at=? WHERE id=? AND revision=?",
+        )
+        .bind(...values, now(), row.id, row.revision),
+    );
+  }
+  if (changes.length) {
+    const results = await db.batch(changes);
+    if (
+      results.some(
+        (result) => Number(result.meta?.changes ?? result.changes) !== 1,
+      )
+    )
+      return false;
+  }
+  await db
+    .prepare(
+      "INSERT OR IGNORE INTO config (id,value) VALUES ('glassey-theme-v1','1')",
+    )
+    .run();
+  return true;
+}
+export async function ensureThemes(db) {
+  if (!(await ensureGlassey(db))) return;
   if (
     !(await db
       .prepare("SELECT id FROM themes WHERE id=?")

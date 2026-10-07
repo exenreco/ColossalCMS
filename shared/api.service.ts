@@ -1,10 +1,65 @@
 import { Injectable, signal } from "@angular/core";
 import { State } from "./models";
+import {
+  readWorkspaceStream,
+  WorkspaceProgress,
+  WORKSPACE_STEPS,
+} from "./workspace-progress";
 /** Shared API boundary. Server authorization is authoritative. */
 @Injectable({ providedIn: "root" })
 export class ApiService {
   state = signal<State | null>(null);
   notice = signal("");
+  workspacePasswordAuth = signal<boolean | null>(null);
+  workspaceProgress = signal<WorkspaceProgress>({
+    completed: 0,
+    total: WORKSPACE_STEPS.length,
+    message: "Connecting to your database and checking your session…",
+    phase: "connecting",
+  });
+  private workspaceLoad?: Promise<{ setup: boolean; passwordAuth: boolean }>;
+  private workspaceSession = { setup: false, passwordAuth: false };
+  openWorkspace() {
+    if (this.workspaceLoad) return this.workspaceLoad;
+    if (this.state()) return Promise.resolve(this.workspaceSession);
+    this.workspaceProgress.set({
+      completed: 0,
+      total: WORKSPACE_STEPS.length,
+      message: "Connecting to your database and checking your session…",
+      phase: "connecting",
+    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    const pending = (async () => {
+      const response = await fetch("/api/admin/bootstrap", {
+        headers: { Accept: "application/x-ndjson" },
+        signal: controller.signal,
+      });
+      const result = await readWorkspaceStream(response, (progress) => {
+        this.workspacePasswordAuth.set(progress.passwordAuth === true);
+        this.workspaceProgress.set(progress);
+      });
+      this.workspaceSession = {
+        setup: result.setup === true,
+        passwordAuth: result.passwordAuth === true,
+      };
+      if (result.state) this.state.set(result.state);
+      return this.workspaceSession;
+    })()
+      .catch((error) => {
+        if (controller.signal.aborted)
+          throw new Error(
+            "Your database is taking longer than expected. Check the connection and try again.",
+          );
+        throw error;
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        if (this.workspaceLoad === pending) this.workspaceLoad = undefined;
+      });
+    this.workspaceLoad = pending;
+    return pending;
+  }
   async request(path: string, method = "GET", body?: unknown): Promise<any> {
     const response = await fetch("/api" + path, {
       method,

@@ -10,6 +10,7 @@ import worker from "../server/worker.mjs";
 import { connectionManager } from "./connection-manager.mjs";
 import { passwordAuth } from "./password-auth.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { writeResponseBody } from "./response-body.mjs";
 const dataDir = process.env.CMS_DATA_DIR || ".local";
 const port =
   process.env.CMS_PORT === undefined ? 4200 : Number(process.env.CMS_PORT);
@@ -135,7 +136,7 @@ const cmsServer = http
           response = await worker.fetch(new Request(request, { headers }), env);
       }
       res.writeHead(response.status, Object.fromEntries(response.headers));
-      res.end(Buffer.from(await response.arrayBuffer()));
+      await writeResponseBody(response, res, req.method === "HEAD");
     } catch (e) {
       res.writeHead(e.status || 500, {
         "Content-Type": "application/json",

@@ -3,6 +3,7 @@ import { resolve, extname, sep } from "node:path";
 import worker from "../server/worker.mjs";
 import { productionRuntime } from "./production-server.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { writeResponseBody } from "./response-body.mjs";
 import { clientIp } from "./client-ip.mjs";
 import {
   HEARTBEAT_PATH,
@@ -183,15 +184,15 @@ export function createVercelHandler(
           response = await worker.fetch(new Request(request, { headers }), env);
       }
       // Dynamic CMS and auth responses must never be stored by the CDN.
-      res.writeHead(response.status, {
-        ...Object.fromEntries(response.headers),
-        "Cache-Control": "no-store",
-      });
-      res.end(
-        req.method === "HEAD"
-          ? undefined
-          : Buffer.from(await response.arrayBuffer()),
+      const responseHeaders = new Headers(response.headers);
+      responseHeaders.set(
+        "Cache-Control",
+        response.headers.get("Content-Type")?.startsWith("application/x-ndjson")
+          ? "no-store, no-transform"
+          : "no-store",
       );
+      res.writeHead(response.status, Object.fromEntries(responseHeaders));
+      await writeResponseBody(response, res, req.method === "HEAD");
     } catch (error) {
       // Fixed diagnoses only: never log a raw error, URI, stack or credentials.
       if (!error.status) {

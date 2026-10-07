@@ -1,10 +1,12 @@
 /** Non-destructive compatibility upgrade, applied when old snapshots are opened. */
 import { defaultTheme, CMS_VERSION } from "./theme-engine.mjs";
 import { upgradeColossal2027Document } from "./colossal-2027-ice-world.mjs";
+import { migrateGlasseyDocument } from "./glassey-migration.mjs";
 
 export function migrateThemeDocument(input) {
   if (!input?.manifest || !input.templates || !input.parts) return input;
   const d = structuredClone(input);
+  migrateGlasseyDocument(d);
   d.notices = [];
   // Rebase bundled prototype themes when the public release version is reset.
   if (

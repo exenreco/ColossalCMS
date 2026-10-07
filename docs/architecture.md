@@ -8,7 +8,7 @@ The implementation follows the dual-application and plugin model in `Colossal CM
 
 1. A trusted hosting gateway authenticates administrators.
 2. The Worker serves the admin SPA at `/admin/*`. Public document responses embed sanitized theme markup, CSS, metadata, body settings and an inert initial-render payload.
-3. The admin shell loads the authenticated session and server state through `ApiService`.
+3. The admin shell and route guard share one authenticated `/api/admin/bootstrap` request through `ApiService`. Its NDJSON stream reports real database milestones (themes, core plugins, site data, dashboard state), replacing the startup skeleton with a progress screen. Node and Vercel adapters forward chunks immediately. The route opens after the full role-filtered state arrives; failures and interrupted streams expose retry, with a 90-second client timeout.
 4. The router derives routes from JSON manifests and an allowlisted lazy-component map. Guards check plugin activation and role; the Worker independently authorizes every operation.
 5. The public app reuses the embedded theme render during Angular bootstrap and enhances media, sliders and ads independently. It does not refetch the initial theme or content. Legacy shells without a payload fetch `/api/themes/render`, with `/api/public` as the built-in content fallback. Drafts are excluded on the server except through validated signed previews; media uses stable IDs.
 

@@ -1,7 +1,12 @@
 import { MediaPickerComponent } from "../../../shared/media-picker.component";
-import { DashboardSkeletonComponent } from "../../../shared/skeleton-compositions";
-import { SkeletonComponent } from "../../../shared/skeleton.component";
-import { Component, inject, signal, OnInit } from "@angular/core";
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  ChangeDetectorRef,
+} from "@angular/core";
+import { WORKSPACE_STEPS } from "../../../shared/workspace-progress";
 import {
   Router,
   RouterLink,
@@ -18,8 +23,6 @@ import { MaintenanceState } from "./maintenance-state";
   standalone: true,
   imports: [
     MediaPickerComponent,
-    DashboardSkeletonComponent,
-    SkeletonComponent,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -242,23 +245,75 @@ import { MaintenanceState } from "./maintenance-state";
         </div>
       </div>
     } @else if (!setup && !error) {
-      <div
-        class="app-shell app-shell-skeleton"
-        role="status"
-        aria-busy="true"
-        aria-label="Opening your workspace"
-      >
-        <aside class="sidebar">
-          <span class="brand"><span class="brand-mark">C</span></span>
-          <cl-skeleton variant="rectangle" height="84px" radius="12px" />
-          <cl-skeleton variant="paragraph" [count]="6" height="14px" />
-        </aside>
-        <div class="main-shell">
-          <header class="topbar">
-            <cl-skeleton variant="text" width="180px" height="20px" />
-          </header>
-          <main><cl-dashboard-skeleton /></main>
-        </div>
+      <div class="auth-page">
+        <section
+          class="auth-card workspace-progress-card"
+          aria-busy="true"
+          aria-labelledby="workspace-progress-title"
+        >
+          <span class="brand-mark">C</span>
+          <p class="eyebrow">COLOSSAL CMS</p>
+          <h1 id="workspace-progress-title">Preparing your workspace</h1>
+          <p>
+            We’re checking your database and preparing your themes, plugins, and
+            content.
+          </p>
+          <p
+            class="workspace-progress-message"
+            role="status"
+            aria-live="polite"
+          >
+            {{ api.workspaceProgress().message }}
+          </p>
+          <div
+            class="workspace-progress-track"
+            role="progressbar"
+            aria-label="Database and workspace progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="
+              api.workspaceProgress().phase === 'connecting'
+                ? null
+                : progressPercent
+            "
+            [attr.aria-valuetext]="api.workspaceProgress().message"
+          >
+            <span
+              [class.indeterminate]="
+                api.workspaceProgress().phase === 'connecting'
+              "
+              [style.width.%]="progressPercent"
+            ></span>
+          </div>
+          <ol class="workspace-progress-steps">
+            @for (step of workspaceSteps; track step.label; let i = $index) {
+              <li
+                [class.complete]="i < api.workspaceProgress().completed"
+                [class.current]="
+                  api.workspaceProgress().phase !== 'connecting' &&
+                  i === api.workspaceProgress().completed
+                "
+                [attr.aria-current]="
+                  api.workspaceProgress().phase !== 'connecting' &&
+                  i === api.workspaceProgress().completed
+                    ? 'step'
+                    : null
+                "
+              >
+                <span class="workspace-step-marker">
+                  @if (i < api.workspaceProgress().completed) {
+                    <cl-icon name="check" />
+                  } @else {
+                    {{ i + 1 }}
+                  }</span
+                >{{ step.label }}
+              </li>
+            }
+          </ol>
+          <p class="workspace-progress-note">
+            Your dashboard will open when these checks finish.
+          </p>
+        </section>
       </div>
     } @else {
       <div class="auth-page">
@@ -287,12 +342,19 @@ import { MaintenanceState } from "./maintenance-state";
               <cl-icon name="arrow" />
             </button>
           } @else if (error) {
+            <button class="button primary" (click)="initialize()">
+              Try again
+            </button>
             <a
-              class="button primary"
-              href="/signin-with-chatgpt?return_to=/admin/"
+              class="button"
+              [href]="
+                api.workspacePasswordAuth() === true || passwordAuth
+                  ? '/login'
+                  : '/signin-with-chatgpt?return_to=/admin/'
+              "
               target="_top"
-              >Sign in with ChatGPT</a
-            ><button class="button" (click)="initialize()">Try again</button>
+              >Sign in</a
+            >
           }
         </div>
       </div>
@@ -306,6 +368,8 @@ import { MaintenanceState } from "./maintenance-state";
   `,
 })
 export class AdminComponent implements OnInit {
+  cdr = inject(ChangeDetectorRef);
+  workspaceSteps = WORKSPACE_STEPS;
   maintenance = inject(MaintenanceState);
   pluginView = inject(PluginViewState);
   api = inject(ApiService);
@@ -333,18 +397,22 @@ export class AdminComponent implements OnInit {
   async initialize() {
     this.error = "";
     try {
-      const session = await this.api.request("/admin/session");
+      const session = await this.api.openWorkspace();
       this.passwordAuth = session.passwordAuth === true;
       this.setup = !!session.setup;
       if (!this.setup) {
-        await this.api.load();
-        this.router.navigateByUrl(
-          location.pathname.replace(/^\/admin/, "") || "/dashboard",
-        );
+        const path = location.pathname.replace(/^\/admin/, "");
+        this.router.navigateByUrl(!path || path === "/" ? "/dashboard" : path);
       }
     } catch (e) {
       this.error = (e as Error).message;
+    } finally {
+      this.cdr.markForCheck();
     }
+  }
+  get progressPercent() {
+    const progress = this.api.workspaceProgress();
+    return Math.round((progress.completed / progress.total) * 100);
   }
   async create() {
     this.busy = true;

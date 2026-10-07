@@ -1,18 +1,20 @@
-# Colossal 2027 portfolio theme
+# Glassey portfolio theme
 
-Colossal 2027 is a bundled core theme for Exenreco Bell's developer portfolio. Its dark moonlit landscape, silver typography, translucent panels, sticky navigation, and interactive ice throne are editable through the Theme Editor.
+Glassey is a bundled regular theme for Exenreco Bell's developer portfolio. Its dark moonlit landscape, silver typography, translucent panels, sticky navigation, and interactive ice throne are editable through the Theme Editor.
 
 ## Activate and customize
 
-1. Open **Themes → Colossal 2027 → Edit**. Home opens first.
+1. Open **Themes → Glassey → Edit**. Home opens first.
 2. Edit the hero, project cards, About section, education details, and contact links. The two concept projects and institution/date fields are editable samples.
 3. Open the Header or Footer shared part to change navigation, identity, and the three footer columns.
 4. Save a draft and use **Preview** to review it without activating it.
 5. Publish, then choose **Activate** on the theme card.
 
-Startup seeds the theme inactive. It preserves the current active theme, posts, pages, existing Colossal 2027 edits, and drafts. No portfolio pages or invented education records are added to the content database.
+Startup seeds the theme inactive. It preserves the current active theme, posts, pages, existing Glassey edits, and drafts. No portfolio pages or invented education records are added to the content database.
 
-Existing Colossal 2027 documents receive the full-viewport scene and charcoal glass upgrades when opened or rendered. Bundled revision 3 replaces the previous default throne with the slimmer royal ice chair, adds the corner moon, snowflake motion, zoom, and veil controls, and updates the old default particle counts. Revision 4 places the shared footer above the persistent background without replaying earlier upgrades. Revision 5 gives project, education, and toolkit cards a consistent `#17191bc9` glass surface, adds fine rain lines, and updates the old default overlay opacity to 0.75. Revision 6 adds separate line opacity; the lines now extend across the viewport at 45 degrees. Revision 7 increases the previous 0.75 px default line thickness to 2 px, while preserving custom thickness settings. Existing custom overlay-opacity values are retained. The compatibility migration preserves block IDs, authored text, other templates, shared parts, custom CSS, replacement images, and existing motion-control values. The upgraded document is persisted on the next save or publish. The original database record and theme history remain available until then.
+Existing **Colossal 2027** installations and exports are renamed to **Glassey** on startup and lose their core status. Custom theme names are retained. Published layouts, drafts, activation, assets, and history are preserved; older history snapshots receive the new metadata when restored. The installed ID `com.colossal.theme.colossal-2027` and asset URLs stay unchanged for compatibility. To delete Glassey, activate another theme first, then choose **Delete**. Deleted copies are not reinstalled at startup.
+
+Existing Glassey documents receive the full-viewport scene and charcoal glass upgrades when opened or rendered. Bundled revision 3 replaces the previous default throne with the slimmer royal ice chair, adds the corner moon, snowflake motion, zoom, and veil controls, and updates the old default particle counts. Revision 4 places the shared footer above the persistent background without replaying earlier upgrades. Revision 5 gives project, education, and toolkit cards a consistent `#17191bc9` glass surface, adds fine rain lines, and updates the old default overlay opacity to 0.75. Revision 6 adds separate line opacity; the lines now extend across the viewport at 45 degrees. Revision 7 increases the previous 0.75 px default line thickness to 2 px, while preserving custom thickness settings. Existing custom overlay-opacity values are retained. The compatibility migration preserves block IDs, authored text, other templates, shared parts, custom CSS, replacement images, and existing motion-control values. The upgraded document is persisted on the next save or publish. The original database record and theme history remain available until then.
 
 ## Templates and routing
 
@@ -75,9 +77,9 @@ Three.js loads in a separate chunk. Rendering uses bounded pixel density and par
 
 ## Loading appearance
 
-Public pages arrive with their theme markup and CSS already rendered. Colossal 2027 starts on `#0c0d10`, with `#f1f2f4` text and a `#c5e5ff` loading accent. Its navigation and text are available before the Three.js chunk or portrait texture finishes loading; the background retains its independent 1,200 ms first-render fade. Angular reuses the initial render rather than showing a generic journal skeleton or restarting the scene with another theme request.
+Public pages arrive with their theme markup and CSS already rendered. Glassey starts on `#0c0d10`, with `#f1f2f4` text and a `#c5e5ff` loading accent. Its navigation and text are available before the Three.js chunk or portrait texture finishes loading; the background retains its independent 1,200 ms first-render fade. Angular reuses the initial render rather than showing a generic journal skeleton or restarting the scene with another theme request.
 
-Change the colors and placeholder animation in **Theme Editor → Inspector → Theme loading appearance**, then publish. Bundled revision 8 adds the dark loading profile to older Colossal 2027 documents while preserving custom loading settings, artwork, line thickness and authored content. Placeholder animation respects reduced motion; the CMS handles retries and availability errors.
+Change the colors and placeholder animation in **Theme Editor → Inspector → Theme loading appearance**, then publish. Bundled revision 8 adds the dark loading profile to older Glassey documents while preserving custom loading settings, artwork, line thickness and authored content. Placeholder animation respects reduced motion; the CMS handles retries and availability errors.
 
 ## Liquid glass controls
 

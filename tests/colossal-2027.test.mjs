@@ -13,7 +13,11 @@ import {
   sanitizeTemplate,
   CORE_THEME_ID,
 } from "../server/theme-engine.mjs";
-import { ensureThemes, publicThemeRender } from "../server/themes.mjs";
+import {
+  ensureThemes,
+  publicThemeRender,
+  handleThemes,
+} from "../server/themes.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
 import { mediaIds } from "../server/v2-utils.mjs";
 import { initialize } from "../server/worker.mjs";
@@ -29,7 +33,7 @@ import {
 } from "../shared/ice-scene/scene-math.ts";
 import { modelFieldVisible } from "../shared/model-field-visibility.ts";
 
-test("Colossal 2027 is seeded inactive without replacing a site's theme, edits, or content", async () => {
+test("Glassey is seeded as an inactive regular theme without replacing a site's theme, edits, or content", async () => {
   const db = localDatabase();
   try {
     await initialize(db, { email: "owner@example.test" });
@@ -38,7 +42,9 @@ test("Colossal 2027 is seeded inactive without replacing a site's theme, edits, 
       .bind(COLOSSAL_2027_ID)
       .first();
     assert.equal(first.active, 0);
-    assert.equal(first.is_core, 1);
+    assert.equal(first.is_core, 0);
+    assert.equal(JSON.parse(first.manifest).name, "Glassey");
+    assert.equal(JSON.parse(first.manifest).isCore, false);
     assert.equal(
       (await db.prepare("SELECT id FROM themes WHERE active=1").first()).id,
       CORE_THEME_ID,
@@ -61,6 +67,173 @@ test("Colossal 2027 is seeded inactive without replacing a site's theme, edits, 
     assert.deepEqual(
       (await db.prepare("SELECT * FROM content").all()).results,
       content,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("existing Colossal 2027 installations and exports become Glassey without replacing published content, drafts, or history", async () => {
+  const db = localDatabase();
+  try {
+    await initialize(db, { email: "owner@example.test" });
+    await db.prepare("DELETE FROM config WHERE id='glassey-theme-v1'").run();
+    const published = colossal2027Theme();
+    published.manifest.name = "Colossal 2027";
+    published.manifest.isCore = true;
+    const footerCopy =
+      published.parts.footer.children[0].children[0].children[1];
+    footerCopy.settings.html = footerCopy.settings.html.replace(
+      "GLASSEY / PORTFOLIO",
+      "COLOSSAL 2027 / PORTFOLIO",
+    );
+    published.css += ".theme-root .authored{color:#123456}";
+    const draft = structuredClone(published);
+    draft.templates.home.settings.background = "#123456";
+    await db.prepare("UPDATE themes SET active=0").run();
+    await db
+      .prepare(
+        "UPDATE themes SET manifest=?,published=?,draft=?,active=1,is_core=1,revision=9 WHERE id=?",
+      )
+      .bind(
+        JSON.stringify(published.manifest),
+        JSON.stringify(published),
+        JSON.stringify(draft),
+        COLOSSAL_2027_ID,
+      )
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO theme_history (id,theme_id,version,snapshot,created_at) VALUES ('glassey-history',?,?,?,?)",
+      )
+      .bind(
+        COLOSSAL_2027_ID,
+        published.manifest.version,
+        JSON.stringify(published),
+        "2026-10-01T00:00:00Z",
+      )
+      .run();
+    for (const [suffix, name] of [
+      ["export", "Colossal 2027"],
+      ["custom", "My custom portfolio"],
+    ]) {
+      const exported = structuredClone(published);
+      exported.manifest.id += "." + suffix;
+      exported.manifest.name = name;
+      exported.manifest.isCore = false;
+      await db
+        .prepare(
+          "INSERT INTO themes (id,manifest,published,draft,active,is_core,revision,updated_at) VALUES (?,?,?,NULL,0,0,1,?)",
+        )
+        .bind(
+          exported.manifest.id,
+          JSON.stringify(exported.manifest),
+          JSON.stringify(exported),
+          "2026-10-01T00:00:00Z",
+        )
+        .run();
+    }
+    assert.ok(
+      await db
+        .prepare("SELECT id FROM config WHERE id='theme-role-templates-v2'")
+        .first(),
+    );
+    await ensureThemes(db);
+    const migrated = await db
+      .prepare("SELECT * FROM themes WHERE id=?")
+      .bind(COLOSSAL_2027_ID)
+      .first();
+    assert.equal(migrated.is_core, 0);
+    assert.equal(migrated.active, 1);
+    assert.equal(migrated.revision, 10);
+    published.manifest.name = draft.manifest.name = "Glassey";
+    published.manifest.isCore = draft.manifest.isCore = false;
+    footerCopy.settings.html = footerCopy.settings.html.replace(
+      "COLOSSAL 2027 / PORTFOLIO",
+      "GLASSEY / PORTFOLIO",
+    );
+    draft.parts.footer.children[0].children[0].children[1].settings.html =
+      footerCopy.settings.html;
+    assert.deepEqual(JSON.parse(migrated.published), published);
+    assert.deepEqual(JSON.parse(migrated.draft), draft);
+    assert.deepEqual(JSON.parse(migrated.manifest), published.manifest);
+    for (const [suffix, name] of [
+      ["export", "Glassey"],
+      ["custom", "My custom portfolio"],
+    ]) {
+      const row = await db
+        .prepare("SELECT * FROM themes WHERE id=?")
+        .bind(COLOSSAL_2027_ID + "." + suffix)
+        .first();
+      assert.equal(JSON.parse(row.manifest).name, name);
+      assert.equal(JSON.parse(row.published).manifest.isCore, false);
+    }
+    const history = await db
+      .prepare("SELECT * FROM theme_history WHERE id='glassey-history'")
+      .first();
+    assert.equal(JSON.parse(history.snapshot).manifest.name, "Colossal 2027");
+    const restored = migrateThemeDocument(JSON.parse(history.snapshot));
+    assert.equal(restored.manifest.name, "Glassey");
+    assert.equal(restored.manifest.isCore, false);
+    await ensureThemes(db);
+    assert.deepEqual(
+      await db
+        .prepare("SELECT * FROM themes WHERE id=?")
+        .bind(COLOSSAL_2027_ID)
+        .first(),
+      migrated,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("Glassey can be deleted while inactive and stays deleted; the active and default themes remain protected", async () => {
+  const db = localDatabase();
+  const remove = (id) =>
+    handleThemes(
+      new Request("https://cms.test/api/themes/" + id, { method: "DELETE" }),
+      { DB: db },
+      { role: "admin" },
+      "/api/themes/" + id,
+    );
+  try {
+    await initialize(db, { email: "owner@example.test" });
+    await assert.rejects(
+      remove(CORE_THEME_ID),
+      (error) => error.status === 403,
+    );
+    await db.prepare("UPDATE themes SET active=0").run();
+    await db
+      .prepare("UPDATE themes SET active=1 WHERE id=?")
+      .bind(COLOSSAL_2027_ID)
+      .run();
+    await assert.rejects(
+      remove(COLOSSAL_2027_ID),
+      (error) => error.status === 409,
+    );
+    await db.prepare("UPDATE themes SET active=0").run();
+    await db
+      .prepare("UPDATE themes SET active=1 WHERE id=?")
+      .bind(CORE_THEME_ID)
+      .run();
+    assert.equal((await remove(COLOSSAL_2027_ID)).status, 200);
+    await initialize(db, { email: "owner@example.test" });
+    assert.equal(
+      await db
+        .prepare("SELECT * FROM themes WHERE id=?")
+        .bind(COLOSSAL_2027_ID)
+        .first(),
+      null,
+    );
+    assert.equal(
+      (
+        await db
+          .prepare("SELECT * FROM themes WHERE id=?")
+          .bind(CORE_THEME_ID)
+          .first()
+      ).is_core,
+      1,
     );
   } finally {
     db.close();

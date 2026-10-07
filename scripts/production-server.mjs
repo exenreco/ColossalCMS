@@ -16,6 +16,7 @@ import { seedBuiltInData } from "./data-migration.mjs";
 import { localStorage } from "./local-storage.mjs";
 import { passwordAuth } from "./password-auth.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
+import { writeResponseBody } from "./response-body.mjs";
 import { clientIp } from "./client-ip.mjs";
 import { mongodbHeartbeat } from "../server/mongodb-heartbeat.mjs";
 import {
@@ -220,7 +221,7 @@ export async function startProductionServer(
           response = await worker.fetch(new Request(request, { headers }), env);
       }
       res.writeHead(response.status, Object.fromEntries(response.headers));
-      res.end(Buffer.from(await response.arrayBuffer()));
+      await writeResponseBody(response, res, req.method === "HEAD");
     } catch (error) {
       res.writeHead(error.status || 500, {
         "Content-Type": "application/json",

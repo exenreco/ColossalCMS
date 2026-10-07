@@ -10,6 +10,7 @@ import {
 } from "./themes.mjs";
 import { renderContentCanvas } from "./theme-engine.mjs";
 import { publicHtml, unavailablePublicRender } from "./public-html.mjs";
+import { WORKSPACE_STEPS } from "../shared/workspace-progress.ts";
 import {
   readAdSettings,
   validateAdSettings,
@@ -110,8 +111,10 @@ async function identity(request, db) {
     fail("Your account has not been invited to this workspace.", 403);
   return { ...member, authenticatedId: id };
 }
-export async function initialize(db, user) {
+export async function initialize(db, user, report = () => {}) {
+  report(0);
   await ensureThemes(db);
+  report(1);
   await db.batch(
     catalog.map((p) =>
       db
@@ -137,7 +140,11 @@ export async function initialize(db, user) {
           .bind(p.id),
       ),
   );
-  if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) return;
+  report(2);
+  if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) {
+    report(3);
+    return;
+  }
   const time = now();
   const statements = [
     db
@@ -183,6 +190,7 @@ export async function initialize(db, user) {
       .bind("welcome", "Workspace created with three sample entries", time),
   );
   await db.batch(statements);
+  report(3);
 }
 async function state(db, user) {
   await repairRouting(db);
@@ -227,6 +235,54 @@ async function state(db, user) {
 }
 function requireAdmin(user) {
   if (user.role !== "admin") fail("Administrator access is required.", 403);
+}
+function workspaceBootstrap(db, user, passwordAuth) {
+  let cancelled = false;
+  const encoder = new TextEncoder();
+  const body = new ReadableStream({
+    start(controller) {
+      const send = (event) => {
+        if (!cancelled)
+          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      };
+      const progress = (completed) =>
+        send({
+          type: "progress",
+          completed,
+          total: WORKSPACE_STEPS.length,
+          passwordAuth,
+          message:
+            WORKSPACE_STEPS[completed]?.message || "Your workspace is ready.",
+        });
+      void (async () => {
+        try {
+          await initialize(db, user, progress);
+          const ready = await state(db, user);
+          progress(WORKSPACE_STEPS.length);
+          send({ type: "complete", state: ready, passwordAuth });
+        } catch (error) {
+          send({
+            type: "error",
+            message: error.status
+              ? error.message
+              : "Unable to prepare your workspace. Check your database connection and try again.",
+          });
+        } finally {
+          if (!cancelled) controller.close();
+        }
+      })();
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  return new Response(body, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }
 export default {
   async fetch(request, env) {
@@ -472,7 +528,10 @@ export default {
         await initialize(db, { email });
         return json({ ok: true });
       }
-      if (path === "/api/admin/session") {
+      if (
+        path === "/api/admin/session" ||
+        (path === "/api/admin/bootstrap" && request.method === "GET")
+      ) {
         const owner = await db
           .prepare("SELECT id FROM members WHERE id='owner'")
           .first();
@@ -480,6 +539,8 @@ export default {
           fail("Sign in to continue.", 401);
         if (!owner) return json({ setup: true });
         const user = await identity(request, db);
+        if (path === "/api/admin/bootstrap")
+          return workspaceBootstrap(db, user, env.PASSWORD_AUTH === true);
         await initialize(db, user);
         return json({ user, passwordAuth: env.PASSWORD_AUTH === true });
       }

@@ -1,4 +1,4 @@
-# Colossal 2027 artwork
+# Glassey artwork
 
 ## Royal ice throne
 

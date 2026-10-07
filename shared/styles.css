@@ -1550,6 +1550,100 @@ td:last-child {
 .auth-card .button {
   margin: 0 6px 8px 0;
 }
+.workspace-progress-card {
+  width: min(580px, 100%);
+  text-align: left;
+}
+.auth-card p.workspace-progress-message {
+  margin: 28px 0 12px;
+  color: var(--green);
+  font-weight: 600;
+  min-height: 3em;
+}
+.workspace-progress-track {
+  height: 8px;
+  background: #e3eadb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.workspace-progress-track > span {
+  display: block;
+  height: 100%;
+  background: #2b6a50;
+  border-radius: inherit;
+  transition: width 200ms ease;
+}
+.workspace-progress-track > span.indeterminate {
+  width: 35% !important;
+  animation: workspace-connect 1.4s ease-in-out infinite;
+}
+.workspace-progress-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  margin: 22px 0;
+  list-style: none;
+}
+.workspace-progress-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #73826e;
+  font-size: 12px;
+}
+.workspace-progress-steps li.complete,
+.workspace-progress-steps li.current {
+  color: #245d47;
+}
+.workspace-step-marker {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid #cedac7;
+  border-radius: 50%;
+  font-size: 11px;
+}
+.workspace-step-marker cl-icon {
+  width: 12px;
+  height: 12px;
+}
+.complete .workspace-step-marker {
+  color: #fff;
+  background: #2b6a50;
+  border-color: #2b6a50;
+}
+.current .workspace-step-marker {
+  border-color: #2b6a50;
+}
+.auth-card p.workspace-progress-note {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+@keyframes workspace-connect {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(390%);
+  }
+}
+@media (max-width: 480px) {
+  .workspace-progress-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-progress-track > span {
+    transition: none;
+  }
+  .workspace-progress-track > span.indeterminate {
+    animation: none;
+  }
+}
 .sr-only {
   position: absolute;
   width: 1px;
