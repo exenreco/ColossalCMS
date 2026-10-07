@@ -26,6 +26,24 @@ export async function mountIceWorld(host: HTMLElement) {
     ".cl-portrait-fallback",
   );
   const full = host.dataset["fullViewport"] === "true";
+  // Stretch between viewport edges rather than mixing vh/svh heights. Set this
+  // before texture loading so the fallback and live scene have the same frame.
+  host.style.position = full ? "fixed" : "relative";
+  host.style.overflow = "hidden";
+  if (full) {
+    host.style.inset = "0";
+    host.style.setProperty("height", "auto", "important");
+    host.style.setProperty("width", "auto", "important");
+    host.style.setProperty("margin", "0", "important");
+    host.style.minHeight = "0";
+    host.style.maxHeight = "none";
+    host.style.maxWidth = "none";
+    host.style.padding = "0";
+    host.style.border = "0";
+    host.style.borderRadius = "0";
+    host.style.zIndex = "0";
+    host.style.pointerEvents = "none";
+  }
   const components: SceneComponent[] = [];
   const cleanups: (() => void)[] = [];
   let renderer: any,
@@ -179,6 +197,7 @@ export async function mountIceWorld(host: HTMLElement) {
               ),
               clamp(Number(host.dataset["sceneRainSpeed"] ?? 1), 0.25, 3),
               clamp(Number(host.dataset["sceneRainWidth"] ?? 0.75), 0.3, 1.5),
+              clamp(Number(host.dataset["sceneRainOpacity"] ?? 0.35), 0, 1),
             ),
           )
         : null;
@@ -188,15 +207,6 @@ export async function mountIceWorld(host: HTMLElement) {
     canvas.style.cssText =
       "display:block;width:100%;height:100%;position:absolute;inset:0;";
     canvas.setAttribute("aria-hidden", "true");
-    host.style.position = full ? "fixed" : "relative";
-    if (full) {
-      host.style.inset = "0";
-      host.style.width = "100%";
-      host.style.height = "100vh";
-      host.style.zIndex = "0";
-      host.style.pointerEvents = "none";
-    }
-    host.style.overflow = "hidden";
     host.append(canvas);
     const preview = doc !== document ? doc.createElement("img") : null;
     if (preview) {
@@ -308,6 +318,7 @@ export async function mountIceWorld(host: HTMLElement) {
     host.addEventListener("keydown", keys);
     view.addEventListener("scroll", scrolling, { passive: true });
     view.addEventListener("resize", resize);
+    view.visualViewport?.addEventListener("resize", resize);
     motion.addEventListener("change", preference);
     cleanups.push(
       () =>
@@ -316,6 +327,7 @@ export async function mountIceWorld(host: HTMLElement) {
       () => host.removeEventListener("keydown", keys),
       () => view.removeEventListener("scroll", scrolling),
       () => view.removeEventListener("resize", resize),
+      () => view.visualViewport?.removeEventListener("resize", resize),
       () => motion.removeEventListener("change", preference),
     );
     scrolling();

@@ -1051,6 +1051,12 @@
         "default": 0.75
       },
       {
+        "key": "sceneRainOpacity",
+        "label": "Rain line opacity (0–1)",
+        "type": "number",
+        "default": 0.35
+      },
+      {
         "key": "scenePixelsEnabled",
         "label": "Animated pixel texture",
         "type": "checkbox",

@@ -95,6 +95,7 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.match(home.html, /data-scene-veil-color="#17191bc9"/);
     assert.match(home.html, /data-scene-veil-opacity="0.75"/);
     assert.match(home.html, /data-scene-rain-enabled="true"/);
+    assert.match(home.html, /data-scene-rain-opacity="0.35"/);
     assert.match(home.html, /data-snow-enabled="true"/);
     assert.match(home.html, /data-wind-enabled="true"/);
     assert.match(home.css, /height:100vh/);
@@ -154,6 +155,7 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
     sceneRainDensity: 9999,
     sceneRainSpeed: 99,
     sceneRainWidth: -1,
+    sceneRainOpacity: 99,
   });
   const result = renderTheme(
     validateDocument(d, true),
@@ -185,6 +187,7 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
   assert.match(result.html, /data-scene-rain-density="96"/);
   assert.match(result.html, /data-scene-rain-speed="3"/);
   assert.match(result.html, /data-scene-rain-width="0.3"/);
+  assert.match(result.html, /data-scene-rain-opacity="1"/);
   assert.match(result.html, /data-scene-pixel-size="1"/);
   assert.match(result.html, /data-snow-size="2"/);
   assert.match(result.html, /data-snow-speed="0.25"/);
@@ -197,6 +200,39 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
   assert.throws(() => validateDocument(d, true), /portrait URL|HTTPS/);
   scene.settings.portraitUrl = "https://user:password@example.test/art.png";
   assert.throws(() => validateDocument(d, true), /credentials/);
+});
+
+test("viewport scenes stretch between all edges before hydration while inline scenes honor their height", () => {
+  const document = colossal2027Theme();
+  const scene = document.templates.home.children[1].children[1].children[0];
+  const render = () =>
+    renderTheme(
+      validateDocument(document, true),
+      {
+        settings: {},
+        allContent: [],
+        media: [],
+        kind: "home",
+        path: "/",
+      },
+      "home",
+    ).html;
+  const full = render();
+  assert.match(full, /position:fixed;top:0px;right:0px;bottom:0px;left:0px/);
+  assert.match(full, /width:auto\s*!important;height:auto\s*!important/);
+  assert.match(
+    full,
+    /min-height:0px;max-height:none;max-width:none;margin:0px 0px 0px 0px\s*!important/,
+  );
+  assert.doesNotMatch(full, /height:100(?:s|d)?vh/);
+  assert.match(full, /class="cl-portrait-fallback"/);
+  scene.settings.fullViewport = false;
+  scene.settings.height = 340;
+  scene.settings.sceneRainOpacity = 0;
+  const inline = render();
+  assert.match(inline, /style="height:340px\s*!important"/);
+  assert.match(inline, /data-scene-rain-opacity="0"/);
+  assert.doesNotMatch(inline, /position:fixed/);
 });
 
 test("glass controls produce bounded sanitized styles and the ice artwork ships with alpha", async () => {
@@ -253,7 +289,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 5);
+  assert.equal(upgraded.manifest.bundledRevision, 6);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -351,7 +387,12 @@ test("shared Inspector only exposes world controls for ice scenes and hides disa
     true,
   );
   assert.equal(showModelField("moonEnabled", { source: "url" }), false);
-  for (const key of ["sceneRainDensity", "sceneRainSpeed", "sceneRainWidth"])
+  for (const key of [
+    "sceneRainDensity",
+    "sceneRainSpeed",
+    "sceneRainWidth",
+    "sceneRainOpacity",
+  ])
     assert.equal(
       showModelField(key, { ...world, sceneRainEnabled: false }),
       false,
@@ -487,7 +528,7 @@ test("existing glass themes place the shared footer above the fixed scene withou
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 5);
+  assert.equal(updated.manifest.bundledRevision, 6);
   assert.deepEqual(updated.templates, original.templates);
   assert.deepEqual(updated.parts, original.parts);
   assert.ok(updated.css.startsWith(original.css));
@@ -504,6 +545,41 @@ test("existing glass themes place the shared footer above the fixed scene withou
     rendered.css,
     /\.theme-root \.theme-part-footer\{position:relative;z-index:2\}/,
   );
+});
+
+test("revision five adds line opacity without replaying glass or overlay changes", () => {
+  const document = colossal2027Theme();
+  document.manifest.bundledRevision = 5;
+  const scene = document.templates.home.children[1].children[1].children[0];
+  delete scene.settings.sceneRainOpacity;
+  scene.settings.sceneVeilOpacity = 0.5;
+  scene.settings.sceneRainEnabled = false;
+  document.templates.home.children[5].children[2].children[0].settings.background =
+    "#12345678";
+  const original = structuredClone(document);
+  const updated = migrateThemeDocument(document);
+  assert.deepEqual(document, original);
+  assert.equal(updated.manifest.bundledRevision, 6);
+  assert.equal(
+    updated.templates.home.children[1].children[1].children[0].settings
+      .sceneRainOpacity,
+    0.35,
+  );
+  const expected = structuredClone(original);
+  expected.manifest.bundledRevision = 6;
+  expected.templates.home.children[1].children[1].children[0].settings.sceneRainOpacity = 0.35;
+  assert.deepEqual(updated.templates, expected.templates);
+  assert.deepEqual(updated.parts, original.parts);
+  assert.equal(updated.css, original.css);
+  for (const opacity of [0, 0.6]) {
+    scene.settings.sceneRainOpacity = opacity;
+    assert.equal(
+      migrateThemeDocument(document).templates.home.children[1].children[1]
+        .children[0].settings.sceneRainOpacity,
+      opacity,
+    );
+  }
+  assert.deepEqual(migrateThemeDocument(updated), updated);
 });
 
 test("glass card and rain upgrades style the requested IDs and project cards while retaining content and custom motion", () => {
@@ -529,7 +605,7 @@ test("glass card and rain upgrades style the requested IDs and project cards whi
   const original = structuredClone(document);
   const upgraded = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(upgraded.manifest.bundledRevision, 5);
+  assert.equal(upgraded.manifest.bundledRevision, 6);
   assert.deepEqual(upgraded.parts, original.parts);
   const next = upgraded.templates.home.children[1].children[1].children[0];
   assert.equal(next.settings.sceneVeilOpacity, 0.75);
