@@ -5,6 +5,7 @@ import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { ThemesListSkeletonComponent } from "../../../../shared/skeleton-compositions";
 import { ThemeSummary } from "../../../../shared/theme-models";
+import { themeBodyAttributes } from "../../../../shared/theme-body";
 @Component({
   selector: "cl-themes",
   standalone: true,
@@ -63,7 +64,7 @@ import { ThemeSummary } from "../../../../shared/theme-models";
           <article class="theme-card" [class.active]="t.active">
             <div class="theme-thumbnail">
               <iframe
-                title="Theme thumbnail"
+                [title]="t.name + ' theme preview'"
                 sandbox=""
                 tabindex="-1"
                 [srcdoc]="thumbnails[t.id] || ''"
@@ -162,7 +163,13 @@ export class ThemesComponent implements OnInit {
               },
             );
             this.thumbnails[t.id] = this.sanitizer.bypassSecurityTrustHtml(
-              "<style>body{margin:0}" + render.css + "</style>" + render.html,
+              '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0}html,body{min-height:100%;overflow:hidden}' +
+                render.css.replace(/</g, "\\3c ") +
+                "</style></head><body " +
+                themeBodyAttributes(render.body) +
+                ">" +
+                render.html +
+                "</body></html>",
             );
           } catch {
           } finally {
