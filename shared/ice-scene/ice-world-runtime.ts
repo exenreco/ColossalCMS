@@ -196,7 +196,7 @@ export async function mountIceWorld(host: HTMLElement) {
                 clamp(Number(host.dataset["sceneRainDensity"] ?? 36), 0, 96),
               ),
               clamp(Number(host.dataset["sceneRainSpeed"] ?? 1), 0.25, 3),
-              clamp(Number(host.dataset["sceneRainWidth"] ?? 0.75), 0.3, 1.5),
+              clamp(Number(host.dataset["sceneRainWidth"] ?? 2), 0.3, 4),
               clamp(Number(host.dataset["sceneRainOpacity"] ?? 0.35), 0, 1),
             ),
           )

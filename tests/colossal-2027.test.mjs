@@ -95,6 +95,7 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.match(home.html, /data-scene-veil-color="#17191bc9"/);
     assert.match(home.html, /data-scene-veil-opacity="0.75"/);
     assert.match(home.html, /data-scene-rain-enabled="true"/);
+    assert.match(home.html, /data-scene-rain-width="2"/);
     assert.match(home.html, /data-scene-rain-opacity="0.35"/);
     assert.match(home.html, /data-snow-enabled="true"/);
     assert.match(home.html, /data-wind-enabled="true"/);
@@ -289,7 +290,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 6);
+  assert.equal(upgraded.manifest.bundledRevision, 7);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -528,7 +529,7 @@ test("existing glass themes place the shared footer above the fixed scene withou
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 6);
+  assert.equal(updated.manifest.bundledRevision, 7);
   assert.deepEqual(updated.templates, original.templates);
   assert.deepEqual(updated.parts, original.parts);
   assert.ok(updated.css.startsWith(original.css));
@@ -547,6 +548,49 @@ test("existing glass themes place the shared footer above the fixed scene withou
   );
 });
 
+test("revision six thickens the former default lines and preserves custom scene settings", () => {
+  const document = colossal2027Theme();
+  document.manifest.bundledRevision = 6;
+  const scene = document.templates.home.children[1].children[1].children[0];
+  scene.settings.sceneRainWidth = 0.75;
+  scene.settings.sceneRainOpacity = 0.6;
+  scene.settings.sceneRainSpeed = 2;
+  const original = structuredClone(document);
+  const updated = migrateThemeDocument(document);
+  assert.deepEqual(document, original);
+  assert.equal(updated.manifest.bundledRevision, 7);
+  const expected = structuredClone(original.templates);
+  expected.home.children[1].children[1].children[0].settings.sceneRainWidth = 2;
+  assert.deepEqual(updated.templates, expected);
+  assert.deepEqual(updated.parts, original.parts);
+  assert.equal(updated.css, original.css);
+  assert.deepEqual(migrateThemeDocument(updated), updated);
+  for (const width of [0.3, 1.5, 3, 99]) {
+    scene.settings.sceneRainWidth = width;
+    const migrated = migrateThemeDocument(document);
+    assert.equal(
+      migrated.templates.home.children[1].children[1].children[0].settings
+        .sceneRainWidth,
+      width,
+    );
+    const rendered = renderTheme(
+      validateDocument(migrated, true),
+      {
+        settings: {},
+        allContent: [],
+        media: [],
+        kind: "home",
+        path: "/",
+      },
+      "home",
+    );
+    assert.match(
+      rendered.html,
+      new RegExp(`data-scene-rain-width="${Math.min(width, 4)}"`),
+    );
+  }
+});
+
 test("revision five adds line opacity without replaying glass or overlay changes", () => {
   const document = colossal2027Theme();
   document.manifest.bundledRevision = 5;
@@ -559,14 +603,14 @@ test("revision five adds line opacity without replaying glass or overlay changes
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 6);
+  assert.equal(updated.manifest.bundledRevision, 7);
   assert.equal(
     updated.templates.home.children[1].children[1].children[0].settings
       .sceneRainOpacity,
     0.35,
   );
   const expected = structuredClone(original);
-  expected.manifest.bundledRevision = 6;
+  expected.manifest.bundledRevision = 7;
   expected.templates.home.children[1].children[1].children[0].settings.sceneRainOpacity = 0.35;
   assert.deepEqual(updated.templates, expected.templates);
   assert.deepEqual(updated.parts, original.parts);
@@ -605,7 +649,7 @@ test("glass card and rain upgrades style the requested IDs and project cards whi
   const original = structuredClone(document);
   const upgraded = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(upgraded.manifest.bundledRevision, 6);
+  assert.equal(upgraded.manifest.bundledRevision, 7);
   assert.deepEqual(upgraded.parts, original.parts);
   const next = upgraded.templates.home.children[1].children[1].children[0];
   assert.equal(next.settings.sceneVeilOpacity, 0.75);

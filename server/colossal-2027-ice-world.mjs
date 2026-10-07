@@ -1,6 +1,6 @@
 /** Upgrade the bundled hero without rebuilding authored copy, other templates or shared parts. */
 export function upgradeColossal2027Document(input) {
-  if (!input?.templates?.home || input.manifest?.bundledRevision >= 6)
+  if (!input?.templates?.home || input.manifest?.bundledRevision >= 7)
     return input;
   const d = structuredClone(input);
   const hero = d.templates.home.children?.find((node) =>
@@ -122,8 +122,16 @@ export function upgradeColossal2027Document(input) {
     d.css = (d.css || "") + COLOSSAL_2027_RAIN_GLASS_CSS;
     d.manifest.bundledRevision = 5;
   }
-  scene.settings.sceneRainOpacity ??= 0.35;
-  d.manifest.bundledRevision = 6;
+  if (!(d.manifest.bundledRevision >= 6)) {
+    scene.settings.sceneRainOpacity ??= 0.35;
+    d.manifest.bundledRevision = 6;
+  }
+  if (
+    scene.settings.sceneRainWidth == null ||
+    scene.settings.sceneRainWidth === 0.75
+  )
+    scene.settings.sceneRainWidth = 2;
+  d.manifest.bundledRevision = 7;
   return d;
 }
 
