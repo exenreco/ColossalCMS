@@ -7,6 +7,11 @@ import definitions from "../shared/theme-blocks.json" with { type: "json" };
 import { fail } from "./v2-utils.mjs";
 import { ADS_BLOCK, GOOGLE_ADS_ID, resolveAdUnit } from "./google-ads.mjs";
 import {
+  BRILLIANT_MODEL_URL,
+  BRILLIANT_POSTER_URL,
+  modelSourceUrl,
+} from "./model-assets.mjs";
+import {
   DEFAULT_THEME_LOADING,
   resolveThemeLoading,
   validThemeLoading,
@@ -841,14 +846,10 @@ export function validateDocument(input, core = false) {
       if (!String(node.settings.alt || "").trim())
         fail("Add a description for the 3D model.");
       if (node.settings.source === "url") {
-        let url;
-        try {
-          url = new URL(node.settings.url);
-        } catch {
-          fail("Enter a valid HTTPS model URL.");
-        }
-        if (url.protocol !== "https:" || url.username || url.password)
-          fail("Model URLs must use HTTPS without credentials.");
+        if (!modelSourceUrl(node.settings.url))
+          fail(
+            "Use an HTTPS model URL without credentials or the bundled Brilliant model.",
+          );
       }
       if (node.settings.source === "portrait" && node.settings.portraitUrl) {
         const src = String(node.settings.portraitUrl);
@@ -1601,16 +1602,13 @@ function dynamic(type, s, ctx) {
     const media = ctx.media.find(
       (m) => m.id === s.mediaId && m.type === "model",
     );
-    const url =
-      s.source === "url"
-        ? /^https:\/\//.test(s.url || "")
-          ? s.url
-          : ""
-        : media?.url;
+    const url = s.source === "url" ? modelSourceUrl(s.url) : media?.url;
     const poster = ctx.media.find(
       (m) => m.id === s.poster && m.type === "image",
     );
-    return `<div class="gltf-viewer" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "3D model")}" ${url ? `data-model-url="${esc(url)}"` : ""} data-controls="${s.controls !== false}" data-auto-rotate="${!!s.autoRotate}" data-rotate-speed="${num(s.autoRotateSpeed ?? 2, 0, 60)}" data-scroll-interactive="${s.scrollInteractive === true}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${num(s.height || 360, 100, 1600)}px">${poster ? `<img src="${esc(poster.url)}" alt="${esc(s.alt)}">` : `<p>${esc(s.alt || "Choose a model in the Inspector.")}</p>`}</div>`;
+    const posterUrl =
+      poster?.url || (url === BRILLIANT_MODEL_URL ? BRILLIANT_POSTER_URL : "");
+    return `<div class="gltf-viewer" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "3D model")}" ${url ? `data-model-url="${esc(url)}"` : ""} data-controls="${s.controls !== false}" data-auto-rotate="${!!s.autoRotate}" data-rotate-speed="${num(s.autoRotateSpeed ?? 2, 0, 60)}" data-scroll-interactive="${s.scrollInteractive === true}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="height:${num(s.height || 360, 100, 1600)}px">${posterUrl ? `<img src="${esc(posterUrl)}" alt="${esc(s.alt)}">` : `<p>${esc(s.alt || "Choose a model in the Inspector.")}</p>`}</div>`;
   }
   const c = ctx.content,
     settings = ctx.settings;

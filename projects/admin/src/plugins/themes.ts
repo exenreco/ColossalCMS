@@ -63,13 +63,19 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
         @for (t of themes; track t.id) {
           <article class="theme-card" [class.active]="t.active">
             <div class="theme-thumbnail">
-              <iframe
-                [title]="t.name + ' theme preview'"
-                sandbox=""
-                tabindex="-1"
-                [srcdoc]="thumbnails[t.id] || ''"
-              ></iframe
-              ><span class="theme-card-badge">{{
+              @if (thumbnailErrors[t.id]) {
+                <p class="theme-thumbnail-error" role="status">
+                  {{ thumbnailErrors[t.id] }}
+                </p>
+              } @else {
+                <iframe
+                  [title]="t.name + ' theme preview'"
+                  sandbox=""
+                  tabindex="-1"
+                  [srcdoc]="thumbnails[t.id] || ''"
+                ></iframe>
+              }
+              <span class="theme-card-badge">{{
                 t.active
                   ? "Active theme"
                   : t.isCore
@@ -133,6 +139,7 @@ export class ThemesComponent implements OnInit {
   sanitizer = inject(DomSanitizer);
   themes: ThemeSummary[] = [];
   thumbnails: Record<string, SafeHtml> = {};
+  thumbnailErrors: Record<string, string> = {};
   error = "";
   busy = false;
   loading = true;
@@ -144,6 +151,7 @@ export class ThemesComponent implements OnInit {
   async load() {
     try {
       this.loading = true;
+      this.thumbnailErrors = {};
       this.themes = await this.api.request("/themes");
       this.cdr.markForCheck();
       await Promise.all(
@@ -157,6 +165,7 @@ export class ThemesComponent implements OnInit {
                 document: record.published,
                 templateId:
                   record.published.manifest.homeTemplate ||
+                  t.templates.find((x) => x.appliesTo.includes("home"))?.id ||
                   t.templates.find((x) => x.appliesTo.includes("post-index"))
                     ?.id ||
                   t.templates[0].id,
@@ -171,7 +180,9 @@ export class ThemesComponent implements OnInit {
                 render.html +
                 "</body></html>",
             );
-          } catch {
+          } catch (e) {
+            this.thumbnailErrors[t.id] =
+              "Preview unavailable: " + (e as Error).message;
           } finally {
             this.cdr.markForCheck();
           }

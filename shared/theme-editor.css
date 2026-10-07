@@ -34,6 +34,13 @@
   transform-origin: top left;
   border: 0;
 }
+.theme-thumbnail-error {
+  margin: 0;
+  padding: 32px 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
 .theme-card-badge {
   position: absolute;
   bottom: 14px;

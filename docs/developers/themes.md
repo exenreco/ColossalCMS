@@ -86,6 +86,10 @@ The database stores separate published and draft JSON documents. Saves require t
 
 Preview links use HMAC-SHA256, expire after 15 minutes and bind to a specific theme revision. Changing the draft or publishing invalidates earlier links. Preview access grants media reads only for files referenced by that theme. Active published themes expose their media; draft/history references prevent deletion without making private media public.
 
+Theme cards preview the declared landing template, then Home, then the post index. Thumbnails apply the real template body attributes and scoped CSS; they remain script-free and use image fallbacks for 3D blocks. Rendering failures show the validation message instead of an empty card.
+
+Already-installed legacy Brilliant themes retain their `/brilliant/hero.glb` model through a bundled compatibility asset and `/brilliant/hero.svg` static fallback. Brilliant is not installed on new sites. The model URL validator accepts that exact bundled path and credential-free HTTPS URLs; arbitrary relative paths remain rejected. Rebuild the model with `node scripts/generate-brilliant-model.mjs` after changing its source geometry.
+
 ## Contributing blocks from a reviewed plugin
 
 Register a declarative `BlockDefinition` through the shared `BlockRegistry` service during a bundled plugin's initialization:
