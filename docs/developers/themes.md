@@ -13,6 +13,7 @@ Place `theme.manifest.json` at the ZIP root. It contains a reverse-domain `id`, 
 - `assets`: `{ "styles": ["assets/theme.css"], "scripts": [] }`.
 - Optional `palette`: up to 12 hex colors.
 - Optional `homeTemplate`: a declared template ID whose `appliesTo` includes `home`. Public rendering uses it at `/` when site routing otherwise resolves to `post-index`; content routes and separate post-index pages keep their existing resolution. The Theme Editor exposes it as **Landing page at /**.
+- Optional `loading`: theme loading colors and placeholder animation. Configure these in **Theme Editor → Inspector → Theme loading appearance**. This is a theme-wide setting, saved and published with the document.
 
 The easiest starter package is **Themes → Colossal Default → Export**. Export changes the protected core ID to an installable non-core ID. Change the ID when installing multiple copies.
 
@@ -50,6 +51,34 @@ Core blocks include layout, rich text, headings, media, featured images, menu, s
 ## Resolution and routing
 
 `content.templateId` resolves to an applicable explicit override, then the type default, then the theme default, then a minimal built-in renderer. Missing overrides remain stored and raise a non-blocking editor warning. Activation reports affected entries. Pages, `/year/month/slug` posts, home/custom-page post indexes, `/search?q=...`, pagination and missing-page templates share the same resolver.
+
+## Public loading and initial HTML
+
+Public document requests include the sanitized theme markup, CSS, body settings, title, description, favicon and active announcement in the initial HTML response. Angular reads the inert `theme-render` JSON payload and uses that exact render; it does not replace it with a journal skeleton or issue a second theme/content request during startup. This is server rendering of the declarative theme, not Angular SSR or Angular DOM hydration. Content and ordinary links also work without JavaScript.
+
+The initial document and `/api/themes/render` use the same resolver and published-content filter. HTML requests resolve their actual URL path, search query and pagination. Missing pages return HTTP 404; maintenance remains HTTP 503 with its existing retry and noindex headers. Dynamic documents use `Cache-Control: no-store` and discard static ETags and content lengths. Signed previews validate their token before embedding a draft and remain noindex. Admin pages and static assets retain their existing serving paths.
+
+```json
+"loading": {
+  "background": "#0c0d10",
+  "color": "#f1f2f4",
+  "accent": "#c5e5ff",
+  "animation": "pulse"
+}
+```
+
+| Field        | Accepted values                  | Default when omitted                     |
+| ------------ | -------------------------------- | ---------------------------------------- |
+| `background` | Hex color, optionally with alpha | Template root background, then `#f7f9f3` |
+| `color`      | Hex color, optionally with alpha | Template root text color, then `#243e2f` |
+| `accent`     | Hex color, optionally with alpha | `#246b50`                                |
+| `animation`  | `glare`, `pulse`, `none`         | `glare`                                  |
+
+These values become `--cl-loading-background`, `--cl-loading-color` and `--cl-loading-accent` on `.theme-root`. They are available to theme-authored block placeholders and CMS fallback states. Reduced motion disables placeholder animation. Existing packages can omit `loading`; no migration or custom JavaScript is required. The CMS owns readiness, retry behavior and error handling; themes supply presentation, not executable loader scripts.
+
+Images, sliders and 3D blocks enhance independently after content is available. The full-viewport ice canvas is hidden before enhancement to avoid a portrait flash, then uses its existing first-render fade. Its static image remains available when JavaScript is disabled or live rendering fails. Public content is never held behind a full-page wait for all media.
+
+If the provider fails inside the Worker, the CMS returns a safe HTTP 503 retry page without raw provider errors. Legacy/static shells without an initial payload retain the generic public skeleton and API fallback, bounded by a ten-second timeout and a retry action. Provider initialization failures in a hosting adapter can still occur before the Worker is reached; those retain the adapter's existing error handling.
 
 ## Drafts, publishing and preview
 

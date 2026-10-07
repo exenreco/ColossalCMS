@@ -7,10 +7,10 @@ The implementation follows the dual-application and plugin model in `Colossal CM
 ## Request flow
 
 1. A trusted hosting gateway authenticates administrators.
-2. The Worker serves the admin SPA at `/admin/*` and public SPA elsewhere.
+2. The Worker serves the admin SPA at `/admin/*`. Public document responses embed sanitized theme markup, CSS, metadata, body settings and an inert initial-render payload.
 3. The admin shell loads the authenticated session and server state through `ApiService`.
 4. The router derives routes from JSON manifests and an allowlisted lazy-component map. Guards check plugin activation and role; the Worker independently authorizes every operation.
-5. The public app loads `/api/public` to obtain settings, activated plugins, and publishable content. Drafts are excluded on the server. Validated rich-text nodes are rendered with Angular sanitization; media uses stable IDs.
+5. The public app reuses the embedded theme render during Angular bootstrap and enhances media, sliders and ads independently. It does not refetch the initial theme or content. Legacy shells without a payload fetch `/api/themes/render`, with `/api/public` as the built-in content fallback. Drafts are excluded on the server except through validated signed previews; media uses stable IDs.
 
 ## Persistence
 
@@ -42,4 +42,4 @@ v2.0.2 adds three refinements on top of that foundation:
 
 - **Unique block icons.** Every block declares an `icon` token. The manifest validator requires an icon and rejects duplicate icons within a theme; the library popover, canvas outline and Inspector header render the same icon. `BlockIconComponent` resolves the token to inline SVG.
 - **Container min height.** `core/container` gains `minHeightEnabled`, `minHeight`, `minHeightUnit`, per-breakpoint overrides and `verticalAlign`. `minHeightCss` compiles these into breakpoint-aware rules keyed by the block's stable id, and `renderTheme` emits them alongside the theme CSS.
-- **True-frontend canvas and skeleton screens.** The Theme Editor canvas consumes the same render endpoint as the Frontend and layers editor affordances over the true render inside an isolated `allow-same-origin` iframe. `cl-skeleton` and its composition library provide glare-animated, reduced-motion-aware loading states for both applications; plugins declare their skeletons in `plugin.manifest.json`.
+- **True-frontend canvas and skeleton screens.** The Theme Editor canvas consumes the same render engine as the Frontend and layers editor affordances over the true render inside an isolated `allow-same-origin` iframe. `cl-skeleton` and its composition library provide glare-animated, reduced-motion-aware loading states; plugins declare their skeletons in `plugin.manifest.json`. Public themes control loading colors and placeholder animation through `manifest.loading`, while the CMS controls readiness, failures and retries. Public documents contain the real theme content before Angular starts; admin/editor skeletons remain shared CMS components.

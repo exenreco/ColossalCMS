@@ -1,3 +1,5 @@
+import { ThemeLoading } from "./theme-loading";
+
 export interface BlockNode {
   id: string;
   type: string;
@@ -48,6 +50,7 @@ export interface ThemeManifest {
   palette?: string[];
   homeTemplate?: string;
   bundledRevision?: number;
+  loading?: ThemeLoading;
 }
 export interface ThemeDocument {
   notices?: string[];

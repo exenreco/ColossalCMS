@@ -28,6 +28,8 @@ import { hydrateModels } from "./gltf-host";
 import { hydrateSliders } from "./swiper-host";
 import { themeBodyAttributes } from "./theme-body";
 import { modelFieldVisible } from "./model-field-visibility";
+import { ColorPickerComponent } from "./pickers/color-picker.component";
+import { ThemeLoading, resolveThemeLoading } from "./theme-loading";
 import {
   AppearancePickerPanelComponent,
   PICKER_FIELD_KEYS,
@@ -46,6 +48,7 @@ import {
     BlockIconComponent,
     ThemeEditorSkeletonComponent,
     AppearancePickerPanelComponent,
+    ColorPickerComponent,
   ],
   providers: [ThemeEditorState],
   templateUrl: "./theme-editor.component.html",
@@ -1135,6 +1138,21 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       const manifest = this.state.document()!.manifest;
       if (id) manifest.homeTemplate = id;
       else delete manifest.homeTemplate;
+    });
+  }
+  get loadingAppearance() {
+    const doc = this.state.document();
+    return resolveThemeLoading(
+      doc?.manifest.loading,
+      this.state.root?.settings,
+    );
+  }
+  setLoadingAppearance(key: keyof ThemeLoading, value: string) {
+    this.state.commit(() => {
+      const manifest = this.state.document()!.manifest;
+      manifest.loading = { ...manifest.loading };
+      if (value) (manifest.loading as Record<string, string>)[key] = value;
+      else delete manifest.loading[key];
     });
   }
   setDefault(on: boolean) {

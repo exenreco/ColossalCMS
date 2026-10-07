@@ -3,11 +3,13 @@ import {
   activeTheme,
   handleThemes,
   publicThemeRender,
+  publicThemeRenderData,
   serveThemeAsset,
   previewAllowsMedia,
   context as themeContext,
 } from "./themes.mjs";
 import { renderContentCanvas } from "./theme-engine.mjs";
+import { publicHtml, unavailablePublicRender } from "./public-html.mjs";
 import {
   readAdSettings,
   validateAdSettings,
@@ -280,48 +282,66 @@ export default {
           response.status === 200 &&
           ["GET", "HEAD"].includes(request.method)
         ) {
-          let maintenance = await maintenanceState(database(env), request);
-          if (maintenance && url.searchParams.has("themePreview")) {
-            await publicThemeRender(request, env); // Validate signed previews before allowing a bypass.
-            maintenance = null;
-          }
-          if (maintenance) {
-            const rendered = await maintenanceRender(
-              database(env),
-              maintenance,
+          let rendered, publisher;
+          try {
+            let maintenance = await maintenanceState(database(env), request);
+            if (maintenance && url.searchParams.has("themePreview")) {
+              await publicThemeRender(request, env); // Validate signed previews before allowing a bypass.
+              maintenance = null;
+            }
+            if (maintenance) {
+              const rendered = await maintenanceRender(
+                database(env),
+                maintenance,
+              );
+              headers.delete("Content-Length");
+              headers.delete("ETag");
+              headers.set("Cache-Control", "no-store");
+              headers.set(
+                "Retry-After",
+                String(maintenance.settings.retryAfter),
+              );
+              headers.set("X-Robots-Tag", "noindex");
+              return new Response(
+                request.method === "HEAD"
+                  ? null
+                  : maintenanceHtml(await response.text(), rendered),
+                { status: 503, headers },
+              );
+            }
+            const renderUrl = new URL(request.url);
+            // The document route owns its path; an API-style ?path= cannot change it.
+            renderUrl.searchParams.set(
+              "path",
+              path === "/index.html" ? "/" : path,
             );
-            headers.delete("Content-Length");
-            headers.delete("ETag");
-            headers.set("Cache-Control", "no-store");
-            headers.set("Retry-After", String(maintenance.settings.retryAfter));
-            headers.set("X-Robots-Tag", "noindex");
-            return new Response(
-              request.method === "HEAD"
-                ? null
-                : maintenanceHtml(await response.text(), rendered),
-              { status: 503, headers },
+            rendered = await publicThemeRenderData(
+              new Request(renderUrl, request),
+              env,
             );
+            ({ publisher } = await adVerification(database(env)));
+          } catch (error) {
+            if (url.searchParams.has("themePreview")) throw error;
+            rendered = unavailablePublicRender();
           }
-        }
-        if (
-          !isAdmin &&
-          assetPath === "/index.html" &&
-          response.status === 200 &&
-          request.method === "GET"
-        ) {
-          const { publisher } = await adVerification(database(env));
-          if (publisher) {
-            headers.delete("Content-Length");
-            headers.delete("ETag");
-            headers.set("Cache-Control", "no-store");
-            return new Response(
-              (await response.text()).replace(
-                /<\/head>/i,
-                `<meta name="google-adsense-account" content="${publisher}"></head>`,
-              ),
-              { status: response.status, headers },
+          headers.delete("Content-Length");
+          headers.delete("ETag");
+          headers.set("Cache-Control", "no-store");
+          headers.set("Content-Type", "text/html; charset=utf-8");
+          let html =
+            request.method === "HEAD"
+              ? null
+              : publicHtml(await response.text(), rendered);
+          if (html && publisher)
+            html = html.replace(
+              /<\/head>/i,
+              `<meta name="google-adsense-account" content="${publisher}"></head>`,
             );
-          }
+          if (rendered.preview) headers.set("X-Robots-Tag", "noindex");
+          return new Response(html, {
+            status: rendered.status || 200,
+            headers,
+          });
         }
         return new Response(response.body, {
           status: response.status,

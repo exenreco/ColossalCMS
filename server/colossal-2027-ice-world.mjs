@@ -1,8 +1,14 @@
 /** Upgrade the bundled hero without rebuilding authored copy, other templates or shared parts. */
 export function upgradeColossal2027Document(input) {
-  if (!input?.templates?.home || input.manifest?.bundledRevision >= 7)
+  if (!input?.templates?.home || input.manifest?.bundledRevision >= 8)
     return input;
   const d = structuredClone(input);
+  d.manifest.loading ??= {
+    background: "#0c0d10",
+    color: "#f1f2f4",
+    accent: "#c5e5ff",
+    animation: "pulse",
+  };
   const hero = d.templates.home.children?.find((node) =>
     String(node.settings?.classes || "")
       .split(/\s+/)
@@ -127,11 +133,12 @@ export function upgradeColossal2027Document(input) {
     d.manifest.bundledRevision = 6;
   }
   if (
-    scene.settings.sceneRainWidth == null ||
-    scene.settings.sceneRainWidth === 0.75
+    !(d.manifest.bundledRevision >= 7) &&
+    (scene.settings.sceneRainWidth == null ||
+      scene.settings.sceneRainWidth === 0.75)
   )
     scene.settings.sceneRainWidth = 2;
-  d.manifest.bundledRevision = 7;
+  d.manifest.bundledRevision = 8;
   return d;
 }
 

@@ -187,6 +187,12 @@ export function colossal2027Theme() {
     description:
       "An expressive portfolio in silver and liquid glass. A full-screen ice throne meets a moonlit Three.js landscape with wind and snow.",
     palette: ["#0c0d10", "#f1f2f4", "#9ca1aa", "#c5e5ff", "#ffffff14"],
+    loading: {
+      background: "#0c0d10",
+      color: "#f1f2f4",
+      accent: "#c5e5ff",
+      animation: "pulse",
+    },
   });
   d.parts.header = box(
     "c27-header-inner",

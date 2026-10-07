@@ -6,6 +6,11 @@ import semver from "semver";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
 import { fail } from "./v2-utils.mjs";
 import { ADS_BLOCK, GOOGLE_ADS_ID, resolveAdUnit } from "./google-ads.mjs";
+import {
+  DEFAULT_THEME_LOADING,
+  resolveThemeLoading,
+  validThemeLoading,
+} from "../shared/theme-loading.ts";
 export const CMS_VERSION = "0.0.1",
   CORE_THEME_ID = "com.colossal.theme.default";
 export const TYPES = ["home", "page", "post", "post-index", "search", "404"];
@@ -487,6 +492,10 @@ export function validateThemeManifest(m, files, core = false) {
     )
   )
     fail("The landing template must support Home.");
+  if (m.loading !== undefined && !validThemeLoading(m.loading))
+    fail(
+      "Theme loading settings must use hex colors and a glare, pulse or none animation.",
+    );
   if (
     !m.parts ||
     typeof m.parts !== "object" ||
@@ -672,6 +681,7 @@ export function defaultTheme() {
         })),
       assets: { styles: ["assets/theme.css"], scripts: [] },
       palette: ["#214c3a", "#f6f8f1", "#d2debd", "#596f53", "#ffffff"],
+      loading: { ...DEFAULT_THEME_LOADING },
     },
     templates: {},
     parts: {
@@ -1968,6 +1978,7 @@ export function renderTheme(d, ctx, override, options = {}) {
   const bodySettings = part ? {} : root?.settings || {};
   return {
     html: sanitizeTemplate(html, [], "render", true),
+    loading: resolveThemeLoading(d.manifest.loading, bodySettings),
     body: {
       blockId: part ? "" : root?.id || "",
       className: String(bodySettings.classes || "")

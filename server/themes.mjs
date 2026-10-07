@@ -328,7 +328,7 @@ async function validateForDb(db, doc, core) {
       fail("A theme media item no longer exists.");
   return d;
 }
-export async function publicThemeRender(request, env) {
+export async function publicThemeRenderData(request, env) {
   const u = new URL(request.url);
   const token = u.searchParams.get("themePreview");
   const d = token
@@ -346,8 +346,26 @@ export async function publicThemeRender(request, env) {
     ctx.path === "/" && ctx.kind === "post-index"
       ? d.manifest.homeTemplate
       : undefined;
+  const entryTitle = ctx.content?.id
+    ? ctx.content.details?.metaTitle || ctx.content.title
+    : "";
+  const metadata = {
+    title: entryTitle
+      ? entryTitle + " · " + ctx.settings.title
+      : ctx.settings.title,
+    description:
+      ctx.content?.details?.metaDescription ||
+      ctx.content?.excerpt ||
+      ctx.settings.tagline,
+    announcement: ctx.plugins.some((p) => p.id === "com.colossal.announcement")
+      ? ctx.settings.announcement || ""
+      : "",
+    siteIcon: ctx.settings.siteIconId
+      ? "/api/media/" + encodeURIComponent(ctx.settings.siteIconId) + "/file"
+      : "/favicon.svg",
+  };
   try {
-    return json({
+    return {
       ...renderTheme(
         d,
         landingTemplate ? { ...ctx, kind: "home" } : ctx,
@@ -359,24 +377,21 @@ export async function publicThemeRender(request, env) {
         ctx.plugins.some((p) => p.id === "com.colossal.google-ads"),
       preview: !!token,
       theme: d.manifest.name,
-      title:
-        ctx.content?.details?.metaTitle ||
-        ctx.content?.title ||
-        ctx.settings.title,
-      description:
-        ctx.content?.details?.metaDescription ||
-        ctx.content?.excerpt ||
-        ctx.settings.tagline,
+      ...metadata,
       status: ctx.kind === "404" ? 404 : 200,
-    });
+    };
   } catch (e) {
     if (token) throw e;
-    return json({
+    return {
       ...renderTheme(defaultTheme(), ctx),
+      ...metadata,
       fallback: true,
       status: ctx.kind === "404" ? 404 : 200,
-    });
+    };
   }
+}
+export async function publicThemeRender(request, env) {
+  return json(await publicThemeRenderData(request, env));
 }
 export async function serveThemeAsset(request, env, id, file, userIdentity) {
   if (!safePath(file)) fail("Invalid theme asset path.");

@@ -460,6 +460,43 @@
               }
             }
           </details>
+          @if (!maintenance) {
+            <details class="theme-template-options">
+              <summary>Theme loading appearance</summary>
+              <p class="muted">
+                Applies to all public templates. Content appears immediately;
+                media and 3D scenes load independently.
+              </p>
+              <cl-color-picker
+                label="Loading background"
+                [value]="loadingAppearance.background"
+                [palette]="doc.manifest.palette || []"
+                (valueChange)="setLoadingAppearance('background', $event)"
+              />
+              <cl-color-picker
+                label="Loading text"
+                [value]="loadingAppearance.color"
+                [palette]="doc.manifest.palette || []"
+                (valueChange)="setLoadingAppearance('color', $event)"
+              />
+              <cl-color-picker
+                label="Loading accent"
+                [value]="loadingAppearance.accent"
+                [palette]="doc.manifest.palette || []"
+                (valueChange)="setLoadingAppearance('accent', $event)"
+              />
+              <label class="theme-field"
+                >Placeholder animation<select
+                  [ngModel]="loadingAppearance.animation"
+                  (ngModelChange)="setLoadingAppearance('animation', $event)"
+                >
+                  <option value="glare">Glare</option>
+                  <option value="pulse">Pulse</option>
+                  <option value="none">None</option>
+                </select></label
+              >
+            </details>
+          }
         </aside>
       </div>
     </div>

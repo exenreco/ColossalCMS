@@ -9,21 +9,15 @@ import { hydrateModels } from "../../../shared/gltf-host";
 import { hydrateSliders } from "../../../shared/swiper-host";
 import { hydrateAds } from "../../../shared/google-ads-host";
 import { bootstrapApplication } from "@angular/platform-browser";
-import { Component, OnInit, signal } from "@angular/core";
+import { Component, OnInit, OnDestroy, signal } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { IconComponent } from "../../../shared/icon.component";
 import { Content, Settings, Plugin, MediaItem } from "../../../shared/models";
-function initialMaintenanceRender() {
-  try {
-    const payload = document.getElementById("maintenance-render")?.textContent;
-    const rendered = payload ? JSON.parse(payload) : null;
-    return rendered?.maintenance === true && typeof rendered.html === "string"
-      ? rendered
-      : null;
-  } catch {
-    return null;
-  }
-}
+import {
+  initialPublicRender,
+  PublicRender,
+} from "../../../shared/public-render";
+import { themeLoadingCss } from "../../../shared/theme-loading";
 @Component({
   selector: "cl-frontend",
   standalone: true,
@@ -46,10 +40,8 @@ function initialMaintenanceRender() {
           <a href="/">Exit preview</a>
         </div>
       }
-      @if (data(); as site) {
-        @if (active("announcement") && site.settings.announcement) {
-          <div class="announcement">{{ site.settings.announcement }}</div>
-        }
+      @if (announcement()) {
+        <div class="announcement">{{ announcement() }}</div>
       }
       <div [innerHTML]="themeMarkup()"></div>
     } @else if (data(); as site) {
@@ -215,7 +207,7 @@ function initialMaintenanceRender() {
         class="public-skeleton"
         role="status"
         aria-busy="true"
-        aria-label="Opening the journal"
+        aria-label="Loading website"
       >
         @if (postIndex) {
           <cl-posts-list-skeleton layout="grid" />
@@ -224,8 +216,8 @@ function initialMaintenanceRender() {
         }
       </div>
     } @else {
-      <div class="auth-page">
-        <div class="auth-card">
+      <div class="auth-page public-load-error">
+        <div class="auth-card" role="alert">
           <h1>We’ll be right back.</h1>
           <p>{{ error() }}</p>
           <button class="button" (click)="load()">Try again</button>
@@ -234,12 +226,14 @@ function initialMaintenanceRender() {
     }
   `,
 })
-class FrontendComponent implements OnInit {
+class FrontendComponent implements OnInit, OnDestroy {
   constructor() {
+    if (this.initialRender) this.applyRender(this.initialRender);
     afterEveryRender(() => {
       hydrateModels(document);
       hydrateSliders(document);
       if (this.adsEnabled && !this.isPreview) hydrateAds(document);
+      document.body.dataset["cmsEnhanced"] = "true";
     });
   }
   data = signal<{
@@ -249,22 +243,63 @@ class FrontendComponent implements OnInit {
     media: MediaItem[];
   } | null>(null);
   sanitizer = inject(DomSanitizer);
-  private initialRender = initialMaintenanceRender();
+  private initialRender = initialPublicRender(document);
   themeMarkup = signal<SafeHtml>(
     this.initialRender
       ? this.sanitizer.bypassSecurityTrustHtml(this.initialRender.html)
       : "",
   );
   isPreview = this.initialRender?.preview === true;
-  adsEnabled = false;
+  adsEnabled = this.initialRender?.adsEnabled === true;
   maintenancePreview = this.initialRender?.maintenancePreview === true;
+  announcement = signal(this.initialRender?.announcement || "");
   error = signal("");
+  private loadingRequest?: AbortController;
   home = location.pathname === "/";
   entry: Content | undefined;
   ngOnInit() {
-    this.load();
+    // Reuse the exact published/preview render already returned with this document.
+    // Refetching here would replace the DOM and restart loading blocks and animations.
+    if (!this.initialRender) void this.load();
+  }
+  ngOnDestroy() {
+    this.loadingRequest?.abort();
+  }
+  private applyRender(rendered: PublicRender) {
+    document.body.className = ["theme-root", rendered.body?.className]
+      .filter(Boolean)
+      .join(" ");
+    document.body.style.cssText = rendered.body?.style || "";
+    document.body.dataset["blockId"] = rendered.body?.blockId || "";
+    document.body.dataset["themeId"] = rendered.body?.themeId || "";
+    document.body.dataset["themeTemplate"] = rendered.body?.templateId || "";
+    this.isPreview = rendered.preview === true;
+    this.maintenancePreview = rendered.maintenancePreview === true;
+    this.adsEnabled = rendered.adsEnabled === true;
+    this.announcement.set(rendered.announcement || "");
+    let styles = document.getElementById("theme-styles");
+    if (!styles) {
+      styles = document.createElement("style");
+      styles.id = "theme-styles";
+      document.head.appendChild(styles);
+    }
+    styles.textContent = themeLoadingCss(rendered.loading) + rendered.css;
+    if (rendered.title) document.title = rendered.title;
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute("content", rendered.description || "");
+    if (rendered.siteIcon) {
+      const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      if (icon) icon.href = rendered.siteIcon;
+    }
+    // Only the server's sanitized theme renderer can cross this HTML boundary.
+    this.themeMarkup.set(this.sanitizer.bypassSecurityTrustHtml(rendered.html));
   }
   async load() {
+    this.loadingRequest?.abort();
+    const request = new AbortController();
+    this.loadingRequest = request;
+    const timer = setTimeout(() => request.abort(), 10000);
     this.error.set("");
     try {
       const params = new URLSearchParams(location.search);
@@ -279,46 +314,24 @@ class FrontendComponent implements OnInit {
               "/preview-render?templateId=" +
               encodeURIComponent(params.get("templateId") || "")
           : "/api/themes/render?" + params,
+        { signal: request.signal },
       );
       if (theme.ok) {
         const rendered = await theme.json();
-        // Only the server's sanitized theme renderer can cross this HTML boundary.
-        this.themeMarkup.set(
-          this.sanitizer.bypassSecurityTrustHtml(rendered.html),
-        );
-        document.body.className = ["theme-root", rendered.body?.className]
-          .filter(Boolean)
-          .join(" ");
-        document.body.style.cssText = rendered.body?.style || "";
-        document.body.dataset["blockId"] = rendered.body?.blockId || "";
-        document.body.dataset["themeId"] = rendered.body?.themeId || "";
-        document.body.dataset["themeTemplate"] =
-          rendered.body?.templateId || "";
-        this.isPreview = rendered.preview;
-        this.maintenancePreview = rendered.maintenancePreview === true;
-        this.adsEnabled = rendered.adsEnabled === true;
-        let styles = document.getElementById("theme-styles");
-        if (!styles) {
-          styles = document.createElement("style");
-          styles.id = "theme-styles";
-          document.head.appendChild(styles);
-        }
-        styles.textContent = rendered.css;
-        if (rendered.title) document.title = rendered.title;
-        document
-          .querySelector('meta[name="description"]')
-          ?.setAttribute("content", rendered.description || "");
-        if (rendered.maintenance) return;
+        if (request.signal.aborted) throw new Error("Loading timed out.");
+        this.applyRender(rendered);
+        return;
       } else if (params.has("themePreview")) {
         const result = await theme.json();
         throw new Error(result.error || "Preview is no longer available.");
       }
-      const r = await fetch("/api/public");
+      const r = await fetch("/api/public", { signal: request.signal });
       if (!r.ok)
         throw new Error(
           "Content is temporarily unavailable. Please try again.",
         );
       const site = await r.json();
+      if (request.signal.aborted) throw new Error("Loading timed out.");
       this.data.set(site);
       this.entry =
         this.home && site.settings.homePageId
@@ -355,7 +368,15 @@ class FrontendComponent implements OnInit {
             site.settings.tagline,
         );
     } catch (e) {
-      this.error.set((e as Error).message);
+      if (this.loadingRequest === request)
+        this.error.set(
+          request.signal.aborted
+            ? "Loading took too long. Please try again."
+            : (e as Error).message,
+        );
+    } finally {
+      clearTimeout(timer);
+      if (this.loadingRequest === request) this.loadingRequest = undefined;
     }
   }
   get postsPage() {

@@ -290,7 +290,7 @@ test("older Colossal 2027 trees gain the ice world once without replacing author
   const original = structuredClone(legacy);
   const upgraded = migrateThemeDocument(legacy);
   assert.deepEqual(legacy, original);
-  assert.equal(upgraded.manifest.bundledRevision, 7);
+  assert.equal(upgraded.manifest.bundledRevision, 8);
   assert.equal(upgraded.templates.home.children[1].id, hero.id);
   assert.deepEqual(upgraded.parts, legacy.parts);
   assert.deepEqual(upgraded.templates.page, legacy.templates.page);
@@ -529,7 +529,7 @@ test("existing glass themes place the shared footer above the fixed scene withou
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 7);
+  assert.equal(updated.manifest.bundledRevision, 8);
   assert.deepEqual(updated.templates, original.templates);
   assert.deepEqual(updated.parts, original.parts);
   assert.ok(updated.css.startsWith(original.css));
@@ -558,7 +558,7 @@ test("revision six thickens the former default lines and preserves custom scene 
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 7);
+  assert.equal(updated.manifest.bundledRevision, 8);
   const expected = structuredClone(original.templates);
   expected.home.children[1].children[1].children[0].settings.sceneRainWidth = 2;
   assert.deepEqual(updated.templates, expected);
@@ -603,7 +603,7 @@ test("revision five adds line opacity without replaying glass or overlay changes
   const original = structuredClone(document);
   const updated = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(updated.manifest.bundledRevision, 7);
+  assert.equal(updated.manifest.bundledRevision, 8);
   assert.equal(
     updated.templates.home.children[1].children[1].children[0].settings
       .sceneRainOpacity,
@@ -649,7 +649,7 @@ test("glass card and rain upgrades style the requested IDs and project cards whi
   const original = structuredClone(document);
   const upgraded = migrateThemeDocument(document);
   assert.deepEqual(document, original);
-  assert.equal(upgraded.manifest.bundledRevision, 7);
+  assert.equal(upgraded.manifest.bundledRevision, 8);
   assert.deepEqual(upgraded.parts, original.parts);
   const next = upgraded.templates.home.children[1].children[1].children[0];
   assert.equal(next.settings.sceneVeilOpacity, 0.75);

@@ -73,6 +73,12 @@ Moon, snow, wind, veil, rain, and pixel settings hide when their component is di
 
 Three.js loads in a separate chunk. Rendering uses bounded pixel density and particle counts, targets up to 60 frames per second on the public site and 30 in editor canvases, and pauses when the document is hidden. Editor image snapshots are capped at 15 frames per second. Camera, pointer, and scroll easing are independent of frame rate. Inline scenes also pause offscreen; the full-viewport background keeps rendering during page scrolling. Reduced-motion preferences disable the entrance fade, wind, flake motion, parallax, zoom, pixel animation, rain animation, and scroll movement while retaining the scene. Editor and inline scenes retain the PNG while loading; it also provides the fallback if live rendering cannot start.
 
+## Loading appearance
+
+Public pages arrive with their theme markup and CSS already rendered. Colossal 2027 starts on `#0c0d10`, with `#f1f2f4` text and a `#c5e5ff` loading accent. Its navigation and text are available before the Three.js chunk or portrait texture finishes loading; the background retains its independent 1,200 ms first-render fade. Angular reuses the initial render rather than showing a generic journal skeleton or restarting the scene with another theme request.
+
+Change the colors and placeholder animation in **Theme Editor → Inspector → Theme loading appearance**, then publish. Bundled revision 8 adds the dark loading profile to older Colossal 2027 documents while preserving custom loading settings, artwork, line thickness and authored content. Placeholder animation respects reduced motion; the CMS handles retries and availability errors.
+
 ## Liquid glass controls
 
 The shared **Glass** popover appears in the theme, page, and post Inspectors. Enable **Liquid glass**, set **Blur** from 0–48 px and **Saturation** from 50–200%, then use **Background** for tint/opacity and **Border** for shape. A translucent background lets the backdrop blur remain visible. Browsers without backdrop-filter support keep the tint and border.

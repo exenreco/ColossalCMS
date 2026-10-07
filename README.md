@@ -646,6 +646,10 @@ Older themes gain missing role templates while retaining layouts and additional 
 
 ### Authoring workflow
 
+Public pages include their sanitized theme content, CSS and metadata in the first HTML response. Angular reuses that render, so the page does not switch to a generic journal skeleton while starting. Images, sliders and 3D scenes load independently; normal links and content remain available without JavaScript. Missing routes return HTTP 404, and maintenance retains HTTP 503.
+
+Configure **Inspector → Theme loading appearance** to set theme-wide loading background, text, accent and placeholder animation. These settings are stored in `manifest.loading`, support older themes through defaults and respect reduced motion. The CMS owns failures and retries. Colossal 2027 uses its dark palette and keeps the background's independent first-render fade. See [Public loading and initial HTML](docs/developers/themes.md#public-loading-and-initial-html) for the presentation contract and fallback behavior.
+
 1. Install a ZIP or create an independent copy of the default theme.
 2. Open the editor, which starts with Home by default.
 3. Edit templates/shared parts with blocks and Inspector controls.
