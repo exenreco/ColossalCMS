@@ -26,6 +26,8 @@ export async function mountIceWorld(host: HTMLElement) {
     ".cl-portrait-fallback",
   );
   const full = host.dataset["fullViewport"] === "true";
+  const fadeBackground = full && doc === document;
+  if (fadeBackground) host.style.opacity = "0";
   // Stretch between viewport edges rather than mixing vh/svh heights. Set this
   // before texture loading so the fallback and live scene have the same frame.
   host.style.position = full ? "fixed" : "relative";
@@ -55,10 +57,14 @@ export async function mountIceWorld(host: HTMLElement) {
   let intersection: IntersectionObserver | undefined;
   let animation = 0,
     disposed = false;
+  let revealAnimation: Animation | undefined;
+  let revealed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true;
     cancelAnimationFrame(animation);
+    revealAnimation?.cancel();
+    if (fadeBackground) host.style.opacity = "1";
     cleanups.forEach((fn) => fn());
     resizeObserver?.disconnect();
     intersection?.disconnect();
@@ -307,6 +313,7 @@ export async function mountIceWorld(host: HTMLElement) {
       dirty = true;
     };
     const preference = () => {
+      if (motion.matches) revealAnimation?.cancel();
       leave();
       scrolling();
     };
@@ -383,6 +390,18 @@ export async function mountIceWorld(host: HTMLElement) {
       if (preview && time - lastSnapshot >= 66) {
         preview.src = canvas.toDataURL("image/webp", 0.84);
         lastSnapshot = time;
+      }
+      if (!revealed) {
+        revealed = true;
+        if (fadeBackground) {
+          host.style.opacity = "1";
+          if (!motion.matches)
+            revealAnimation = host.animate?.([{ opacity: 0 }, { opacity: 1 }], {
+              duration: 1200,
+              easing: "ease-out",
+              fill: "backwards",
+            });
+        }
       }
       dirty = false;
       host.dataset["sceneReady"] = "true";
