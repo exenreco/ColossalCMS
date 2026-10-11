@@ -1,6 +1,6 @@
 # Colossal CMS
 
-**Version 0.0.1** — A block-based CMS with separate Angular administration and public applications, a shared HTTP API, declarative themes, and bundled extensions.
+**Version 0.0.3** — A block-based CMS with separate Angular administration and public applications, a shared HTTP API, declarative themes, and bundled extensions.
 
 Manage posts, pages, media, site settings, templates, and team access. Local development uses SQLite and local files. Node production supports MongoDB or Cloudflare D1 records with MongoDB GridFS, R2-compatible object storage, or persistent local files. Production defaults to **MongoDB + GridFS**.
 
@@ -502,7 +502,9 @@ In **Settings → General → Pages & Routing**, choose published Home, Posts, a
 
 ## Block editors
 
-Theme, page, and post editors share the full available block library, secondary toolbar, left-side current-block list, Canvas/Outline views, responsive widths, contextual toolbar, and Inspector.
+Theme, maintenance, page, and post editors share a vertical tool rail, a left sidebar for Blocks/List/Outline and an independent right Inspector sidebar, a full canvas, responsive viewports, contextual block tools, and a compact top toolbar. Outline stays on the left while Inspector opens on the right using the toggle between Save and Editor settings. Both sidebars can stay open on desktop; the canvas fills their remaining space. The centered template chooser opens with Ctrl/Cmd+K. Save keeps a draft; publishing and additional actions are in Editor settings. Theme preview opens an editable metadata popover, and template preview displays the selected template or shared part.
+
+The workspace supports persistent per-user light/dark mode and a one-time interactive walkthrough that can be skipped or replayed. See [Shared editor workspace](docs/developers/shared-editor.md) for components, menus, preferences, preview behavior, shortcuts, and integration details.
 
 <table>
     <caption>Block Editors</caption>
@@ -524,12 +526,12 @@ Theme, page, and post editors share the full available block library, secondary 
     </tbody>
 </table>
 
-**Theme template roots appear as Body**, applying root appearance to the editor document's HTML body. **Content roots appear as Main**. Post/page canvases show only the current entry's blocks, without shared headers/footers or an automatically inserted title. Add a heading/title block when needed; the public template can independently supply one. Container remains available as a normal block.
+**Body settings** sits above the theme block list and outline and opens the Inspector to style the editor document's HTML body. Post/page outlines use **Main settings** in the same position. Root children appear directly at the top level; only actual containers expand/collapse. The root remains in saved documents and API snapshots, so top-level drag/drop and document styles retain their existing behavior. Post/page canvases show only the current entry's blocks, without shared headers/footers or an automatically inserted title. Add a heading/title block when needed; the public template can independently supply one. Container remains available as a normal block.
 
 ### Blocks and layout
 
 - Layout blocks include Container, Group, Row, Columns, and Column.
-- Content blocks include headings, rich text, HTML fragments, media, and other catalog entries.
+- Content blocks include headings, paragraphs, Formatted HTML, media, and other catalog entries.
 - Site-context blocks include navigation, search, post lists, pagination, metadata, current content, and shared-part references.
 - Interactive blocks include Swiper Slider, Slide, glTF, and Overlay.
 - Active extensions and themes can contribute declarative blocks.
@@ -537,6 +539,18 @@ Theme, page, and post editors share the full available block library, secondary 
 The live library and `shared/theme-blocks.json` are the complete catalog. Site-context blocks may have limited meaningful output in a content-only preview. Columns accepts Column children. Movement cannot create descendant or shared-part cycles. Theme trees support up to eight nesting levels and 2,000 blocks.
 
 A Slider contains Slide blocks and uses Swiper settings for behavior/navigation. Slide backgrounds support image, video, and glTF, with applicable position/repeat controls. Overlay accepts nested blocks and renders above its slide/model background.
+
+### Buttons and navigation menus
+
+**Button** provides editable text, a link, optional new-tab behavior, and a bundled SVG icon before or after its text. Set Icon position to **none** for a text-only button. Icon size and the shared Typography and appearance controls work in theme, maintenance, post, and page editors.
+
+**Menu** contains **Menu Item**, **Custom Link**, and **Button** blocks. Add a Menu Item from Blocks while a Menu is selected, then use its Inspector to choose an existing site page or enter a custom link. Leave its label empty to use the page title. Selected page URLs follow slug changes; unpublished or deleted pages are omitted publicly.
+
+Menu Items are selectable in Canvas, List, and Outline. Use the normal block commands to drag, reorder, copy, duplicate, cut, or remove them. Nest Menu Items to create dropdowns; dropdowns can also contain Custom Link and Button blocks. Each Menu Item has independent Typography and appearance controls. Menu Item blocks can only be placed inside Menu or another Menu Item. Add a **Custom Link** block for an external URL, relative path, anchor, email, or telephone link. Its Inspector controls link text, URL, new-tab behavior, and shared Typography and appearance. Custom Links work in menus and nested dropdowns as well as ordinary page/post content, and support the normal drag, copy, and reorder commands.
+
+Desktop Menu controls set orientation and alignment. Mobile controls set the breakpoint (640, 768, or 1024 px), collapsed/expanded behavior, orientation, alignment, toggle text, and icon. Suggested toggle icons sit beside the full icon picker. Dropdowns open by click or keyboard; Escape closes navigation. Settings save with the draft and become public when published.
+
+Existing custom item arrays migrate to nested Menu Item blocks. Older automatic navigation is converted to page-link blocks using the site's current pages. New menus start with editable Menu Item blocks for the current published site pages, excluding the designated 404 page; existing menus are not repopulated. Links accept relative site paths, anchors, HTTP(S), email, and telephone destinations; executable and protocol-relative links are rejected. The editor's normal nesting and block-count limits apply.
 
 ### Appearance controls
 
@@ -546,7 +560,9 @@ Layout includes display-dependent flex controls, position/offsets, z-index, and 
 
 ### HTML mode
 
-HTML mode edits the selected **Rich text or HTML fragment block**, not the entire page document or serialized block tree. With no applicable selection, it selects an existing rich-text block or creates one. Surrounding structured blocks remain intact.
+**Formatted HTML** displays an editable code editor directly on the canvas in themes, shared parts, maintenance layouts, posts, and pages. It includes syntax highlighting, line numbers, a cursor position indicator, Tab/Shift+Tab indentation, and document Undo/Redo. It follows the editor's light/dark mode. Public pages and template previews render the resulting HTML normally.
+
+HTML mode edits the selected **Paragraph or Formatted HTML block**. With no applicable selection, it selects an existing text block or creates a Formatted HTML block. Adding block-level markup to a Paragraph changes that block to Formatted HTML. Surrounding structured blocks remain intact. Existing Rich text blocks automatically use the new name and code editor. Legacy HTML fragment blocks (`core/html`) migrate to Formatted HTML (`core/rich-text`) in theme templates, shared parts, posts, and pages, preserving their IDs, HTML, appearance settings, and custom labels. New HTML imports use Formatted HTML for markup that does not match another structured block.
 
 Safe source is retained on that block. Scripts, styles, frames, embeds, forms, unsafe links, and event attributes are rejected or sanitized. HTML blocks cannot introduce arbitrary JavaScript. The source limit is 100,000 characters.
 
@@ -575,7 +591,7 @@ Safe source is retained on that block. Scripts, styles, frames, embeds, forms, u
         </tr>
         <tr>
             <td>Ctrl/Cmd+Shift+C / O</td>
-            <td>Canvas / Outline</td>
+            <td>Close / open Outline in the sidebar; canvas remains visible</td>
         </tr>
         <tr>
             <td>Ctrl/Cmd+1 / 2 / 3</td>
@@ -596,17 +612,21 @@ Safe source is retained on that block. Scripts, styles, frames, embeds, forms, u
     </tbody>
 </table>
 
-Segmented controls support arrow-key navigation. Editor shortcuts defer to typing where applicable. Drawer transitions respect reduced-motion preferences.
+Panel and viewport menus support arrow-key navigation. Editor shortcuts defer to typing where applicable. Sidebar and menu transitions respect reduced-motion preferences.
 
 ## Themes and templates
 
-**Colossal Default** is the protected core theme. **Glassey** is bundled as a regular theme and can be deleted when inactive. Themes supply declarative presentation; plugins supply capabilities.
+The shared sidebar defaults to **List view**, a compact block hierarchy available from the sidebar menu and the vertical toolbar. List shares its selection, context menu, keyboard actions, and drag/drop behavior with Outline. Switch to **Outline** for dark rounded block cards, connected hierarchy lines, expandable branches, per-block icons, inline labels, and an animated context menu. Drag a block onto the middle of a container to nest it, or onto its upper/lower edge to reorder it. Right-click or use the actions button for copy, cut, paste, duplicate, move, rename, shared-part editing, and deletion. Arrow keys navigate the tree; F2 renames an outline label. Outline changes share the Inspector's undo/redo journal. Outline opens in the shared left sidebar and keeps the canvas visible.
 
-**Glassey** is an editable dark portfolio with silver liquid glass panels, sticky navigation, a three-column footer, and Projects and Resume templates. Its hero fills the viewport and displays a transparent full-body ice figure seated on a slender carved royal throne, preserving the artwork's aspect ratio. A persistent Three.js background has a partially cropped top-left moon, independently tumbling snowflakes, wind, terrain, stars, and an animated charcoal pixel veil. Smooth camera zoom and parallax respond to scrolling; transparent section backgrounds keep the scene visible. It is seeded inactive without changing existing content or the active theme; earlier Glassey trees receive the scene and glass upgrades while preserving authored copy, custom images, and scene settings. The shared Glass popover exposes blur and saturation. The 3D model block's `portrait` source exposes scene speed, zoom, veil, pixels, image, moon, snow, wind, lighting, pointer, scroll, and framing controls in theme, post, and page Inspectors. Reduced-motion preferences stop scene animation. See the [Glassey guide](docs/guides/colossal-2027.md) for activation, sample content, assets, and controls, and [artwork provenance](docs/guides/colossal-2027-artwork.md) for the exact image prompt and snowflake source.
+Themes can supply `editor: { label, icon }` metadata on block nodes. Reviewed editor integrations can use `window.colossalThemeEditor` or inject `ThemeOutlineApi`; external tools can read or change private drafts through `/api/themes/:id/outline`. See the [Outline editor API](docs/developers/outline-api.md) for commands, subscriptions, metadata, authentication, and revision checks.
 
-Glassey project, education, and toolkit cards use `#17191bc9` glass backgrounds. Its pixel veil and animated rain lines share the same editable tint; the overlay defaults to 0.75 opacity. Lines extend across the canvas at 45 degrees and default to 2 px thickness and 0.35 opacity. The angle is calculated in pixels so it stays consistent on wide and narrow screens. Rain controls cover density, falling speed, stroke thickness from 0.3–4 px, and opacity. These controls appear in theme, post, and page Inspectors, and reduced-motion preferences stop their animation. The persistent background stretches between all four viewport edges with zero margin, including during scrolling and mobile viewport resizing. On the public site it fades in over 1.2 seconds after its first rendered frame; reduced-motion preferences reveal it immediately.
+**Colossal Default** is the protected core theme. **Glossy** is bundled as a regular theme and can be deleted when inactive. Themes supply declarative presentation; plugins supply capabilities.
 
-**Template settings → Landing page at /** selects an optional Home template when `/` normally renders the post index. Choose **Follow site routing** to remove that preference. Glassey selects Home by default; separately configured post-index pages retain their normal routing.
+**Glossy** is an editable dark portfolio with silver liquid glass panels, sticky navigation, a three-column footer, and Projects and Resume templates. Its hero fills the viewport and displays a transparent full-body ice figure seated on a slender carved royal throne, preserving the artwork's aspect ratio. A persistent Three.js background has a partially cropped top-left moon, independently tumbling snowflakes, wind, terrain, stars, and an animated charcoal pixel veil. Smooth camera zoom and parallax respond to scrolling; transparent section backgrounds keep the scene visible. It is seeded inactive without changing existing content or the active theme; earlier Glossy trees receive the scene and glass upgrades while preserving authored copy, custom images, and scene settings. The shared Glass popover exposes blur and saturation. The 3D model block's `portrait` source exposes scene speed, zoom, veil, pixels, image, moon, snow, wind, lighting, pointer, scroll, and framing controls in theme, post, and page Inspectors. Reduced-motion preferences stop scene animation. See the [Glossy guide](docs/guides/colossal-2027.md) for activation, sample content, assets, and controls, and [artwork provenance](docs/guides/colossal-2027-artwork.md) for the exact image prompt and snowflake source.
+
+Glossy project, education, and toolkit cards use `#17191bc9` glass backgrounds. Its pixel veil and animated rain lines share the same editable tint; the overlay defaults to 0.75 opacity. Lines extend across the canvas at 45 degrees and default to 2 px thickness and 0.35 opacity. The angle is calculated in pixels so it stays consistent on wide and narrow screens. Rain controls cover density, falling speed, stroke thickness from 0.3–4 px, and opacity. These controls appear in theme, post, and page Inspectors, and reduced-motion preferences stop their animation. The persistent background stretches between all four viewport edges with zero margin, including during scrolling and mobile viewport resizing. On the public site it fades in over 1.2 seconds after its first rendered frame; reduced-motion preferences reveal it immediately.
+
+**Template settings → Landing page at /** selects an optional Home template when `/` normally renders the post index. Choose **Follow site routing** to remove that preference. Glossy selects Home by default; separately configured post-index pages retain their normal routing.
 
 <table>
     <caption>Default Theme</caption>
@@ -650,7 +670,7 @@ Older themes gain missing role templates while retaining layouts and additional 
 
 Public pages include their sanitized theme content, CSS and metadata in the first HTML response. Angular reuses that render, so the page does not switch to a generic journal skeleton while starting. Images, sliders and 3D scenes load independently; normal links and content remain available without JavaScript. Missing routes return HTTP 404, and maintenance retains HTTP 503.
 
-Configure **Inspector → Theme loading appearance** to set theme-wide loading background, text, accent and placeholder animation. These settings are stored in `manifest.loading`, support older themes through defaults and respect reduced motion. The CMS owns failures and retries. Glassey uses its dark palette and keeps the background's independent first-render fade. See [Public loading and initial HTML](docs/developers/themes.md#public-loading-and-initial-html) for the presentation contract and fallback behavior.
+Configure **Inspector → Theme loading appearance** to set theme-wide loading background, text, accent and placeholder animation. These settings are stored in `manifest.loading`, support older themes through defaults and respect reduced motion. The CMS owns failures and retries. Glossy uses its dark palette and keeps the background's independent first-render fade. See [Public loading and initial HTML](docs/developers/themes.md#public-loading-and-initial-html) for the presentation contract and fallback behavior.
 
 1. Install a ZIP or create an independent copy of the default theme.
 2. Open the editor, which starts with Home by default.
@@ -775,7 +795,7 @@ The Plugins page initially opens in **List view**, with alternating table row co
 
 ### Maintenance
 
-Install and activate **Maintenance** from Plugins, then open its admin menu. It includes three editable layouts: **Quiet**, **Midnight**, and **Studio**. Maintenance mode starts disabled.
+Install and activate **Maintenance** from Plugins, then open its admin menu. It includes three editable layouts: **Quiet**, **Midnight**, and **Studio**. Maintenance mode starts disabled. **Midnight** is a full-screen transparent layout with a deep blue overlay at 88% opacity, centered message, and Site Identity. Its Moving geometry block animates circles and connections, responds to the pointer, and offers circle count, speed, and connection-distance controls. It respects reduced motion and works in the editor and public previews.
 
 1. Choose **Edit** on a layout, or **New layout** to start blank. The shared Theme Editor provides blocks, Canvas, Outline, Inspector, responsive previews, CSS, and template settings.
 2. Save drafts, preview privately as an administrator, then publish. Add templates through the editor's template menu; **Save as new layout** duplicates a layout. Version history supports restoring a published version as a draft.
@@ -1199,6 +1219,11 @@ All paths are relative to the site's origin. IDs identify persisted records. `/a
             <td>Member workspace state; admin-only member/key metadata</td>
         </tr>
         <tr>
+            <td>GET / PUT</td>
+            <td>`/api/admin/editor/preferences`</td>
+            <td>Current member’s light/dark mode and one-time walkthrough state</td>
+        </tr>
+        <tr>
             <td>POST</td>
             <td>`/api/admin/content`</td>
             <td>Admin/editor creates or updates entry</td>
@@ -1349,6 +1374,16 @@ Listings and the active manifest require membership. Document/package/edit opera
             <td>GET</td>
             <td>`/api/themes/:id`</td>
             <td>Published/draft documents, revision, history</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>`/api/themes/:id/outline`</td>
+            <td>Versioned block tree for a template or shared part; optional published-only view</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>`/api/themes/:id/outline`</td>
+            <td>Administrator-only block command; validates and saves a private draft with a revision check</td>
         </tr>
         <tr>
             <td>DELETE</td>

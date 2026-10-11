@@ -8,6 +8,12 @@ describe("Shared appearance pickers", () => {
       headers,
       failOnStatusCode: false,
     });
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers: headers,
+      body: { walkthroughVersion: 1 },
+    });
   });
 
   it("replaces theme appearance inputs and saves picker changes", () => {
@@ -26,6 +32,7 @@ describe("Shared appearance pickers", () => {
             win.sessionStorage.setItem("colossal.inspector.open", "true");
           },
         });
+        cy.get(".outline-document-settings").click();
         cy.get(".theme-inspector cl-appearance-picker-panel").should("exist");
         cy.get(".theme-inspector .inspector-title").should("contain", "Body");
         cy.get("iframe.theme-live-preview").should(($frame) => {
@@ -269,8 +276,14 @@ describe("Shared appearance pickers", () => {
           .contains("label", "Loop animation")
           .find("input[type='checkbox']")
           .check();
+        let canvasDocument;
+        let canvasBody;
+        cy.get("iframe.theme-live-preview").then(($frame) => {
+          canvasDocument = $frame[0].contentDocument;
+          canvasBody = canvasDocument.body;
+        });
         cy.get(
-          ".theme-inspector cl-spacing-picker[kind='padding'] summary",
+          ".theme-inspector cl-spacing-picker[kind='padding'] .cl-picker-trigger",
         ).click();
         cy.screenshot("theme-padding-picker", { capture: "viewport" });
         cy.get(
@@ -280,6 +293,8 @@ describe("Shared appearance pickers", () => {
           .type("36")
           .blur();
         cy.get("iframe.theme-live-preview").should(($frame) => {
+          expect($frame[0].contentDocument).eq(canvasDocument);
+          expect($frame[0].contentDocument.body).eq(canvasBody);
           expect($frame[0].contentDocument.body.style.paddingTop).eq("36px");
         });
         cy.get(
@@ -292,7 +307,7 @@ describe("Shared appearance pickers", () => {
           ".theme-inspector cl-spacing-picker[kind='padding'] .cl-spacing-bottom cl-unit-input select",
         ).select("rem");
         cy.get(
-          ".theme-inspector cl-spacing-picker[kind='margin'] summary",
+          ".theme-inspector cl-spacing-picker[kind='margin'] .cl-picker-trigger",
         ).click();
         cy.get(
           ".theme-inspector cl-spacing-picker[kind='margin'] .cl-spacing-right input[type='number']",
@@ -300,7 +315,7 @@ describe("Shared appearance pickers", () => {
           .click()
           .clear()
           .type("12");
-        cy.get(".theme-inspector cl-dimensions-picker summary").click();
+        cy.get(".theme-inspector cl-dimensions-picker .cl-picker-trigger").click();
         cy.get(".theme-inspector cl-dimensions-picker cl-unit-input")
           .first()
           .find("input[type='range']")
@@ -321,36 +336,29 @@ describe("Shared appearance pickers", () => {
           .find("input[type='number']")
           .clear()
           .type("360");
-        cy.get(".theme-more summary").click();
-        cy.get(".theme-more").contains("button", "Save Draft").click();
+        cy.get('button[aria-label="Save draft"]').click();
         cy.contains("Draft saved").should("exist");
         cy.request("/api/themes/" + body.id).then(({ body: theme }) => {
-          expect(theme.draft.templates.default.settings.padding.top).eq(36);
-          expect(theme.draft.templates.default.settings.padding.right).eq(24);
-          expect(theme.draft.templates.default.settings.margin.right).eq(12);
-          expect(theme.draft.templates.default.settings.borderSides.right).eq(
-            3,
-          );
-          expect(theme.draft.templates.default.settings.offsets.right).eq(14);
-          expect(theme.draft.templates.default.settings.maxWidth).match(/vw$/);
-          expect(theme.draft.templates.default.settings.minHeight).eq(360);
-          expect(theme.draft.templates.default.settings.padding.bottom).match(
+          expect(theme.draft.templates.home.settings.padding.top).eq(36);
+          expect(theme.draft.templates.home.settings.padding.right).eq(24);
+          expect(theme.draft.templates.home.settings.margin.right).eq(12);
+          expect(theme.draft.templates.home.settings.borderSides.right).eq(3);
+          expect(theme.draft.templates.home.settings.offsets.right).eq(14);
+          expect(theme.draft.templates.home.settings.maxWidth).match(/vw$/);
+          expect(theme.draft.templates.home.settings.minHeight).eq(360);
+          expect(theme.draft.templates.home.settings.padding.bottom).match(
             /rem$/,
           );
-          expect(theme.draft.templates.default.settings.position).eq("fixed");
-          expect(theme.draft.templates.default.settings.zIndex).eq(25);
-          expect(theme.draft.templates.default.settings.offsets.top).match(
-            /vh$/,
-          );
-          expect(theme.draft.templates.default.settings.transform.rotate).eq(
-            15,
-          );
-          expect(theme.draft.templates.default.settings.color).eq("");
-          expect(theme.draft.templates.default.settings.background).eq("");
-          expect(theme.draft.templates.default.settings.borderStyles.top).eq(
+          expect(theme.draft.templates.home.settings.position).eq("fixed");
+          expect(theme.draft.templates.home.settings.zIndex).eq(25);
+          expect(theme.draft.templates.home.settings.offsets.top).match(/vh$/);
+          expect(theme.draft.templates.home.settings.transform.rotate).eq(15);
+          expect(theme.draft.templates.home.settings.color).eq("");
+          expect(theme.draft.templates.home.settings.background).eq("");
+          expect(theme.draft.templates.home.settings.borderStyles.top).eq(
             "dashed",
           );
-          expect(theme.draft.templates.default.settings.borderColors.top).eq(
+          expect(theme.draft.templates.home.settings.borderColors.top).eq(
             "#214c3a",
           );
         });
@@ -361,6 +369,9 @@ describe("Shared appearance pickers", () => {
     it(`uses the same pickers in the ${kind} Inspector`, () => {
       cy.visit(`/admin/${kind}s`);
       cy.contains("button", `Create ${kind}`).first().click();
+      cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+        if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+      });
       cy.get(".content-block-inspector cl-appearance-picker-panel").should(
         "exist",
       );

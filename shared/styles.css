@@ -1,5 +1,7 @@
 @import "./theme-editor.css";
+@import "./theme-outline.css";
 @import "./pickers/pickers.css";
+@import "./editor-shell.css";
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
   --bg: #f7f9f8;
@@ -3159,7 +3161,6 @@ progress {
 }
 .content-block-inspector {
   padding: 22px 24px;
-  border-bottom: 1px solid #e0e5d9;
 }
 .content-block-inspector h3 {
   display: flex;
@@ -3167,12 +3168,6 @@ progress {
   gap: 8px;
   margin: 6px 0 14px;
   font-size: 18px;
-}
-.content-block-inspector__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 18px;
 }
 .content-block-inspector .theme-field {
   margin-bottom: 14px;

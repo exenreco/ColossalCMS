@@ -1,9 +1,27 @@
+import {
+  renderButton,
+  renderMenu,
+  renderMenuItem,
+  navigationSettingsError,
+  MENU_CSS,
+} from "../shared/navigation-blocks.ts";
 import sanitizeHtml from "sanitize-html";
 import postcss from "postcss";
 import { parseDocument } from "htmlparser2";
 import { textContent } from "domutils";
 import semver from "semver";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
+import {
+  normalizeIconSettings,
+  renderIcon,
+  validIcon,
+} from "../shared/icon-catalog.ts";
+import { validOutlineMetadata } from "../shared/outline-document.ts";
+import { sharedPartsError } from "../shared/shared-part-blocks.ts";
+import {
+  paginationPlacementValid,
+  postListChildren,
+} from "../shared/context-blocks.ts";
 import { fail } from "./v2-utils.mjs";
 import { ADS_BLOCK, GOOGLE_ADS_ID, resolveAdUnit } from "./google-ads.mjs";
 import {
@@ -16,7 +34,7 @@ import {
   resolveThemeLoading,
   validThemeLoading,
 } from "../shared/theme-loading.ts";
-export const CMS_VERSION = "0.0.1",
+export const CMS_VERSION = "0.0.3",
   CORE_THEME_ID = "com.colossal.theme.default";
 export const TYPES = ["home", "page", "post", "post-index", "search", "404"];
 export const esc = (v) =>
@@ -159,10 +177,17 @@ const styles = {
     width: [new RegExp(`^(?:${positiveLengthCssPattern}|auto)$`)],
     "min-height": [new RegExp(`^${positiveLengthCssPattern}$`)],
     "max-height": [new RegExp(`^(?:${positiveLengthCssPattern}|none)$`)],
+    "--menu-direction": [/^(row|column)$/],
+    "--menu-mobile-direction": [/^(row|column)$/],
+    "--menu-align": [/^(flex-start|center|flex-end)$/],
+    "--menu-mobile-align": [/^(flex-start|center|flex-end)$/],
     "flex-direction": [/^(row|column)$/],
     "justify-content": [/^(flex-start|center|flex-end)$/],
     "max-width": [new RegExp(`^(?:${positiveLengthCssPattern}|none)$`)],
-    display: [/^(grid|flex|block)$/],
+    display: [/^(grid|flex|inline-flex|block)$/],
+    "align-items": [/^(stretch|flex-start|center|flex-end)$/],
+    "object-fit": [/^(cover|contain)$/],
+    "aspect-ratio": [/^(16\/9|4\/3|1\/1|3\/4)$/],
     position: [/^(relative|absolute|fixed|sticky)$/],
     "pointer-events": [/^(auto|none)$/],
     top: [new RegExp(`^${lengthCssPattern}$`)],
@@ -195,7 +220,10 @@ export function sanitizeTemplate(
   const original = String(html);
   if (original.length > 500000) fail("Template exceeds 500 KB.");
   const output = sanitizeHtml(original, {
-    allowedTags: [...tags, ...(rendered ? ["form", "input", "button"] : [])],
+    allowedTags: [
+      ...tags,
+      ...(rendered ? ["form", "input", "button", "svg", "path"] : []),
+    ],
     allowedAttributes: {
       "*": [
         "class",
@@ -205,10 +233,16 @@ export function sanitizeTemplate(
         "aria-roledescription",
         "style",
         "data-block-id",
+        "data-geometry-count",
+        "data-geometry-speed",
+        "data-geometry-distance",
+        "data-source-block-id",
+        "data-content-id",
         "data-theme-template",
         "data-theme-id",
         "aria-label",
         "aria-hidden",
+        "aria-expanded",
         "data-model-url",
         "data-portrait-url",
         "data-fragment-count",
@@ -283,14 +317,32 @@ export function sanitizeTemplate(
       form: ["action", "method", "role"],
       input: ["type", "name", "value", "placeholder", "aria-label"],
       button: ["type"],
+      svg: rendered
+        ? [
+            "viewbox",
+            "width",
+            "height",
+            "fill",
+            "stroke",
+            "stroke-width",
+            "stroke-linecap",
+            "stroke-linejoin",
+            "focusable",
+          ]
+        : [],
+      path: rendered ? ["d"] : [],
     },
     allowedStyles: styles,
-    allowedSchemes: ["http", "https", "mailto"],
+    allowedSchemes: ["http", "https", "mailto", "tel"],
     allowProtocolRelative: false,
     transformTags: {
       a: (tag, attrs) => ({
         tagName: tag,
-        attribs: { ...attrs, target: "_self", rel: "noopener noreferrer" },
+        attribs: {
+          ...attrs,
+          target: rendered && attrs.target === "_blank" ? "_blank" : "_self",
+          rel: "noopener noreferrer",
+        },
       }),
       form: () => ({
         tagName: "form",
@@ -324,6 +376,32 @@ export function sanitizeTemplate(
       label + ": unsafe or unsupported markup removed; HTML normalized.",
     );
   return output;
+}
+/** Paragraphs contain inline markup only, never nested blocks or executable content. */
+export function sanitizeParagraph(html) {
+  return sanitizeHtml(sanitizeTemplate(html ?? ""), {
+    allowedTags: [
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "s",
+      "strike",
+      "code",
+      "span",
+      "small",
+      "mark",
+      "sup",
+      "sub",
+      "a",
+    ],
+    allowedAttributes: { a: ["href", "target", "rel"], span: ["style"] },
+    allowedStyles: styles,
+    allowedSchemes: ["http", "https", "mailto"],
+    allowProtocolRelative: false,
+  });
 }
 export function sanitizeCss(css, report = []) {
   if (String(css).length > 200000) fail("Theme styles exceed 200 KB.");
@@ -626,8 +704,7 @@ export function defaultTheme() {
     },
   ];
   const article = () => [
-    block("core/heading", { text: "{{content.title}}", level: "h1" }),
-    block("core/rich-text", { html: "<p>{{content.excerpt}}</p>" }),
+    block("core/title", { level: "h1" }),
     block("core/post-meta"),
     block("core/featured-image"),
     part("content"),
@@ -639,18 +716,23 @@ export function defaultTheme() {
     "post-single": article(),
     "post-archive": [
       block("core/heading", { text: "{{site.tagline}}", level: "h1" }),
-      block("core/post-list", { limit: 6, columns: 3, showExcerpt: true }),
-      block("core/pagination"),
+      block(
+        "core/post-list",
+        { limit: 6, columns: 3 },
+        postListChildren(block),
+      ),
     ],
     search: [
       block("core/heading", { text: "Search the journal", level: "h1" }),
       block("core/search"),
-      block("core/post-list", { limit: 6, columns: 2, showExcerpt: true }),
-      block("core/pagination"),
+      block(
+        "core/post-list",
+        { limit: 6, columns: 2 },
+        postListChildren(block),
+      ),
     ],
     "not-found": [
-      block("core/heading", {
-        text: "{{content.title}}",
+      block("core/title", {
         level: "h1",
       }),
       part("content"),
@@ -690,11 +772,16 @@ export function defaultTheme() {
     },
     templates: {},
     parts: {
-      header: container([block("core/site-brand"), block("core/menu")]),
+      header: container([block("core/site-brand"), block("core/menu", {}, [])]),
       footer: container([
-        block("core/rich-text", {
-          html: "<p>{{site.title}} · Powered by Colossal</p>",
-        }),
+        block("core/row", { gap: 8 }, [
+          block("core/site-brand", {
+            display: "name",
+            level: "span",
+            linkHome: false,
+          }),
+          block("core/paragraph", { html: "· Powered by Colossal" }),
+        ]),
       ]),
       sidebar: container([block("core/search")]),
       content: container([block("core/content")]),
@@ -804,6 +891,8 @@ export function validateDocument(input, core = false) {
     )
       fail("Invalid block or duplicate block ID.");
     ids.add(node.id);
+    if (node.editor !== undefined && !validOutlineMetadata(node.editor))
+      fail("Outline labels must be plain text and icons must be valid tokens.");
     if (
       !node.settings ||
       typeof node.settings !== "object" ||
@@ -841,11 +930,48 @@ export function validateDocument(input, core = false) {
     )
       fail("3D model accepts Overlay blocks only.");
     if (node.settings.html)
-      node.settings.html = sanitizeTemplate(node.settings.html);
+      node.settings.html =
+        node.type === "core/paragraph"
+          ? sanitizeParagraph(node.settings.html)
+          : sanitizeTemplate(node.settings.html);
+    const navigationError = navigationSettingsError(node.type, node.settings);
+    if (navigationError) fail(navigationError);
+    if (
+      ["core/menu", "core/menu-item"].includes(node.type) &&
+      node.children?.some(
+        (child) =>
+          !["core/button", "core/menu-item", "core/custom-link"].includes(
+            child.type,
+          ),
+      )
+    )
+      fail(
+        "Menus and Menu Items accept Menu Item, Custom Link, and Button blocks only.",
+      );
+    if (
+      node.type === "core/menu-item" &&
+      !["core/menu", "core/menu-item"].includes(parentType)
+    )
+      fail("A Menu Item must be inside a Menu or another Menu Item.");
+    if (node.type === "core/icon") {
+      if (
+        node.settings.iconName !== undefined &&
+        node.settings.iconName !== "" &&
+        !validIcon(node.settings.iconName)
+      )
+        fail("Choose an icon from the bundled library.");
+      normalizeIconSettings(node.settings);
+    }
     if (node.type === "core/gltf") {
-      if (!String(node.settings.alt || "").trim())
+      const hasSource =
+        node.settings.source === "portrait"
+          ? node.settings.portraitImage || node.settings.portraitUrl
+          : node.settings.source === "url"
+            ? node.settings.url
+            : node.settings.mediaId;
+      if (hasSource && !String(node.settings.alt || "").trim())
         fail("Add a description for the 3D model.");
-      if (node.settings.source === "url") {
+      if (node.settings.source === "url" && node.settings.url) {
         if (!modelSourceUrl(node.settings.url))
           fail(
             "Use an HTTPS model URL without credentials or the bundled Brilliant model.",
@@ -867,7 +993,12 @@ export function validateDocument(input, core = false) {
     }
     if (
       ["core/image", "core/media"].includes(node.type) &&
-      node.settings.source === "url"
+      node.settings.source === "url" &&
+      node.settings.url &&
+      !(
+        node.type === "core/image" &&
+        /^\/(?!\/)[^\s\\\u0000-\u001f]*$/.test(node.settings.url)
+      )
     ) {
       let url;
       try {
@@ -901,6 +1032,9 @@ export function validateDocument(input, core = false) {
           "core/slide",
           "core/overlay",
           "core/gltf",
+          "core/post-list",
+          "core/menu",
+          "core/menu-item",
         ].includes(node.type) &&
           !d.blocks.find((b) => b.type === node.type)?.container)
       )
@@ -915,23 +1049,23 @@ export function validateDocument(input, core = false) {
     const root = d.templates[t.id];
     if (root?.type !== "core/container")
       fail("Every template needs a root container.");
+    if (!paginationPlacementValid(root))
+      fail(
+        "Pagination must be inside a Post list or one of its layout blocks.",
+      );
     walk(root, 0, false, new Set());
   }
   for (const name of Object.keys(d.manifest.parts)) {
     if (d.parts[name]?.type !== "core/container")
       fail("Each theme part needs a root container.");
+    if (!paginationPlacementValid(d.parts[name]))
+      fail(
+        "Pagination must be inside a Post list or one of its layout blocks.",
+      );
     walk(d.parts[name], 0, true, new Set());
   }
-  const checkParts = (node, trail = []) => {
-    if (node.type.startsWith("theme/part-")) {
-      const name = node.type.slice(11);
-      if (trail.includes(name))
-        fail("Shared parts cannot contain circular references.");
-      checkParts(d.parts[name], [...trail, name]);
-    }
-    for (const child of node.children || []) checkParts(child, trail);
-  };
-  for (const [name, root] of Object.entries(d.parts)) checkParts(root, [name]);
+  const partError = sharedPartsError(d.parts);
+  if (partError) fail(partError);
   d.css = sanitizeCss(d.css || "");
   d.html = {};
   d.assets = d.assets || {};
@@ -1165,29 +1299,50 @@ export function minHeightCss(id, s, slider = false) {
   }
   return css;
 }
-const token = (type, settings) =>
+const token = (type, settings, children) =>
   "{{block:" +
-  btoa(unescape(encodeURIComponent(JSON.stringify({ type, settings })))) +
+  btoa(
+    unescape(
+      encodeURIComponent(
+        JSON.stringify({ type, settings, ...(children ? { children } : {}) }),
+      ),
+    ),
+  ) +
   "}}";
+function instanceBlockTree(node, suffix) {
+  return {
+    ...node,
+    id: suffix ? node.id + "--" + suffix : node.id,
+    _sourceId: node._sourceId || node.id,
+    settings: {
+      ...node.settings,
+      ...(suffix && node.settings.anchor
+        ? { anchor: node.settings.anchor + "--" + suffix }
+        : {}),
+    },
+    ...(node.children
+      ? {
+          children: node.children.map((child) =>
+            instanceBlockTree(child, suffix),
+          ),
+        }
+      : {}),
+  };
+}
 export function compileBlock(b, d, depth = 0, asBody = false) {
   if (depth > 16) return "";
   const s = b.settings || {},
-    children = (b.children || [])
+    children = (b.type === "core/post-list" ? [] : b.children || [])
       .map((n) => compileBlock(n, d, depth + 1))
       .join("");
-  if (b.type.startsWith("theme/part-")) {
-    const name = b.type.slice(11);
-    return (
-      '<div class="theme-part-' +
-      name +
-      '">' +
-      compileBlock(d.parts[name], d, depth + 1) +
-      "</div>"
-    );
-  }
   let html = "";
   const type = b.type;
-  if (
+  if (type.startsWith("theme/part-")) {
+    const tree = d.parts?.[type.slice(11)];
+    html = tree
+      ? compileBlock(instanceBlockTree(tree, b.id), d, depth + 1)
+      : "";
+  } else if (
     ["core/container", "core/group", "core/column", "core/overlay"].includes(
       type,
     )
@@ -1260,9 +1415,17 @@ export function compileBlock(b, d, depth = 0, asBody = false) {
       "</" +
       level +
       ">";
-  } else if (type === "core/rich-text" || type === "core/html")
+  } else if (type === "core/paragraph")
+    html = "<p>" + sanitizeParagraph(s.html ?? esc(s.text)) + "</p>";
+  else if (type === "core/rich-text" || type === "core/html")
     html = sanitizeTemplate(s.html || "");
+  else if (type === "core/button") html = renderButton(s);
+  else if (["core/menu", "core/menu-item", "core/custom-link"].includes(type))
+    html = token(type, { ...s, childMarkup: children });
+  else if (type === "core/icon") html = renderIcon(s);
   else if (type === "core/gltf") html = token(type, s) + children;
+  else if (type === "core/post-list")
+    html = token(type, { ...s, listBlockId: b.id }, b.children);
   else if (definitions.some((x) => x.type === type)) html = token(type, s);
   else {
     const def = d.blocks.find((x) => x.type === type);
@@ -1278,8 +1441,9 @@ export function compileBlock(b, d, depth = 0, asBody = false) {
     .filter((k) => s.visibility?.[k] === false)
     .map((k) => "theme-hide-" + k)
     .join(" ");
-  const structural =
-    type === "core/slide"
+  const structural = type.startsWith("theme/part-")
+    ? "theme-part-" + type.slice(11)
+    : type === "core/slide"
       ? "swiper-slide"
       : type === "core/overlay"
         ? "cl-overlay-block"
@@ -1326,10 +1490,18 @@ export function compileBlock(b, d, depth = 0, asBody = false) {
     }
   }
   if (asBody) return html;
+  // Button appearance belongs to the clickable element, including its hit area.
+  if (type === "core/button")
+    return html.replace(
+      'class="theme-button"',
+      `data-block-id="${esc(b.id)}"${b._sourceId ? ` data-source-block-id="${esc(b._sourceId)}"` : ""} class="theme-block theme-button ${classes} ${hidden}" style="${styleSettings(s)}"${/^[a-zA-Z][\w-]*$/.test(s.anchor || "") ? ` id="${esc(s.anchor)}"` : ""}`,
+    );
   return (
     '<div data-block-id="' +
     esc(b.id) +
-    '" class="theme-block ' +
+    '"' +
+    (b._sourceId ? ' data-source-block-id="' + esc(b._sourceId) + '"' : "") +
+    ' class="theme-block ' +
     classes +
     " " +
     hidden +
@@ -1396,7 +1568,7 @@ export function htmlToTree(html) {
       );
     if (/^h[1-6]$/.test(n.name))
       return block("core/heading", { text: textContent(n), level: n.name });
-    // Sanitized hand-authored fragments remain editable through the HTML text field.
+    // Sanitized hand-authored markup uses the shared Formatted HTML canvas editor.
     const serialize = (node) => {
       if (node.type === "text") return esc(node.data);
       if (!node.name) return "";
@@ -1414,7 +1586,7 @@ export function htmlToTree(html) {
         ">"
       );
     };
-    return block("core/html", { html: serialize(n) });
+    return block("core/rich-text", { html: serialize(n) });
   };
   return block("core/container", {}, dom.children.map(convert).filter(Boolean));
 }
@@ -1496,7 +1668,7 @@ function mediaHtml(m, ctx) {
     "</figure>"
   );
 }
-function dynamic(type, s, ctx) {
+function dynamic(type, s, ctx, children) {
   if (type === ADS_BLOCK) {
     const preview = !!(
       ctx.adsPreview ||
@@ -1588,6 +1760,7 @@ function dynamic(type, s, ctx) {
         image ||
         /^\/themes\/colossal-2027\/[a-z0-9-]+\.png$/.test(url) ||
         /^https:\/\//.test(url);
+      if (!url || !safe) return "";
       const world = s.scenePreset === "ice-world";
       const veilColor = /^#[a-f0-9]{6}(?:[a-f0-9]{2})?$/i.test(
         String(s.sceneVeilColor || ""),
@@ -1603,6 +1776,7 @@ function dynamic(type, s, ctx) {
       (m) => m.id === s.mediaId && m.type === "model",
     );
     const url = s.source === "url" ? modelSourceUrl(s.url) : media?.url;
+    if (!url) return "";
     const poster = ctx.media.find(
       (m) => m.id === s.poster && m.type === "image",
     );
@@ -1612,18 +1786,37 @@ function dynamic(type, s, ctx) {
   }
   const c = ctx.content,
     settings = ctx.settings;
-  if (type === "core/site-brand")
-    return (
-      '<a class="theme-site-brand" href="/">' +
-      (settings.logo
-        ? '<img src="' +
-          esc(settings.logo) +
-          '" alt="' +
-          esc(settings.title) +
-          '" height="52">'
-        : "<h2>" + esc(settings.title) + "</h2>") +
-      "</a>"
-    );
+  if (type === "core/site-brand") {
+    const display = s.display || "auto";
+    const showLogo =
+      !!settings.logo && ["auto", "logo", "logo-and-name"].includes(display);
+    const showName =
+      display === "name" ||
+      display === "logo-and-name" ||
+      (display === "auto" && !showLogo);
+    const level = /^(?:h[1-6]|p|span)$/.test(s.level) ? s.level : "h2";
+    const content =
+      (showLogo
+        ? `<img class="theme-site-logo" src="${esc(settings.logo)}" alt="${esc(settings.title)}" height="${num(s.logoHeight ?? 52, 8, 512)}" style="height:${num(s.logoHeight ?? 52, 8, 512)}px;width:auto;object-fit:contain">`
+        : "") +
+      (showName
+        ? `<${level} class="theme-site-name"${typographyAttributes(s)}>${esc(settings.title)}</${level}>`
+        : "");
+    if (!content) return "";
+    const tag = s.linkHome === false ? "div" : "a";
+    return `<${tag} class="theme-site-brand"${tag === "a" ? ' href="/"' : ""} style="display:inline-flex;align-items:center;flex-direction:${s.orientation === "vertical" ? "column" : "row"};gap:${num(s.gap ?? 12, 0, 120)}px">${content}</${tag}>`;
+  }
+  if (type === "core/title") {
+    const text = c?.title || (ctx.kind === "404" ? "Page not found" : "");
+    if (!text) return "";
+    const level = /^h[1-6]$/.test(s.level) ? s.level : "h2";
+    const title =
+      s.linkToContent && c?.slug
+        ? `<a href="${esc(contentPath(c))}"${typographyAttributes(s)}>${esc(text)}</a>`
+        : esc(text);
+    return `<${level} class="theme-content-title"${typographyAttributes(s)}>${title}</${level}>`;
+  }
+  if (type === "core/excerpt") return renderListExcerpt(c?.excerpt, s);
   if (type === "core/post-content" || type === "core/content") {
     const contentHtml =
       Array.isArray(c?.details?.contentBlocks) && !ctx.renderingContentBlocks
@@ -1635,25 +1828,18 @@ function dynamic(type, s, ctx) {
               }),
             )
             .join("")
-            .replace(/{{block:([A-Za-z0-9+/=]+)}}/g, (_, payload) => {
-              try {
-                const b = JSON.parse(decodeURIComponent(escape(atob(payload))));
-                return dynamic(b.type, b.settings, {
-                  ...ctx,
-                  renderingContentBlocks: true,
-                });
-              } catch {
-                return "";
-              }
-            })
         : c?.details?.richText
           ? rich(c.details.richText, ctx)
           : esc(c?.body || "")
               .split(/\n\s*\n/)
               .map((p) => "<p>" + p + "</p>")
               .join("");
+    const resolvedContent = renderDynamicMarkup(contentHtml, {
+      ...ctx,
+      renderingContentBlocks: true,
+    });
     if (ctx.renderingContentBlocks || ctx.renderingContentCanvas)
-      return contentHtml;
+      return resolvedContent;
     const mainSettings = c?.details?.contentMain || {};
     const mainId =
       "blk_content-main-" +
@@ -1662,7 +1848,7 @@ function dynamic(type, s, ctx) {
         .slice(0, 60);
     if (mainSettings.minHeightEnabled)
       ctx.contentCss.push(minHeightCss(mainId, mainSettings));
-    return `<main class="theme-block content-main" data-block-id="${mainId}" style="${styleSettings(mainSettings)}">${contentHtml}</main>`;
+    return `<main class="theme-block content-main" data-block-id="${mainId}" style="${styleSettings(mainSettings)}">${resolvedContent}</main>`;
   }
   if (type === "core/post-meta")
     return c?.kind === "post"
@@ -1700,24 +1886,34 @@ function dynamic(type, s, ctx) {
             : "") +
           "</p>"
       : "";
-  if (type === "core/featured-image")
-    return (
-      mediaHtml(
-        ctx.media.find(
-          (m) => m.id === (c?.details?.featuredImageId || s.mediaId),
-        ),
-        ctx,
-      ) || projectImage(c)
+  if (type === "core/featured-image") {
+    if (s.showImage === false) return "";
+    const image = ctx.media.find(
+      (m) => m.id === c?.details?.featuredImageId && m.type === "image",
     );
+    let html = image ? mediaHtml(image, ctx) : projectImage(c);
+    if (!html) return "";
+    const ratio = ["16/9", "4/3", "1/1", "3/4"].includes(s.aspectRatio)
+      ? s.aspectRatio
+      : "";
+    const fit = s.objectFit === "contain" ? "contain" : "cover";
+    html = html.replace(
+      /<img\b/,
+      `<img style="width:100%;${ratio ? `aspect-ratio:${ratio};` : ""}object-fit:${fit}"`,
+    );
+    return s.linkToContent && c?.slug
+      ? `<a class="theme-featured-image-link" href="${esc(contentPath(c))}">${html}</a>`
+      : html;
+  }
   if (type === "core/image") {
     const m = ctx.media.find((m) => m.id === s.mediaId && m.type === "image");
     const src =
       s.source === "url"
-        ? /^https:\/\//.test(s.url || "")
+        ? /^(https:\/\/|\/(?!\/))/.test(s.url || "")
           ? s.url
           : ""
         : m?.url;
-    if (!src) return "<p>Choose an image.</p>";
+    if (!src) return "";
     const size = { small: 320, medium: 640, large: 960 }[s.size] || 0;
     const img = `<img src="${esc(src)}" alt="${esc(s.alt || m?.altText || "")}" loading="lazy" style="${size ? "max-width:" + size + "px;" : ""}border-radius:${num(s.radius, 0, 100)}px">`;
     const linked =
@@ -1736,7 +1932,7 @@ function dynamic(type, s, ctx) {
           ? s.url
           : ""
         : m?.url;
-    if (!src) return "<p>Choose a media file.</p>";
+    if (!src) return "";
     const kind =
       m?.type || (/\.(mp3|wav|ogg)(\?|$)/i.test(src) ? "audio" : "video");
     const poster = ctx.media.find(
@@ -1744,6 +1940,20 @@ function dynamic(type, s, ctx) {
     );
     return `<${kind} src="${esc(src)}" ${s.controls !== false ? "controls" : ""} ${s.autoplay ? "autoplay muted" : ""} ${s.loop ? "loop" : ""} ${poster && kind === "video" ? `poster="${esc(poster.url)}"` : ""} preload="metadata"></${kind}>`;
   }
+  if (type === "core/custom-link")
+    return renderMenuItem(
+      { ...s, pageId: undefined },
+      ctx,
+      "",
+      typographyAttributes(s),
+    );
+  if (type === "core/menu-item")
+    return renderMenuItem(
+      s,
+      ctx,
+      renderDynamicMarkup(s.childMarkup || "", ctx),
+      typographyAttributes(s),
+    );
   if (type === "core/menu") {
     const page = ctx.allContent.find((c) => c.id === settings.postsPageId),
       index =
@@ -1754,10 +1964,7 @@ function dynamic(type, s, ctx) {
           : settings.postRouting === "page" && page
             ? "/" + page.slug
             : "/";
-    return (
-      '<nav class="theme-menu" aria-label="Site navigation" style="flex-direction:' +
-      (s.orientation === "vertical" ? "column" : "row") +
-      '">' +
+    const fallback =
       (index !== "/" ? '<a href="/">Home</a>' : "") +
       (index
         ? '<a href="' + index + '">' + esc(page?.title || "Journal") + "</a>"
@@ -1766,13 +1973,19 @@ function dynamic(type, s, ctx) {
         .filter(
           (p) =>
             p.kind === "page" &&
+            (p.status === undefined || p.status === "published") &&
             p.id !== settings.postsPageId &&
             p.id !== settings.homePageId &&
             p.id !== settings.notFoundPageId,
         )
         .map((p) => '<a href="/' + esc(p.slug) + '">' + esc(p.title) + "</a>")
         .join("") +
-      '<a href="/search">Search</a></nav>'
+      '<a href="/search">Search</a>';
+    return renderMenu(
+      s,
+      ctx,
+      fallback,
+      renderDynamicMarkup(s.childMarkup || "", ctx),
     );
   }
   if (type === "core/search")
@@ -1809,56 +2022,60 @@ function dynamic(type, s, ctx) {
           String(av).localeCompare(String(bv))
         );
       });
-    ctx.pages = Math.max(1, Math.ceil(list.length / limit));
+    const listContext = {
+      ...ctx,
+      listPagination: {
+        page,
+        pages: Math.max(1, Math.ceil(list.length / limit)),
+      },
+    };
+    const make = (type, settings = {}) => ({
+      id: "blk_" + crypto.randomUUID(),
+      type,
+      settings,
+    });
+    const layout = Array.isArray(children)
+      ? children
+      : postListChildren(make, s, false);
+    const entryLayout = listLayoutBranch(layout, false);
+    const paginationLayout = listLayoutBranch(layout, true);
+    const rows = entryLayout.length
+      ? list
+          .slice((page - 1) * limit, page * limit)
+          .map((entry, index) => {
+            const rendered = renderListLayout(
+              entryLayout,
+              { ...listContext, content: entry },
+              index === 0
+                ? ""
+                : "item-" + String(entry.id || index).replace(/[^\w-]/g, ""),
+            );
+            const category =
+              s.portfolio && entry.details?.panelData?.projectCategory
+                ? '<span class="theme-project-category">' +
+                  esc(entry.details.panelData.projectCategory) +
+                  "</span>"
+                : "";
+            return `<article data-content-id="${esc(entry.id)}">${category}${rendered}</article>`;
+          })
+          .join("")
+      : "";
+    const empty = entryLayout.length
+      ? "<p>No matching stories yet.</p>"
+      : ctx.adsPreview || ctx.renderingContentCanvas
+        ? "<p>Add blocks to design each result.</p>"
+        : "";
     return (
-      '<div class="theme-post-grid ' +
-      (s.layout === "list" ? "theme-list" : "") +
-      '" style="display:grid;grid-template-columns:repeat(' +
-      num(s.layout === "list" ? 1 : s.columns || 3, 1, 6) +
-      ', minmax(0, 1fr));gap:24px">' +
-      (list
-        .slice((page - 1) * limit, page * limit)
-        .map(
-          (p) =>
-            '<article><a href="' +
-            contentPath(p) +
-            '">' +
-            (s.showFeaturedImage === false
-              ? ""
-              : mediaHtml(
-                  ctx.media.find((m) => m.id === p.details?.featuredImageId),
-                  ctx,
-                ) || projectImage(p)) +
-            (s.portfolio && p.details?.panelData?.projectCategory
-              ? '<span class="theme-project-category">' +
-                esc(p.details.panelData.projectCategory) +
-                "</span>"
-              : "") +
-            "<h2>" +
-            esc(p.title) +
-            "</h2></a>" +
-            (s.showDate === false
-              ? ""
-              : "<small>" +
-                esc(
-                  new Date(p.publishAt).toLocaleDateString("en-US", {
-                    timeZone: "UTC",
-                  }),
-                ) +
-                "</small>") +
-            (s.showExcerpt !== false ? "<p>" + esc(p.excerpt) + "</p>" : "") +
-            "</article>",
-        )
-        .join("") || "<p>No matching stories yet.</p>") +
-      "</div>"
+      `<div class="theme-post-grid ${s.layout === "list" ? "theme-list" : ""}" style="display:grid;grid-template-columns:repeat(${num(s.layout === "list" ? 1 : s.columns || 3, 1, 6)}, minmax(0, 1fr));gap:24px">${rows || empty}</div>` +
+      renderListLayout(paginationLayout, listContext, "pagination")
     );
   }
   if (type === "core/pagination") {
-    const page = num(ctx.page || 1, 1, 10000),
-      pages = ctx.pages || 1;
+    if (!ctx.listPagination) return "";
+    const { page, pages } = ctx.listPagination;
     const href = (p) =>
       esc(
-        ctx.path +
+        (ctx.path || "/") +
           "?" +
           new URLSearchParams({
             ...(ctx.kind === "search" ? { q: ctx.query || "" } : {}),
@@ -1867,7 +2084,9 @@ function dynamic(type, s, ctx) {
           }),
       );
     return pages > 1
-      ? '<nav class="theme-pagination">' +
+      ? '<nav class="theme-pagination" style="justify-content:' +
+          ({ left: "flex-start", right: "flex-end" }[s.align] || "center") +
+          '">' +
           (s.style === "load-more"
             ? page < pages
               ? '<a href="' + href(page + 1) + '">Load more</a>'
@@ -1886,7 +2105,84 @@ function dynamic(type, s, ctx) {
   }
   return "";
 }
+/** Keep pagination branches outside the repeating result, preserving their layout ancestors. */
+function listLayoutBranch(nodes, pagination) {
+  return nodes
+    .map((node) => {
+      if (node.type === "core/pagination") return pagination ? node : null;
+      if (node.type === "core/post-list") return pagination ? null : node;
+      if (!node.children) return pagination ? null : node;
+      const children = listLayoutBranch(node.children, pagination);
+      if (!children.length && (pagination || node.children.length)) return null;
+      return { ...node, children };
+    })
+    .filter(Boolean);
+}
+function renderListLayout(nodes, ctx, suffix) {
+  const document = { ...ctx.themeDocument, _gen: ctx.contentCss };
+  return renderDynamicMarkup(
+    nodes
+      .map((node) => compileBlock(instanceBlockTree(node, suffix), document))
+      .join(""),
+    ctx,
+  );
+}
+function renderDynamicMarkup(html, ctx) {
+  if ((ctx.dynamicDepth || 0) >= 24) return "";
+  return html.replace(/{{block:([A-Za-z0-9+/=]+)}}/g, (_, payload) => {
+    try {
+      if (ctx.renderBudget && ctx.renderBudget.remaining-- <= 0) return "";
+      const block = JSON.parse(decodeURIComponent(escape(atob(payload))));
+      return dynamic(
+        block.type,
+        block.settings || {},
+        { ...ctx, dynamicDepth: (ctx.dynamicDepth || 0) + 1 },
+        block.children,
+      );
+    } catch {
+      return "";
+    }
+  });
+}
+function typographyAttributes(settings) {
+  const css = styleSettings(
+    Object.fromEntries(
+      [
+        "color",
+        "fontFamily",
+        "fontSize",
+        "lineHeight",
+        "textIndent",
+        "bold",
+        "italic",
+        "inlineCode",
+        "underline",
+        "strike",
+        "align",
+      ].map((key) => [key, settings[key]]),
+    ),
+  );
+  return css ? ' style="' + esc(css) + '"' : "";
+}
+function renderListExcerpt(excerpt, settings) {
+  if (settings.showExcerpt === false || !String(excerpt || "").trim())
+    return "";
+  const words = String(excerpt).trim().split(/\s+/);
+  const limit = Math.floor(num(settings.excerptLength ?? 0, 0, 100));
+  const text =
+    limit > 0 && words.length > limit
+      ? words.slice(0, limit).join(" ") + "…"
+      : words.join(" ");
+  return (
+    '<p class="theme-post-excerpt"' +
+    typographyAttributes(settings) +
+    ">" +
+    esc(text) +
+    "</p>"
+  );
+}
 export const BASE_THEME_CSS =
+  MENU_CSS +
   ".theme-root{min-height:100vh}.theme-root *{box-sizing:border-box}.theme-root img,.theme-root video{max-width:100%;height:auto}.theme-root audio{width:100%}.theme-root figure{margin:20px 0}.theme-root figcaption{font-size:13px;color:#74846a}.theme-menu{display:flex;gap:24px;flex-wrap:wrap}.theme-post-grid article{background:#ffffff;padding:24px;border:1px solid #e0e6da;border-radius:12px}.theme-post-grid a{text-decoration:none}.theme-post-grid h2{line-height:1.4}.theme-root pre{white-space:pre-wrap;background:#eaf0e1;padding:20px}.theme-root input,.theme-root button{font:inherit;padding:10px;border:1px solid #becdb4;border-radius:6px}.theme-pagination{display:flex;gap:24px;justify-content:center;padding:24px}@media(min-width:1025px){.theme-hide-desktop{display:none!important}}@media(min-width:641px) and (max-width:1024px){.theme-hide-tablet{display:none!important}.theme-post-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:640px){.theme-hide-mobile{display:none!important}.theme-columns,.theme-post-grid{grid-template-columns:1fr!important}}";
 export const PICKER_THEME_CSS =
   "@keyframes cl-picker-fade{from{opacity:0}to{opacity:1}}@keyframes cl-picker-slide{from{transform:translateY(24px)}to{transform:translateY(0)}}@keyframes cl-picker-scale{from{transform:scale(.85)}to{transform:scale(1)}}@media(prefers-reduced-motion:reduce){.theme-root [data-block-id]{animation:none!important}}";
@@ -1895,7 +2191,12 @@ export const ADS_THEME_CSS =
 export const SLIDER_THEME_CSS =
   ".theme-root .cl-swiper{position:relative;width:100%;overflow:hidden}.theme-root .cl-swiper .swiper-wrapper{display:flex;width:100%;height:100%;transition-property:transform}.theme-root .cl-swiper .swiper-slide{position:relative;flex-shrink:0;width:100%;height:100%;overflow:hidden}.theme-root .swiper-slide>.cl-slide-background{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}.theme-root .swiper-slide>.cl-slide-background>video,.theme-root .swiper-slide>.cl-slide-background>.gltf-viewer{display:block;width:100%;height:100%;max-width:none}.theme-root .swiper-slide>:not(.cl-slide-background){position:relative;z-index:1}.theme-root .cl-gltf-block{position:relative}.theme-root [data-block-id].cl-overlay-block{position:absolute!important;inset:0;z-index:40;pointer-events:none}.theme-root .cl-overlay-block>*{pointer-events:auto}.theme-root .cl-swiper .swiper-button-prev,.theme-root .cl-swiper .swiper-button-next{position:absolute;top:50%;z-index:50;transform:translateY(-50%);border:0;border-radius:50%;width:42px;height:42px;padding:0;background:#fff;color:#243e2f;box-shadow:0 2px 12px #0003;cursor:pointer}.theme-root .cl-swiper .swiper-button-prev{left:12px}.theme-root .cl-swiper .swiper-button-next{right:12px}.theme-root .cl-swiper .swiper-button-prev::after{content:'‹';font-size:32px;line-height:1}.theme-root .cl-swiper .swiper-button-next::after{content:'›';font-size:32px;line-height:1}.theme-root .cl-swiper .swiper-pagination{position:absolute;bottom:12px;left:0;right:0;z-index:50;display:flex;justify-content:center;gap:7px}.theme-root .cl-swiper .swiper-pagination-bullet{display:block;width:9px;height:9px;border:0;border-radius:50%;padding:0;background:#fff9;cursor:pointer}.theme-root .cl-swiper .swiper-pagination-bullet-active{background:#fff}";
 export function renderTheme(d, ctx, override, options = {}) {
-  const renderCtx = { ...ctx, themeDocument: d, contentCss: [] };
+  const renderCtx = {
+    ...ctx,
+    themeDocument: d,
+    contentCss: [],
+    renderBudget: { remaining: 10000 },
+  };
   const resolution = resolveTemplateForContent(
     d,
     ctx.kind,
@@ -1907,12 +2208,20 @@ export function renderTheme(d, ctx, override, options = {}) {
     ? compileBlock(part, d)
     : root
       ? (d.compiled?.[resolution.template.id] ?? compileBlock(root, d, 0, true))
-      : "<main><h1>{{content.title}}</h1>" +
+      : "<main>" +
+        token("core/title", { level: "h1" }) +
         token(
           ctx.kind === "post-index" || ctx.kind === "search"
             ? "core/post-list"
             : "core/post-content",
           {},
+          ctx.kind === "post-index" || ctx.kind === "search"
+            ? postListChildren((type, settings = {}) => ({
+                id: "blk_" + crypto.randomUUID(),
+                type,
+                settings,
+              }))
+            : undefined,
         ) +
         "</main>";
   const tokens = {
@@ -1929,14 +2238,7 @@ export function renderTheme(d, ctx, override, options = {}) {
       : ctx.kind === "search"
         ? "Search"
         : ctx.settings.tagline);
-  html = html.replace(/{{block:([A-Za-z0-9+/=]+)}}/g, (_, payload) => {
-    try {
-      const b = JSON.parse(decodeURIComponent(escape(atob(payload))));
-      return dynamic(b.type, b.settings, renderCtx);
-    } catch {
-      return "";
-    }
-  });
+  html = renderDynamicMarkup(html, renderCtx);
   html = html.replace(/{{([\w.]+)}}/g, (_, key) => esc(tokens[key] ?? ""));
   if (ctx.previewToken) {
     // Keep review navigation inside the same signed revision; never attach tokens to external destinations.
@@ -2002,12 +2304,30 @@ export function renderTheme(d, ctx, override, options = {}) {
 
 /** Editor canvas for one entry. It deliberately omits template and shared-part blocks. */
 export function renderContentCanvas(d, ctx, rootId) {
+  const entryId = ctx.content?.id;
+  const kind =
+    ctx.kind === "page" && entryId
+      ? entryId === ctx.settings?.postsPageId
+        ? "post-index"
+        : entryId === ctx.settings?.notFoundPageId
+          ? "404"
+          : entryId === ctx.settings?.homePageId
+            ? "home"
+            : ctx.kind
+      : ctx.kind;
+  const resolution = resolveTemplateForContent(
+    d,
+    kind,
+    ctx.content?.templateId,
+  );
+  const bodySettings = d.templates[resolution.template?.id]?.settings || {};
   const contentCss = [];
   const renderCtx = {
     ...ctx,
     themeDocument: d,
     contentCss,
     renderingContentCanvas: true,
+    renderBudget: { remaining: 10000 },
   };
   const id = /^blk_[\w-]{8,80}$/.test(rootId || "")
     ? rootId
@@ -2024,10 +2344,16 @@ export function renderContentCanvas(d, ctx, rootId) {
     ),
     body: {
       blockId: "",
-      className: "",
-      style: "",
+      className: String(bodySettings.classes || "")
+        .split(/\s+/)
+        .filter((name) => /^[a-zA-Z][\w-]*$/.test(name))
+        .join(" "),
+      style: styleSettings({
+        background: bodySettings.background,
+        backgroundGradient: bodySettings.backgroundGradient,
+      }),
       themeId: d.manifest.id,
-      templateId: "content-canvas",
+      templateId: resolution.template?.id || "content-canvas",
     },
     css:
       BASE_THEME_CSS +

@@ -1,6 +1,18 @@
 import { zipSync, strToU8 } from "fflate";
 import semver from "semver";
-import { migrateThemeDocument } from "./theme-migrations.mjs";
+import {
+  migrateThemeDocument,
+  removeStandaloneExcerptBlocks,
+} from "./theme-migrations.mjs";
+import {
+  normalizeFormattedHtmlNames,
+  normalizeFormattedHtmlBlocks,
+} from "../shared/formatted-html.ts";
+import {
+  normalizeMenuDocument,
+  normalizeContextDocument,
+} from "../shared/context-blocks.ts";
+import { sharedPartDefinitions } from "../shared/shared-part-blocks.ts";
 import { COLOSSAL_2027_ID, colossal2027Theme } from "./colossal-2027.mjs";
 import {
   isGlasseyTheme,
@@ -8,7 +20,12 @@ import {
   migrateGlasseyDocument,
 } from "./glassey-migration.mjs";
 import { readAdSettings } from "./google-ads.mjs";
+import { templatePreviewContent } from "./theme-preview-content.mjs";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
+import {
+  applyOutlineCommand,
+  outlineSnapshot,
+} from "../shared/outline-document.ts";
 import { inspectZip } from "./plugin-installer.mjs";
 import { inspectMedia } from "./media.mjs";
 import {
@@ -41,6 +58,49 @@ import {
 } from "./theme-engine.mjs";
 const dec = new TextDecoder();
 const rowDoc = (r) => compileDocument(migrateThemeDocument(parse(r.published)));
+function outlineRoot(document, templateId, part) {
+  if (part) {
+    if (typeof part !== "string" || !Object.hasOwn(document.parts, part))
+      fail("Shared part not found.", 404);
+    return document.parts[part];
+  }
+  const id =
+    templateId ||
+    document.manifest.homeTemplate ||
+    document.manifest.templates.find((template) =>
+      template.appliesTo.includes("home"),
+    )?.id ||
+    document.manifest.templates[0].id;
+  if (typeof id !== "string" || !Object.hasOwn(document.templates, id))
+    fail("Template not found.", 404);
+  return document.templates[id];
+}
+function outlineDefinitions(document) {
+  return [
+    ...definitions,
+    ...document.blocks.filter(
+      (block) => !definitions.some((core) => core.type === block.type),
+    ),
+    ...sharedPartDefinitions(document.parts),
+  ];
+}
+function themeOutline(document, templateId, part) {
+  const root = outlineRoot(document, templateId, part);
+  return {
+    ...outlineSnapshot(
+      root,
+      outlineDefinitions(document),
+      part ? part + " · shared part" : "Body",
+    ),
+    themeId: document.manifest.id,
+    templateId: part
+      ? null
+      : Object.keys(document.templates).find(
+          (id) => document.templates[id] === root,
+        ),
+    part: part || null,
+  };
+}
 async function ensureGlassey(db) {
   if (
     await db
@@ -107,6 +167,91 @@ async function ensureGlassey(db) {
     .run();
   return true;
 }
+async function ensureThemeDocumentUpgrade(db, key, normalize) {
+  if (await db.prepare("SELECT id FROM config WHERE id=?").bind(key).first())
+    return true;
+  const changes = [];
+  for (const row of await all(db, "SELECT * FROM themes")) {
+    const published = parse(row.published),
+      draft = parse(row.draft, null);
+    normalize(published);
+    if (draft) normalize(draft);
+    const values = [
+      JSON.stringify(published.manifest),
+      JSON.stringify(published),
+      draft ? JSON.stringify(draft) : null,
+    ];
+    if (
+      values[0] === row.manifest &&
+      values[1] === row.published &&
+      values[2] === row.draft
+    )
+      continue;
+    compileDocument(published);
+    if (draft) compileDocument(draft);
+    changes.push(
+      db
+        .prepare(
+          "UPDATE themes SET manifest=?,published=?,draft=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?",
+        )
+        .bind(
+          JSON.stringify(published.manifest),
+          JSON.stringify(published),
+          draft ? JSON.stringify(draft) : null,
+          now(),
+          row.id,
+          row.revision,
+        ),
+    );
+  }
+  if (changes.length) {
+    const results = await db.batch(changes);
+    if (
+      results.some(
+        (result) => Number(result.meta?.changes ?? result.changes) !== 1,
+      )
+    )
+      return false;
+  }
+  await db
+    .prepare("INSERT OR IGNORE INTO config (id,value) VALUES (?,'1')")
+    .bind(key)
+    .run();
+  return true;
+}
+export async function ensureFormattedHtmlContent(db) {
+  const key = "formatted-html-content-v1";
+  if (await db.prepare("SELECT id FROM config WHERE id=?").bind(key).first())
+    return true;
+  const changes = [];
+  for (const row of await all(db, "SELECT id,details FROM content")) {
+    const details = parse(row.details);
+    if (!Array.isArray(details.contentBlocks)) continue;
+    const previous = JSON.stringify(details);
+    normalizeFormattedHtmlBlocks(details.contentBlocks);
+    const value = JSON.stringify(details);
+    if (value === previous) continue;
+    changes.push(
+      db
+        .prepare("UPDATE content SET details=? WHERE id=? AND details=?")
+        .bind(value, row.id, row.details),
+    );
+  }
+  if (changes.length) {
+    const results = await db.batch(changes);
+    if (
+      results.some(
+        (result) => Number(result.meta?.changes ?? result.changes) !== 1,
+      )
+    )
+      return false;
+  }
+  await db
+    .prepare("INSERT OR IGNORE INTO config (id,value) VALUES (?,'1')")
+    .bind(key)
+    .run();
+  return true;
+}
 export async function ensureThemes(db) {
   if (!(await ensureGlassey(db))) return;
   if (
@@ -122,6 +267,89 @@ export async function ensureThemes(db) {
       )
       .bind(d.manifest.id, JSON.stringify(d.manifest), JSON.stringify(d), now())
       .run();
+  }
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "formatted-html-labels-v1",
+      normalizeFormattedHtmlNames,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "formatted-html-consolidation-v1",
+      normalizeFormattedHtmlNames,
+    ))
+  )
+    return;
+  if (!(await ensureFormattedHtmlContent(db))) return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-identity-menu-v1",
+      (document) => {
+        if (isGlasseyTheme(document.manifest?.id))
+          migrateGlasseyDocument(document);
+      },
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glassey-native-blocks-v1",
+      (document) => {
+        if (isGlasseyTheme(document.manifest?.id))
+          migrateGlasseyDocument(document);
+      },
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "theme-list-excerpts-v1",
+      removeStandaloneExcerptBlocks,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "theme-context-blocks-v1",
+      normalizeContextDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "theme-menu-blocks-v1",
+      normalizeMenuDocument,
+    ))
+  )
+    return;
+  if (
+    !(await db
+      .prepare("SELECT id FROM config WHERE id='theme-menu-item-blocks-v1'")
+      .first())
+  ) {
+    const pages = await all(db, "SELECT id,kind,slug,title FROM content");
+    const site = parse(
+      (await db.prepare("SELECT value FROM config WHERE id='site'").first())
+        ?.value,
+      {},
+    );
+    if (
+      !(await ensureThemeDocumentUpgrade(
+        db,
+        "theme-menu-item-blocks-v1",
+        (document) => normalizeMenuDocument(document, pages, site),
+      ))
+    )
+      return;
   }
   if (
     await db
@@ -290,6 +518,8 @@ export async function verifyThemePreview(db, token) {
         ? compileDocument(migrateThemeDocument(parse(row.draft)))
         : rowDoc(row),
       row,
+      templateId: p.templateId,
+      part: p.part,
     };
   } catch (e) {
     if (e.status === 410) throw e;
@@ -367,7 +597,7 @@ export async function context(db, path, query = "", page = 1) {
   };
 }
 async function validateForDb(db, doc, core) {
-  doc = migrateThemeDocument(doc);
+  doc = migrateThemeDocument(doc, { relocatePagination: false });
   // An editor opened before the metadata migration can still submit its unsaved tree.
   // Built-in icons are canonical metadata; archive manifests remain strictly validated at install.
   const compatible = structuredClone(doc);
@@ -389,9 +619,8 @@ async function validateForDb(db, doc, core) {
 export async function publicThemeRenderData(request, env) {
   const u = new URL(request.url);
   const token = u.searchParams.get("themePreview");
-  const d = token
-    ? (await verifyThemePreview(env.DB, token)).document
-    : await activeTheme(env.DB);
+  const preview = token ? await verifyThemePreview(env.DB, token) : null;
+  const d = preview ? preview.document : await activeTheme(env.DB);
   const ctx = await context(
     env.DB,
     u.searchParams.get("path") || "/",
@@ -399,6 +628,13 @@ export async function publicThemeRenderData(request, env) {
     Number(u.searchParams.get("page")) || 1,
   );
   ctx.previewToken = token;
+  const selectedTemplate = preview?.templateId
+    ? d.manifest.templates.find((t) => t.id === preview.templateId)
+    : undefined;
+  if (selectedTemplate) {
+    ctx.kind = selectedTemplate.appliesTo[0];
+    ctx.content = templatePreviewContent(d, selectedTemplate, ctx);
+  }
   // Portfolio themes may opt into their Home template when the journal normally occupies /.
   const landingTemplate =
     ctx.path === "/" && ctx.kind === "post-index"
@@ -427,7 +663,8 @@ export async function publicThemeRenderData(request, env) {
       ...renderTheme(
         d,
         landingTemplate ? { ...ctx, kind: "home" } : ctx,
-        landingTemplate,
+        selectedTemplate?.id || landingTemplate,
+        preview?.part ? { part: preview.part } : {},
       ),
       adsEnabled:
         !token &&
@@ -620,6 +857,18 @@ export async function handleThemes(request, env, user, path) {
   const id = decodeURIComponent(match[1]),
     action = match[2] || "",
     row = await record(db, id);
+  if (action === "outline" && request.method === "GET") {
+    const query = new URL(request.url).searchParams;
+    const draft = query.get("draft") !== "false" && !!row.draft;
+    const document = migrateThemeDocument(
+      parse(draft ? row.draft : row.published),
+    );
+    return json({
+      ...themeOutline(document, query.get("templateId"), query.get("part")),
+      revision: row.revision,
+      status: draft ? "draft" : "published",
+    });
+  }
   if (!action && request.method === "GET")
     return json({
       ...parse(row.manifest),
@@ -705,12 +954,7 @@ export async function handleThemes(request, env, user, path) {
     const ctx = await context(db, "/");
     ctx.adsPreview = true;
     ctx.kind = t.appliesTo[0];
-    ctx.content = ctx.allContent.find((c) => c.kind === ctx.kind) || {
-      title: "A new perspective",
-      excerpt: "A little room for your next big idea.",
-      body: "Your content appears here.",
-      details: {},
-    };
+    ctx.content = templatePreviewContent(d, t, ctx);
     return json(renderTheme(d, ctx, t.id, { part: body.part }));
   }
   if (action === "activate" && request.method === "POST") {
@@ -740,12 +984,20 @@ export async function handleThemes(request, env, user, path) {
     return json({ ok: true, fallbacks });
   }
   if (action === "preview" && request.method === "POST") {
+    const document =
+      body.draft !== false && row.draft ? parse(row.draft) : rowDoc(row);
+    if (body.templateId && !document.templates[body.templateId])
+      fail("Template not found.", 404);
+    if (body.part && !document.parts[body.part])
+      fail("Shared part not found.", 404);
     const p = b64(
       new TextEncoder().encode(
         JSON.stringify({
           id,
           revision: row.revision,
           draft: body.draft !== false && !!row.draft,
+          ...(body.templateId ? { templateId: body.templateId } : {}),
+          ...(body.part ? { part: body.part } : {}),
           expires: Date.now() + 15 * 60000,
         }),
       ),
@@ -763,6 +1015,38 @@ export async function handleThemes(request, env, user, path) {
     });
   }
   conflict(row, body.revision);
+  if (action === "outline" && request.method === "POST") {
+    if (body.apiVersion !== undefined && body.apiVersion !== 1)
+      fail("Unsupported outline API version.");
+    const document = migrateThemeDocument(
+      parse(row.draft, null) || rowDoc(row),
+    );
+    const root = outlineRoot(document, body.templateId, body.part);
+    let selectedId;
+    try {
+      selectedId = applyOutlineCommand(
+        root,
+        body.command,
+        outlineDefinitions(document),
+      );
+    } catch (error) {
+      fail(error.message || "Invalid outline command.");
+    }
+    const validated = await validateForDb(db, document, !!row.is_core);
+    await db
+      .prepare(
+        "UPDATE themes SET draft=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?",
+      )
+      .bind(JSON.stringify(validated), now(), id, row.revision)
+      .run()
+      .then(requireChange);
+    return json({
+      ...themeOutline(validated, body.templateId, body.part),
+      selectedId,
+      revision: row.revision + 1,
+      status: "draft",
+    });
+  }
   if (
     (action === "draft" || action.startsWith("templates/")) &&
     ["PUT", "POST"].includes(request.method)

@@ -3,7 +3,7 @@
   "name": "Announcement bar",
   "description": "Put an important update at the top of your site.",
   "isCore": false,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "bell",
   "admin": {

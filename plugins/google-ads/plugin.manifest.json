@@ -3,7 +3,7 @@
   "name": "Google Ads",
   "description": "Configure Google AdSense and place display ads using the Ads block.",
   "isCore": false,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "globe",
   "license": "MIT",

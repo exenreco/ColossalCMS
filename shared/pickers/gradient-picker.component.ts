@@ -206,7 +206,11 @@ export class GradientPickerComponent extends PickerBase {
       : `linear-gradient(${this.angle}deg, ${stops})`;
   }
   update(key: string, value: unknown) {
-    this.set("backgroundGradient", { ...this.gradient, [key]: value });
+    this.set("backgroundGradient", {
+      ...this.gradient,
+      stops: this.stops,
+      [key]: value,
+    });
   }
   setStop(key: "color" | "position", value: string | number) {
     if (key === "color" && !/^#[\da-f]{6}(?:[\da-f]{2})?$/i.test(String(value)))

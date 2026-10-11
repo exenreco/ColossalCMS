@@ -24,8 +24,18 @@ test("legacy icon migration preserves core, copied themes, drafts and history an
           "core/slider",
           "core/slide",
           "core/overlay",
+          "core/title",
+          "core/excerpt",
+          "core/paragraph",
+          "core/icon",
+          "core/button",
+          "core/menu-item",
+          "core/custom-link",
         ].includes(b.type),
     );
+    original.manifest.blocks.find(
+      (block) => block.type === "core/rich-text",
+    ).icon = "fas fa-align-left";
     original.manifest.version = "2.0.1";
     original.manifest.requires.colossal = ">=0.0.1";
     original.templates.default.children[1].settings.padding = { top: 71 };

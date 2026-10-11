@@ -96,12 +96,11 @@ import { PickerPopoverComponent } from "./picker-popover.component";
           }
           @if (type === "video") {
             <label class="cl-picker-field cl-picker-checkbox"
-              >Loop
-              <input
+              ><input
                 type="checkbox"
                 [ngModel]="settings['backgroundLoop'] !== false"
                 (ngModelChange)="set('backgroundLoop', $event)"
-              />
+              /><span>Loop</span>
             </label>
             <p class="field-note">
               Background video plays muted and without controls.
@@ -109,12 +108,11 @@ import { PickerPopoverComponent } from "./picker-popover.component";
           }
           @if (type === "model") {
             <label class="cl-picker-field cl-picker-checkbox"
-              >Auto rotate
-              <input
+              ><input
                 type="checkbox"
                 [ngModel]="settings['backgroundAutoRotate'] === true"
                 (ngModelChange)="set('backgroundAutoRotate', $event)"
-              />
+              /><span>Auto rotate</span>
             </label>
             <p class="field-note">
               The model sits behind slide blocks; camera controls are disabled.

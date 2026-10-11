@@ -9,13 +9,13 @@ import { PickerPopoverComponent } from "./picker-popover.component";
   imports: [FormsModule, PickerPopoverComponent],
   template: `
     <cl-picker-popover label="Glass" badge="G">
-      <label class="cl-picker-field"
-        ><span>Liquid glass</span
+      <label class="cl-picker-field cl-picker-checkbox"
         ><input
           type="checkbox"
           [ngModel]="settings['glassEnabled'] || false"
           (ngModelChange)="set('glassEnabled', $event)"
-      /></label>
+        /><span>Liquid glass</span></label
+      >
       @if (settings["glassEnabled"]) {
         <label class="cl-picker-field cl-picker-range-field"
           ><span class="cl-picker-range-label">Blur</span

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Colossal CMS API
-  version: 2.0.1
+  version: 0.0.3
   description: Server-authorized CMS operations. Admin endpoints require a verified hosting-platform session and a CMS role. Mutations also require a same-origin Origin header and application/json, except file uploads which use multipart/form-data.
 servers:
   - url: /api
@@ -64,6 +64,32 @@ components:
           { type: string, description: Published page for the post index }
         homePageId:
           { type: string, description: Optional separate published homepage }
+    OutlineNode:
+      type: object
+      required: [id, type, label, icon, summary, movable, removable]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        label: { type: string }
+        icon: { type: string }
+        summary: { type: string }
+        movable: { type: boolean }
+        removable: { type: boolean }
+        children:
+          type: array
+          items: { $ref: "#/components/schemas/OutlineNode" }
+    ThemeOutline:
+      type: object
+      required: [apiVersion, themeId, templateId, part, revision, status, root]
+      properties:
+        apiVersion: { type: integer, const: 1 }
+        themeId: { type: string }
+        templateId: { type: [string, "null"] }
+        part: { type: [string, "null"] }
+        revision: { type: integer }
+        status: { type: string, enum: [draft, published] }
+        root: { $ref: "#/components/schemas/OutlineNode" }
+        selectedId: { type: string, description: Present after a command }
   responses:
     Error:
       description: Validation, authentication, authorization, or persistence error
@@ -74,6 +100,37 @@ components:
             properties:
               error: { type: string }
 paths:
+  /admin/editor/preferences:
+    get:
+      summary: Read the authenticated member's editor preferences
+      responses:
+        "200":
+          description: User-scoped color mode and walkthrough completion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  colorMode: { type: string, enum: [light, dark] }
+                  walkthroughVersion: { type: integer, enum: [0, 1] }
+    put:
+      summary: Update the authenticated member's editor preferences
+      description: Same-origin JSON request. The session determines the member; arbitrary user IDs and unknown fields are rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                colorMode: { type: string, enum: [light, dark] }
+                walkthroughVersion: { type: integer, const: 1 }
+      responses:
+        "200": { description: Updated preferences }
+        "400": { description: Invalid preference fields }
+        "401": { description: Sign-in required }
+        "403": { description: Invalid Origin or workspace membership }
   /public:
     get:
       summary: Public configuration, active plugins, and publishable content
@@ -436,6 +493,98 @@ paths:
         "200": { description: Deleted }
         "403": { description: Core themes cannot be deleted }
         "409": { description: Activate another theme first }
+  /themes/{id}/outline:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Read the versioned outline of a theme template or shared part
+      description: Administrator session required. Uses the current draft when available; draft=false selects published content.
+      parameters:
+        - {
+            name: templateId,
+            in: query,
+            schema: { type: string },
+            description: Defaults to the landing or Home template,
+          }
+        - {
+            name: part,
+            in: query,
+            schema: { type: string },
+            description: Selects the shared part instead of a template,
+          }
+        - { name: draft, in: query, schema: { type: boolean, default: true } }
+      responses:
+        "200":
+          description: Versioned block tree and theme revision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ThemeOutline" }
+        "401": { description: Sign-in required }
+        "403": { description: Administrator access required }
+        "404": { description: "Theme, template or shared part not found" }
+    post:
+      summary: Apply one outline command to a private draft
+      description: Administrator session, same-origin Origin header and current revision required. Commands share the editor's structural rules. Does not publish, activate or modify blob ownership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, command]
+              properties:
+                apiVersion: { type: integer, const: 1 }
+                revision: { type: integer }
+                templateId: { type: string }
+                part: { type: string }
+                command:
+                  type: object
+                  required: [type]
+                  properties:
+                    type:
+                      {
+                        type: string,
+                        enum:
+                          [
+                            insert,
+                            move,
+                            duplicate,
+                            remove,
+                            update,
+                            rename,
+                            icon,
+                            paste,
+                          ],
+                      }
+                    id: { type: string }
+                    parentId: { type: string }
+                    index: { type: integer, minimum: 0 }
+                    blockType: { type: string }
+                    settings: { type: object }
+                    label: { type: string, minLength: 1, maxLength: 80 }
+                    icon: { type: string }
+                    node:
+                      {
+                        type: object,
+                        description: Block subtree to paste with regenerated IDs,
+                      }
+            example:
+              apiVersion: 1
+              revision: 3
+              templateId: home
+              command: { type: rename, id: blk_heading, label: Hero title }
+      responses:
+        "200":
+          description: Updated outline with selection and incremented draft revision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ThemeOutline" }
+        "400": { description: "Invalid command, metadata or structure" }
+        "401": { description: Sign-in required }
+        "403":
+          { description: Administrator access or same-origin validation failed }
+        "404": { description: "Theme, template or shared part not found" }
+        "409": { description: Revision is stale; reload before retrying }
   /themes/{id}/draft:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
@@ -535,7 +684,7 @@ paths:
           }
     post:
       summary: Manage a theme version or activation
-      description: Administrator only. All actions except preview require revision. Publish bumps patch and saves history. Restore creates a draft. Activate reports content fallbacks. Preview issues a signed URL.
+      description: Administrator only. All actions except preview require revision. Publish bumps patch and saves history. Restore creates a draft. Activate reports content fallbacks. Preview issues a signed URL. Optional templateId and part are bound into the signed URL; arbitrary public query parameters cannot change this selection.
       requestBody:
         content:
           application/json:
@@ -545,6 +694,13 @@ paths:
                 revision: { type: integer }
                 name: { type: string, description: Required for clone }
                 historyId: { type: string, description: Required for restore }
+                templateId:
+                  { type: string, description: Optional preview template ID }
+                part:
+                  {
+                    type: string,
+                    description: Optional preview shared-part name,
+                  }
                 draft:
                   {
                     type: boolean,

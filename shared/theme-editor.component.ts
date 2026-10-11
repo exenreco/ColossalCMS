@@ -13,20 +13,33 @@ import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { ApiService } from "./api.service";
-import { ThemeRecord, BlockField } from "./theme-models";
+import { ThemeRecord, BlockField, ThemeTemplate } from "./theme-models";
 import { ThemeEditorState } from "./theme-editor-state";
-import { ThemeBlockTreeComponent } from "./theme-block-tree.component";
-import { BlockLibraryDrawerComponent } from "./block-library-drawer.component";
 import { BlockListDrawerComponent } from "./block-list-drawer.component";
-import { ThemeEditorSecondaryToolbarComponent } from "./theme-editor-secondary-toolbar.component";
+import { ThemeOutlineApi } from "./theme-outline-api";
+import { BlockLibraryDrawerComponent } from "./block-library-drawer.component";
+import { EditorShellComponent, EditorPanel } from "./editor-shell.component";
+import { EditorDialogComponent } from "./editor-dialog.component";
 import { BlockIconComponent } from "./block-icon.component";
+import { EditorIconComponent } from "./editor-icon.component";
+import { MenuPagePickerComponent } from "./menu-page-picker.component";
+import { hydrateMenus, revealEditorMenu } from "./menu-host";
+import { hydrateGeometry } from "./geometry-host";
+import { IconPickerComponent } from "./icon-picker.component";
 import { ThemeEditorSkeletonComponent } from "./skeleton-compositions";
 import { MediaSelectionService } from "./media-selection.service";
 import { BlockRegistry } from "./block-registry.service";
 import { ContextualBlockToolbarComponent } from "./contextual-block-toolbar.component";
+import { toolbarMovement } from "./toolbar-movement";
+import { installEditorBlockPlaceholders } from "./editor-block-placeholders";
 import { hydrateModels } from "./gltf-host";
 import { hydrateSliders } from "./swiper-host";
 import { themeBodyAttributes } from "./theme-body";
+import { syncEditorCanvasAppearance } from "./editor-canvas-appearance";
+import { EditorCanvasUpdates } from "./editor-canvas-updates";
+import { InlineTextCanvasEditor } from "./inline-text-canvas-editor";
+import { HtmlCanvasEditor } from "./html-canvas-editor";
+import { canvasBlockId } from "./context-blocks";
 import { modelFieldVisible } from "./model-field-visibility";
 import { ColorPickerComponent } from "./pickers/color-picker.component";
 import { ThemeLoading, resolveThemeLoading } from "./theme-loading";
@@ -41,16 +54,19 @@ import {
   imports: [
     ContextualBlockToolbarComponent,
     FormsModule,
-    ThemeBlockTreeComponent,
-    BlockLibraryDrawerComponent,
     BlockListDrawerComponent,
-    ThemeEditorSecondaryToolbarComponent,
+    BlockLibraryDrawerComponent,
+    EditorShellComponent,
+    EditorDialogComponent,
     BlockIconComponent,
+    EditorIconComponent,
+    IconPickerComponent,
+    MenuPagePickerComponent,
     ThemeEditorSkeletonComponent,
     AppearancePickerPanelComponent,
     ColorPickerComponent,
   ],
-  providers: [ThemeEditorState],
+  providers: [ThemeEditorState, ThemeOutlineApi],
   templateUrl: "./theme-editor.component.html",
 })
 export class ThemeEditorComponent implements OnInit, OnDestroy {
@@ -67,6 +83,47 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   }
   cdr = inject(ChangeDetectorRef);
   state = inject(ThemeEditorState);
+  private textEditor = new InlineTextCanvasEditor(this.state, {
+    blocks: () =>
+      this.state.blocks.filter(
+        (block) =>
+          !block.pluginId ||
+          this.api
+            .state()
+            ?.plugins.some(
+              (plugin) => plugin.id === block.pluginId && plugin.active,
+            ),
+      ),
+    select: (id) => {
+      this.state.selected.set(id);
+      this.setInspector(true);
+      this.cdr.markForCheck();
+    },
+    focus: () => {
+      this.sequence++;
+      clearTimeout(this.timer);
+    },
+    edited: () => {
+      clearTimeout(this.timer);
+      void this.refreshCanvas();
+    },
+  });
+  private htmlEditor = new HtmlCanvasEditor(this.state, {
+    select: (id) => {
+      this.state.selected.set(id);
+      this.setInspector(true);
+      this.cdr.markForCheck();
+    },
+    focus: () => {
+      this.sequence++;
+      clearTimeout(this.timer);
+    },
+    edited: () => {
+      clearTimeout(this.timer);
+      void this.refreshCanvas();
+    },
+  });
+  outlineApi = inject(ThemeOutlineApi);
   api = inject(ApiService);
   route = inject(ActivatedRoute);
   router = inject(Router);
@@ -74,16 +131,21 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   media = inject(MediaSelectionService);
   registry = inject(BlockRegistry);
   @ViewChild("canvasFrame") canvasFrame?: ElementRef<HTMLIFrameElement>;
+  @ViewChild("editorShell") editorShell?: EditorShellComponent;
+  @ViewChild("editorDialog") dialog!: EditorDialogComponent;
+  templateSearch = "";
+  private restoringSelection = false;
+  newTemplateName = "";
   record: ThemeRecord | null = null;
   id = "";
   error = "";
   busy = false;
   mode: "canvas" | "outline" = "canvas";
-  width = 1200;
+  width = 0;
   history = false;
   blockLibraryOpen = false;
   blockListOpen = false;
-  inspectorOpen = true;
+  inspectorOpen = false;
   showBoundaries = false;
   showBlockToolbar = localStorage.getItem("colossal.block-toolbar") !== "false";
   toolbarHidden = false;
@@ -91,10 +153,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   private toolbarObserver?: ResizeObserver;
   private toolbarEvents?: AbortController;
   private toolbarFrame = 0;
-  private scheduleToolbarPosition = () => {
+  scheduleToolbarPosition = () => {
     if (this.toolbarFrame) return;
     this.toolbarFrame = requestAnimationFrame(() => {
       this.toolbarFrame = 0;
+      syncEditorCanvasAppearance(this.canvasFrame?.nativeElement);
       this.positionToolbar();
     });
   };
@@ -114,13 +177,18 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     const frame = this.canvasFrame?.nativeElement,
       block = this.renderedBlocks.get(this.state.selected());
     if (!frame || !block) return;
+    this.toolbarMoveLayout = toolbarMovement(block);
     const f = frame.getBoundingClientRect(),
       b = block.getBoundingClientRect();
-    const width = Math.min(760, f.width, window.innerWidth - 24);
+    const width = Math.min(
+      760,
+      f.width - 16,
+      Math.min(f.right, window.innerWidth) - Math.max(f.left, 0) - 16,
+    );
     const next = {
       width,
       left: Math.max(
-        12,
+        Math.max(12, f.left + 8),
         Math.min(
           f.left + b.left + b.width / 2 - width / 2,
           Math.min(f.right, window.innerWidth - 12) - width,
@@ -138,10 +206,12 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   };
   dragging = false;
+  toolbarMoveLayout = { horizontal: false, reversed: false };
   private refreshPending = false;
   private pointerCleanup?: () => void;
   private renderedBlocks = new Map<string, HTMLElement>();
   canvasHtml: SafeHtml = "";
+  private canvasUpdates = new EditorCanvasUpdates();
   recent: string[] = [];
   timer: any;
   sequence = 0;
@@ -162,8 +232,6 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     try {
       this.blockLibraryOpen =
         sessionStorage.getItem("colossal.block-library.open") === "true";
-      this.inspectorOpen =
-        sessionStorage.getItem("colossal.inspector.open") !== "false";
       this.recent = JSON.parse(
         sessionStorage.getItem("colossal.block-recent") || "[]",
       );
@@ -201,6 +269,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
           f.key === "align" &&
           [
             "core/heading",
+            "core/paragraph",
             "core/rich-text",
             "core/post-content",
             "core/content",
@@ -234,12 +303,22 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     this.id = this.route.snapshot.paramMap.get("id")!;
     this.state.onDragStart = () => {
       this.dragging = true;
+      this.finishCanvasEditing();
+      this.canvasFrame?.nativeElement
+        .closest(".theme-editor-viewport")
+        ?.classList.add("is-dragging");
       this.cdr.markForCheck();
     };
     this.state.onDragEnd = () => this.dragEnded();
     this.state.onPointerStart = (event, source) =>
       this.pointerDragStart(event, source);
+    this.state.onConfirmRemoval = (title, message, confirmLabel) =>
+      this.dialog.confirm(title, message, confirmLabel, "Cancel", true);
     this.state.onChange = () => {
+      if (this.restoringSelection) return;
+      this.rememberEditorSelection();
+      this.textEditor.syncScope();
+      this.htmlEditor.syncState();
       this.sequence++;
       clearTimeout(this.timer);
       this.timer = setTimeout(() => this.refreshCanvas(), 350);
@@ -248,6 +327,8 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy() {
     this.destroyed = true;
+    this.textEditor.destroy();
+    this.htmlEditor.destroy();
     this.pointerCleanup?.();
     this.toolbarObserver?.disconnect();
     this.toolbarEvents?.abort();
@@ -255,8 +336,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     clearTimeout(this.timer);
   }
   async load(preserveSelection = false) {
+    this.restoringSelection = true;
     try {
-      const part = preserveSelection ? this.state.part : "";
+      const part = preserveSelection
+        ? this.state.part
+        : this.route.snapshot.queryParamMap.get("part") || "";
       const selectedId = preserveSelection ? this.state.selected() : "";
       this.record = await this.api.request(this.apiBase + "/" + this.id);
       const d = structuredClone(this.record!.draft || this.record!.published);
@@ -270,7 +354,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         .definitions()
         .filter((b) => b.pluginId && active.has(b.pluginId)))
         if (!d.blocks.some((x) => x.type === b.type)) d.blocks.push(b);
-      if (!preserveSelection) this.state.templateId = "home";
+      if (!preserveSelection)
+        this.state.templateId =
+          this.route.snapshot.queryParamMap.get("template") || "home";
       this.state.load(d);
       if (part && d.parts[part]) {
         this.state.part = part;
@@ -283,8 +369,27 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     } catch (e) {
       this.error = (e as Error).message;
     } finally {
+      this.restoringSelection = false;
+      if (this.state.document()) this.state.onChange();
       this.cdr.markForCheck();
     }
+  }
+  private rememberEditorSelection() {
+    const query = this.route.snapshot.queryParamMap;
+    if (
+      query.get("template") === this.state.templateId &&
+      (query.get("part") || "") === this.state.part
+    )
+      return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        template: this.state.templateId,
+        part: this.state.part || null,
+      },
+      queryParamsHandling: "merge",
+      replaceUrl: true,
+    });
   }
   async run(fn: () => Promise<void>) {
     if (this.busy) return;
@@ -345,7 +450,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     if (
       !this.maintenance &&
       warnings.length &&
-      !confirm(warnings.join("\n") + "\nPublish anyway?")
+      !(await this.dialog.confirm(
+        "Publish changes?",
+        warnings.join("\n"),
+        "Publish changes",
+      ))
     )
       return;
     await this.run(async () => {
@@ -366,7 +475,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   }
   async refreshCanvas() {
     if (!this.state.document() || this.destroyed) return;
-    if (this.dragging) {
+    if (this.dragging || this.textEditor.editing || this.htmlEditor.editing) {
       this.refreshPending = true;
       return;
     }
@@ -383,19 +492,26 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         },
       );
       if (seq !== this.sequence || this.destroyed) return;
-      if (this.dragging) {
+      if (this.dragging || this.textEditor.editing || this.htmlEditor.editing) {
         this.refreshPending = true;
         return;
       }
-      this.canvasHtml = this.sanitizer.bypassSecurityTrustHtml(
+      const html =
         '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0}html,body{min-height:100%}' +
-          r.css +
-          "</style></head><body " +
-          themeBodyAttributes(r.body) +
-          ">" +
-          r.html +
-          "</body></html>",
-      );
+        r.css +
+        "</style></head><body " +
+        themeBodyAttributes(r.body) +
+        ">" +
+        r.html +
+        "</body></html>";
+      if (this.canvasUpdates.update(this.canvasFrame?.nativeElement, html)) {
+        this.refreshCanvasBlocks(
+          this.canvasFrame!.nativeElement.contentDocument!,
+        );
+      } else {
+        this.canvasUpdates.prepare(html);
+        this.canvasHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+      }
     } catch (e) {
       if (seq === this.sequence) this.error = (e as Error).message;
     } finally {
@@ -406,28 +522,45 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   enhanceCanvas() {
     const doc = this.canvasFrame?.nativeElement?.contentDocument;
     if (!doc?.querySelector(".theme-root")) return;
+    this.canvasUpdates.capture(doc);
+    syncEditorCanvasAppearance(this.canvasFrame?.nativeElement);
     if (this.enhanced === doc) {
       this.syncSelection();
       return;
     }
     this.enhanced = doc;
+    installEditorBlockPlaceholders(
+      doc,
+      (id) => this.state.find(id),
+      this.state.root!.id,
+    );
     hydrateModels(doc);
+    hydrateGeometry(doc);
     hydrateSliders(doc, true);
+    hydrateMenus(doc);
     this.toolbarObserver?.disconnect();
     this.toolbarEvents?.abort();
     this.toolbarEvents = new AbortController();
     const options = { capture: true, signal: this.toolbarEvents.signal };
+    doc.addEventListener(
+      "keydown",
+      (event) => this.editorShell?.listShortcut(event),
+      options,
+    );
     document.addEventListener("scroll", this.scheduleToolbarPosition, options);
+    window.addEventListener("resize", this.scheduleToolbarPosition, options);
     doc.addEventListener("scroll", this.scheduleToolbarPosition, options);
     this.toolbarObserver = new ResizeObserver(this.scheduleToolbarPosition);
     this.toolbarObserver.observe(this.canvasFrame!.nativeElement);
-    this.renderedBlocks = new Map(
-      Array.from(doc.querySelectorAll<HTMLElement>("[data-block-id]")).map(
-        (el) => [el.dataset["blockId"]!, el],
-      ),
-    );
-    for (const [id, element] of this.renderedBlocks)
-      if (this.state.find(id)) element.tabIndex = 0;
+    this.renderedBlocks = new Map();
+    for (const element of Array.from(
+      doc.querySelectorAll<HTMLElement>("[data-block-id]"),
+    )) {
+      const id = canvasBlockId(element);
+      if (!this.state.find(id)) continue;
+      element.tabIndex = 0;
+      if (!this.renderedBlocks.has(id)) this.renderedBlocks.set(id, element);
+    }
     const style = doc.createElement("style");
     style.textContent = `
       :where(.theme-root [data-block-id]){position:relative}
@@ -449,16 +582,17 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     doc.head.appendChild(style);
     doc.body.classList.toggle("cl-show-boundaries", this.showBoundaries);
     doc.addEventListener("keydown", (e) => {
-      const block = (e.target as HTMLElement)?.closest?.(
-        "[data-block-id]",
-      ) as HTMLElement | null;
+      const block = this.editableCanvasBlock(e.target as HTMLElement);
       if (
         block &&
+        this.state.find(canvasBlockId(block)) &&
         !(e.target as HTMLElement)?.closest?.(
           "input,textarea,select,[contenteditable]",
         )
       ) {
-        const id = block.dataset["blockId"]!;
+        const id = canvasBlockId(block);
+        const node = this.state.find(id)!;
+        this.renderedBlocks.set(id, block);
         if (e.key === "Enter") {
           e.preventDefault();
           this.state.selected.set(id);
@@ -467,10 +601,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
           e.preventDefault();
           this.state.selected.set(id);
           this.state.shift(e.key === "ArrowUp" ? -1 : 1);
-        } else if (
-          e.key === "Delete" &&
-          !this.state.protected(this.state.find(id)!)
-        ) {
+        } else if (e.key === "Delete" && !this.state.protected(node)) {
           e.preventDefault();
           this.state.selected.set(id);
           this.state.remove();
@@ -481,20 +612,24 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     const clear = (cls: string) =>
       doc.querySelectorAll("." + cls).forEach((el) => el.classList.remove(cls));
     doc.addEventListener("click", (e) => {
-      const el = (e.target as HTMLElement)?.closest?.("[data-block-id]");
-      e.preventDefault();
-      if (this.blockLibraryOpen) {
-        this.setBlockLibrary(false);
-        this.state.selected.set("");
-      } else if (el) {
-        this.state.selected.set(el.getAttribute("data-block-id")!);
+      const el = this.editableCanvasBlock(e.target as HTMLElement);
+      if (
+        !(e.target as HTMLElement)?.closest?.(
+          "[data-inline-text-editor],[data-html-editor]",
+        )
+      )
+        e.preventDefault();
+      const id = canvasBlockId(el);
+      if (el && this.state.find(id)) {
+        this.renderedBlocks.set(id, el);
+        this.state.selected.set(id);
         this.setInspector(true);
       }
       this.cdr.markForCheck();
     });
     doc.addEventListener("mouseover", (e) => {
       clear("cl-block-hover");
-      const el = (e.target as HTMLElement)?.closest?.("[data-block-id]");
+      const el = this.editableCanvasBlock(e.target as HTMLElement);
       if (el) el.classList.add("cl-block-hover");
     });
     doc.addEventListener("mouseout", () => clear("cl-block-hover"));
@@ -551,20 +686,59 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       this.dragEnded();
       this.cdr.markForCheck();
     });
+    this.textEditor.attach(doc);
+    this.htmlEditor.attach(doc);
     this.syncSelection();
+  }
+  private refreshCanvasBlocks(doc: Document) {
+    installEditorBlockPlaceholders(
+      doc,
+      (id) => this.state.find(id),
+      this.state.root!.id,
+    );
+    syncEditorCanvasAppearance(this.canvasFrame?.nativeElement);
+    hydrateModels(doc);
+    hydrateGeometry(doc);
+    hydrateSliders(doc, true);
+    hydrateMenus(doc);
+    this.renderedBlocks.clear();
+    for (const element of Array.from(
+      doc.querySelectorAll<HTMLElement>("[data-block-id]"),
+    )) {
+      const id = canvasBlockId(element);
+      if (!this.state.find(id)) continue;
+      element.tabIndex = 0;
+      if (!this.renderedBlocks.has(id)) this.renderedBlocks.set(id, element);
+    }
+    this.textEditor.attach(doc);
+    this.htmlEditor.attach(doc);
+    this.syncSelection();
+    this.scheduleToolbarPosition();
+  }
+  private editableCanvasBlock(element: HTMLElement | null) {
+    let block = element?.closest<HTMLElement>("[data-block-id]");
+    while (block && !this.state.find(canvasBlockId(block)))
+      block = block.parentElement?.closest<HTMLElement>("[data-block-id]");
+    return block;
   }
   resolveDropTarget(doc: Document, x: number, y: number) {
     let el = (
       doc.elementFromPoint(x, y) as HTMLElement | null
     )?.closest<HTMLElement>("[data-block-id]");
     // Shared parts render their own trees. Walk up to the editable template boundary.
-    while (el && !this.state.find(el.dataset["blockId"] || ""))
+    while (el && !this.state.find(canvasBlockId(el)))
       el = el.parentElement?.closest<HTMLElement>("[data-block-id]");
     if (!el) return null;
-    const node = this.state.find(el.dataset["blockId"]!)!;
+    const node = this.state.find(canvasBlockId(el))!;
+    const instance = el.closest("[data-content-id]") || el;
     let parent = node,
       index = 0;
-    const rendered = (id: string) => this.renderedBlocks.get(id);
+    const rendered = (id: string) =>
+      (canvasBlockId(el) === id ? el : undefined) ||
+      Array.from(
+        instance.querySelectorAll<HTMLElement>("[data-block-id]"),
+      ).find((item) => canvasBlockId(item) === id) ||
+      this.renderedBlocks.get(id);
     if (node.children) {
       index = node.children.length;
       const horizontal = node.type === "core/columns";
@@ -631,13 +805,14 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   }
   syncSelection() {
     this.toolbarHidden = false;
-    this.positionToolbar();
     const doc = this.enhanced;
     if (!doc) return;
     const selected = this.state.selected();
+    revealEditorMenu(doc, this.renderedBlocks.get(selected) || null);
+    this.positionToolbar();
     const node = this.state.find(selected);
     doc.querySelectorAll("[data-block-id]").forEach((el) => {
-      const isSelected = el.getAttribute("data-block-id") === selected;
+      const isSelected = canvasBlockId(el) === selected;
       el.classList.toggle("cl-block-selected", isSelected);
       const chip = el.querySelector(":scope > .cl-block-chip");
       const toolbar = el.querySelector(":scope > .cl-block-toolbar");
@@ -648,7 +823,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
           span.textContent = this.state.label(node);
           el.appendChild(span);
         }
-        if (!toolbar) el.appendChild(this.buildToolbar(doc, selected));
+        toolbar?.remove();
       } else {
         chip?.remove();
         toolbar?.remove();
@@ -679,6 +854,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       e.stopPropagation();
       this.state.dragSource = { id };
       this.dragging = true;
+      this.finishCanvasEditing();
       e.dataTransfer?.setData(
         "application/x-colossal-block",
         JSON.stringify({ id }),
@@ -700,81 +876,50 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   selectTemplate(id: string) {
     this.state.templateId = id;
     this.state.part = "";
-    this.state.selected.set(this.state.root!.id);
+    this.state.selected.set(this.state.initialSelection());
     this.state.onChange();
   }
   selectPart(name: string) {
     this.state.part = name;
-    this.state.selected.set(this.state.root!.id);
+    this.state.selected.set(this.state.initialSelection());
     this.state.onChange();
   }
+  sidebarChanged({ panel, open }: { panel: EditorPanel; open: boolean }) {
+    this.blockLibraryOpen = open && panel === "blocks";
+    this.blockListOpen = open && (panel === "list" || panel === "outline");
+    this.scheduleToolbarPosition();
+  }
   toggleBlockLibrary() {
-    this.setBlockLibrary(!this.blockLibraryOpen, true);
+    this.editorShell?.togglePanel("blocks");
   }
   toggleBlockList() {
-    this.setBlockList(!this.blockListOpen, true);
+    this.editorShell?.togglePanel("list");
   }
   setBlockList(open: boolean, focus = false) {
-    this.blockListOpen = open;
-    if (open) this.setBlockLibrary(false);
-    if (open && window.innerWidth < 1200) this.setInspector(false);
-    this.cdr.markForCheck();
-    if (focus)
-      setTimeout(() =>
-        document
-          .querySelector<HTMLElement>(
-            open ? ".block-list-tree .theme-node-label" : ".block-list-trigger",
-          )
-          ?.focus(),
-      );
+    if (open) this.editorShell?.setPanel("list");
+    else if (this.editorShell)
+      this.editorShell.setPanel(this.editorShell.panel, false);
   }
-  /** Drawer state survives navigation; desktop layout pushes, small screens overlay. */
   setBlockLibrary(open: boolean, focus = false) {
-    this.blockLibraryOpen = open;
-    if (open) this.blockListOpen = false;
-    sessionStorage.setItem("colossal.block-library.open", String(open));
-    if (open && window.innerWidth < 1200) this.setInspector(false);
-    this.cdr.markForCheck();
-    if (focus)
-      setTimeout(() => {
-        document
-          .querySelector<HTMLElement>(
-            open ? ".block-library__search" : ".blocks-trigger",
-          )
-          ?.focus();
-      });
+    this.editorShell?.setPanel("blocks", open);
   }
   setInspector(open: boolean) {
-    this.inspectorOpen = open;
-    sessionStorage.setItem("colossal.inspector.open", String(open));
-    if (
-      open &&
-      window.innerWidth < 1200 &&
-      (this.blockLibraryOpen || this.blockListOpen)
-    ) {
-      this.setBlockLibrary(false);
-      this.setBlockList(false);
-    }
-    this.cdr.markForCheck();
+    this.editorShell?.setPanel("inspector", open);
   }
   toggleInspector() {
-    this.setInspector(!this.inspectorOpen);
+    this.editorShell?.togglePanel("inspector");
   }
   closeDrawers() {
-    this.setBlockLibrary(false, true);
-    this.setBlockList(false);
-    this.setInspector(false);
+    this.editorShell?.setPanel("inspector", false);
   }
-  canvasClick(event: MouseEvent) {
-    const blockLabel = (event.target as HTMLElement).closest(
-      ".theme-node-label",
-    );
-    if (this.blockLibraryOpen || this.blockListOpen) {
-      this.setBlockLibrary(false);
-      this.setBlockList(false);
-      if (!blockLabel) this.state.selected.set("");
-    }
-    if (blockLabel) this.setInspector(true);
+  canvasClick(event: MouseEvent) {}
+  updateManifest(
+    key: "name" | "author" | "description" | "license",
+    value: string,
+  ) {
+    this.state.commit(() => {
+      this.state.document()!.manifest[key] = value;
+    });
   }
   toggleBoundaries() {
     this.showBoundaries = !this.showBoundaries;
@@ -837,7 +982,14 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         e.clientY,
       ) as HTMLElement | null;
       const frame = this.canvasFrame?.nativeElement;
-      if (frame && hit === frame && frame.contentDocument === this.enhanced) {
+      if (frame && hit === frame) {
+        // A render can install a new document immediately before its load event.
+        // Bind that document before resolving a drop instead of using stale nodes.
+        if (frame.contentDocument !== this.enhanced) this.enhanceCanvas();
+        if (frame.contentDocument !== this.enhanced) {
+          hide();
+          return;
+        }
         clearOutline();
         const rect = frame.getBoundingClientRect();
         target = this.resolveDropTarget(
@@ -872,10 +1024,13 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         }
         if (outline) {
           const rect = outline.getBoundingClientRect();
+          const ratio = (e.clientY - rect.top) / rect.height;
           const side = outline.matches(".theme-tree-row")
-            ? e.clientY < rect.top + rect.height / 2
+            ? ratio < 0.25
               ? "before"
-              : "after"
+              : ratio > 0.75
+                ? "after"
+                : "inside"
             : "zone";
           if (changed || side !== outlineSide) {
             outlineSide = side;
@@ -905,7 +1060,12 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
           source.addEventListener("click", suppressClick, true);
           this.state.dragSource = block;
           this.dragging = true;
-          this.cdr.detectChanges(); // Make the responsive scrim non-interactive before hit testing.
+          // Disable the responsive scrim immediately without flushing a pending
+          // iframe render while the pointer is crossing into the canvas.
+          this.canvasFrame?.nativeElement
+            .closest(".theme-editor-viewport")
+            ?.classList.add("is-dragging");
+          this.cdr.markForCheck();
           try {
             source.setPointerCapture(event.pointerId);
           } catch {
@@ -998,9 +1158,10 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   /** Inline selections are stored in the block HTML; no selection formats the entire block. */
-  formatText(key: string) {
+  async formatText(key: string) {
     const node = this.state.node;
     if (!node) return;
+    if (node.type === "core/rich-text") return;
     const block = this.renderedBlocks.get(node.id),
       doc = this.enhanced;
     const selection = doc?.getSelection();
@@ -1009,7 +1170,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       range &&
       !range.collapsed &&
       block?.contains(range.commonAncestorContainer) &&
-      ["core/heading", "core/rich-text"].includes(node.type);
+      ["core/heading", "core/paragraph", "core/rich-text"].includes(node.type);
     if (!selected) {
       this.state.set(key, !node.settings[key]);
       return;
@@ -1027,7 +1188,10 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     if (!tag) return;
     const wrapper = doc!.createElement(tag);
     if (key === "link") {
-      const href = prompt("Link URL (HTTPS, mailto, or local path):");
+      const href = await this.dialog.prompt(
+        "Add link",
+        "Link URL (HTTPS, mailto, or local path)",
+      );
       if (
         !href ||
         !/^(https:\/\/|mailto:|\/(?!\/))/.test(href) ||
@@ -1043,7 +1207,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     const content =
       node.type === "core/heading"
         ? block!.querySelector("h1,h2,h3,h4,h5,h6")
-        : block;
+        : node.type === "core/paragraph"
+          ? block!.querySelector("p")
+          : block;
     if (!content) return;
     const clone = content.cloneNode(true) as HTMLElement;
     clone
@@ -1062,13 +1228,18 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     const v = this.state.node?.settings["minHeightByBreakpoint"]?.[bp];
     return v === undefined || v === null ? "" : v;
   }
-  async previewSite() {
+  async previewSite(template = true) {
     await this.run(async () => {
       if (this.state.dirty) await this.saveDraft();
       const r = await this.api.request(
         this.apiBase + "/" + this.id + "/preview",
         "POST",
-        this.maintenance ? { templateId: this.state.templateId } : {},
+        template || this.maintenance
+          ? {
+              templateId: this.state.templateId,
+              ...(this.state.part ? { part: this.state.part } : {}),
+            }
+          : {},
       );
       window.open(r.url, "_blank", "noopener");
     });
@@ -1083,9 +1254,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   async clone() {
-    const name = prompt(
-      this.maintenance ? "Name the new layout" : "Name the new theme",
+    const name = await this.dialog.prompt(
+      this.maintenance ? "Save as new layout" : "Save as new theme",
+      "Name",
       this.record!.name + " copy",
+      "Create",
     );
     if (!name) return;
     await this.run(async () => {
@@ -1101,7 +1274,13 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   async revert() {
-    if (!confirm("Discard this draft and return to the published theme?"))
+    if (
+      !(await this.dialog.confirm(
+        "Revert to published?",
+        "Discard this draft and return to the published theme?",
+        "Revert",
+      ))
+    )
       return;
     await this.run(async () => {
       await this.api.request(this.apiBase + "/" + this.id + "/revert", "POST", {
@@ -1111,7 +1290,13 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     });
   }
   async restore(historyId: string) {
-    if (!confirm("Replace the current draft with this earlier version?"))
+    if (
+      !(await this.dialog.confirm(
+        "Restore earlier version?",
+        "Replace the current draft with this earlier version?",
+        "Restore",
+      ))
+    )
       return;
     await this.run(async () => {
       await this.api.request(
@@ -1190,11 +1375,8 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         delete this.state.document()!.manifest.homeTemplate;
     });
   }
-  newTemplate() {
-    const name = prompt(
-      "Template name",
-      this.maintenance ? "New maintenance template" : "New page template",
-    );
+  newTemplate(name: string) {
+    name = name.trim();
     if (!name) return;
     const id = name
       .toLowerCase()
@@ -1206,7 +1388,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     }
     this.state.commit(() => {
       const d = this.state.document()!;
-      d.templates[id] = this.state.copyTree(d.templates[this.state.templateId]);
+      d.templates[id] = this.state.create("core/container");
+      d.templates[id].settings = structuredClone(
+        d.templates[this.state.templateId].settings,
+      );
+      d.templates[id].children = [this.state.create("core/paragraph")];
       d.manifest.templates.push({
         id,
         name,
@@ -1215,21 +1401,87 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       });
     });
     this.selectTemplate(id);
+    this.newTemplateName = "";
+    this.editorShell?.closeOverlay();
+  }
+  canDeleteTemplate(template: ThemeTemplate) {
+    const others = this.templateOptions.filter((t) => t.id !== template.id);
+    return (
+      !template.isDefault &&
+      !template.isTypeDefault &&
+      others.length > 0 &&
+      template.appliesTo.every((kind) =>
+        others.some((t) => t.appliesTo.includes(kind)),
+      )
+    );
+  }
+  async deleteTemplate(id: string) {
+    const template = this.templateOptions.find((t) => t.id === id);
+    if (!template || !this.canDeleteTemplate(template)) return;
+    this.editorShell?.closeOverlay();
+    if (
+      !(await this.dialog.confirm(
+        "Delete template?",
+        `Remove “${template.name}” and its blocks from this draft? You can undo this change. Content assigned to it will use a fallback template after publishing.`,
+        "Delete template",
+        "Cancel",
+        true,
+      ))
+    ) {
+      this.editorShell?.openTemplates();
+      return;
+    }
+    const current = this.templateOptions.find((t) => t.id === id);
+    if (!current || !this.canDeleteTemplate(current)) {
+      this.editorShell?.openTemplates();
+      return;
+    }
+    this.state.commit(() => {
+      const doc = this.state.document()!;
+      doc.manifest.templates = doc.manifest.templates.filter(
+        (t) => t.id !== id,
+      );
+      delete doc.templates[id];
+      delete doc.html[current.file];
+      if (doc.compiled) delete doc.compiled[id];
+      if (doc.manifest.homeTemplate === id) delete doc.manifest.homeTemplate;
+      if (this.state.templateId === id) {
+        this.state.templateId =
+          doc.manifest.templates.find((t) => t.appliesTo.includes("home"))
+            ?.id || doc.manifest.templates[0].id;
+        if (!this.state.part)
+          this.state.selected.set(this.state.initialSelection());
+      }
+    });
+    this.editorShell?.openTemplates();
   }
   canLeave() {
     return (
       !this.state.dirty ||
-      confirm("Leave the editor and discard unsaved changes?")
+      this.dialog.confirm(
+        "Leave unsaved changes?",
+        "Your changes since the last save will be discarded.",
+        "Discard changes",
+        "Keep editing",
+      )
     );
   }
   close() {
     this.router.navigateByUrl(this.editorHome);
+  }
+  private finishCanvasEditing() {
+    const active = this.enhanced?.activeElement as HTMLElement | null;
+    if (active?.matches("[data-inline-text-editor],[data-html-editor]"))
+      active.blur();
   }
   @HostListener("window:dragend")
   @HostListener("window:drop")
   dragEnded() {
     this.pointerCleanup?.();
     this.dragging = false;
+    this.canvasFrame?.nativeElement
+      .closest(".theme-editor-viewport")
+      ?.classList.remove("is-dragging");
     this.state.dragSource = null;
     if (this.refreshPending && !this.destroyed) {
       this.refreshPending = false;
@@ -1250,6 +1502,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     }
   }
   @HostListener("window:keydown", ["$event"]) keyboard(e: KeyboardEvent) {
+    if (e.defaultPrevented || this.dialog?.open) return;
     if (e.altKey && e.key === "F10") {
       e.preventDefault();
       this.showBlockToolbar = true;
@@ -1288,10 +1541,17 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     )
       return;
     const key = e.key.toLowerCase();
+    if (key === "k" && !this.enhanced?.getSelection()?.toString()) {
+      e.preventDefault();
+      this.editorShell?.openTemplates();
+      return;
+    }
     if (
       ["i", "u", "k"].includes(key) &&
       this.state.node &&
-      ["core/heading", "core/rich-text"].includes(this.state.node.type)
+      ["core/heading", "core/paragraph", "core/rich-text"].includes(
+        this.state.node.type,
+      )
     ) {
       e.preventDefault();
       this.formatText({ i: "italic", u: "underline", k: "link" }[key]!);
@@ -1301,7 +1561,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       key === "b" &&
       this.enhanced?.getSelection()?.toString() &&
       this.state.node &&
-      ["core/heading", "core/rich-text"].includes(this.state.node.type)
+      ["core/heading", "core/paragraph", "core/rich-text"].includes(
+        this.state.node.type,
+      )
     ) {
       e.preventDefault();
       this.formatText("bold");
@@ -1320,7 +1582,9 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     }
     if (e.shiftKey && (key === "o" || key === "c")) {
       e.preventDefault();
-      this.mode = key === "o" ? "outline" : "canvas";
+      if (key === "o") this.editorShell?.setPanel("outline");
+      else if (this.editorShell)
+        this.editorShell.setPanel(this.editorShell.panel, false);
       this.cdr.markForCheck();
       return;
     }

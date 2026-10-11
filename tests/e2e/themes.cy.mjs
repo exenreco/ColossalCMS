@@ -1,4 +1,29 @@
 describe("V2.0.4 theme workflows", () => {
+  const control = (name) =>
+    cy.get(`.shared-editor button[aria-label="${name}"]`).filter(":visible");
+  const inspector = () => {
+    cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+    });
+  };
+  const chooseTemplate = (id) => {
+    control("Choose template").click();
+    cy.get(
+      `dialog[aria-label="Choose template"][open] [data-template-id="${id}"]`,
+    ).click();
+  };
+  const viewport = (name) => {
+    control("Viewport").click();
+    cy.get('dialog[aria-label="Viewport options"]:popover-open')
+      .contains("button", name)
+      .click();
+  };
+  const publish = () => {
+    control("Editor settings").click();
+    cy.get(
+      'dialog[aria-label="Editor settings"]:popover-open .editor-publish',
+    ).click();
+  };
   const core = "com.colossal.theme.default";
   before(() => {
     cy.request({
@@ -10,25 +35,36 @@ describe("V2.0.4 theme workflows", () => {
     })
       .its("status")
       .should("be.oneOf", [200, 409]);
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers: { Origin: "http://127.0.0.1:4201" },
+      body: { walkthroughVersion: 1 },
+    });
   });
   it("shows every standard template in the Theme Editor", () => {
     cy.visit("/admin/themes/edit/" + core);
-    cy.get('[aria-label="Template to edit"] option').then((options) => {
+    control("Choose template").click();
+    cy.get(".editor-template-card[data-template-id] span").then((options) => {
       const names = [...options].map((option) => option.textContent.trim());
       for (const name of ["Home", "Page", "Posts", "Single", "Search", "404"])
         expect(names).to.include(name);
     });
-    cy.get('[aria-label="Template to edit"]').select("home");
-    cy.get('[aria-label="Template to edit"]').should("have.value", "home");
-    cy.get('[aria-label="Template to edit"]').select("not-found");
-    cy.get('[aria-label="Template to edit"]').should("have.value", "not-found");
+    cy.get('.editor-template-card[data-template-id="home"]').click();
+    cy.get(".theme-editor").should("have.attr", "data-template-id", "home");
+    chooseTemplate("not-found");
+    cy.get(".theme-editor").should(
+      "have.attr",
+      "data-template-id",
+      "not-found",
+    );
   });
   it("installs, edits with drag and drop, saves a draft and publishes the active theme", () => {
     cy.visit("/admin/themes/edit/" + core);
     cy.get(".theme-editor").should("be.visible");
     cy.reload();
     cy.get(".theme-editor").should("be.visible");
-    cy.get(".theme-editor-header").contains("button", "Back").click();
+    control("Back to workspace").click();
     cy.get('nav[aria-label="Main navigation"]')
       .should("contain", "Settings")
       .and("not.contain", "Themes");
@@ -49,44 +85,35 @@ describe("V2.0.4 theme workflows", () => {
         cy.contains("a", "Edit theme").click();
       });
     cy.get(".theme-editor").should("be.visible");
-    cy.get('[aria-label="Template to edit"]').select("post-archive");
-    cy.get('[role="radio"][aria-label="Outline"]').click();
-    cy.get(".blocks-trigger").then((button) => {
-      if (button.attr("aria-expanded") !== "true") cy.wrap(button).click();
-    });
-    const transfer = new DataTransfer();
-    cy.get('[data-library-block="core/heading"]').trigger("dragstart", {
-      dataTransfer: transfer,
-    });
-    cy.get(
-      ".theme-outline > cl-theme-block-tree > .theme-tree-node > .theme-tree-children > .theme-drop-zone",
-    )
-      .last()
-      .trigger("dragover", { dataTransfer: transfer })
-      .trigger("drop", { dataTransfer: transfer });
+    chooseTemplate("post-archive");
+    control("Outline").click();
+    cy.get('[aria-label="Add top-level block"]').click();
+    cy.get('[aria-label="Find a block to insert"]').type("Heading");
+    cy.get(".outline-insert-options")
+      .contains("button", /^Heading$/)
+      .click();
+    inspector();
     cy.get(".theme-inspector")
       .contains("label", "Text")
       .find("input")
       .clear()
       .type("A theme built from blocks");
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
-    cy.get(".theme-more summary").click();
+    control("Save draft").click();
     cy.contains("Draft saved").should("exist");
     cy.request("/api/themes/render?path=/")
       .its("body.html")
       .should("not.contain", "A theme built from blocks");
-    cy.get(".theme-editor-header").contains("button", "Publish").click();
-    cy.contains("Published version").should("exist");
+    publish();
+    cy.contains("Theme published").should("exist");
     cy.contains("v1.0.1").should("exist");
-    cy.get('[role="radio"][aria-label="Canvas"]').click();
-    cy.get('[aria-label="Mobile preview"]').click();
+    cy.get(".theme-live-preview").should("be.visible");
+    viewport("Mobile");
     cy.get(".theme-live-preview").should("have.css", "width", "390px");
     cy.screenshot("theme-editor-mobile-preview", { capture: "viewport" });
-    cy.get('[aria-label="Tablet preview"]').click();
+    viewport("Tablet");
     cy.get(".theme-live-preview").should("have.css", "width", "768px");
     cy.screenshot("theme-editor-tablet-preview", { capture: "viewport" });
-    cy.get('[aria-label="Desktop preview"]').click();
+    viewport("Desktop");
     cy.get(".theme-live-preview").should("have.css", "width", "1200px");
     cy.screenshot("theme-editor-desktop-preview", { capture: "viewport" });
     cy.visit("/");
@@ -105,13 +132,12 @@ describe("V2.0.4 theme workflows", () => {
     );
     cy.visit("/admin/pages");
     cy.contains("button", "About us").click();
+    inspector();
     cy.contains("summary", "Template").click();
     cy.contains(".editor-option-panel", "Template")
       .find("select")
       .select("full-width");
-    cy.get(".content-editor-fullscreen")
-      .contains("button", /Update|Publish/)
-      .click();
+    publish();
     cy.request("/api/themes/render?path=/about")
       .its("body.templateId")
       .should("eq", "full-width");
@@ -127,6 +153,7 @@ describe("V2.0.4 theme workflows", () => {
       .should("eq", "default-2");
     cy.visit("/admin/pages");
     cy.contains("button", "About us").click();
+    inspector();
     cy.contains("summary", "Template").click();
     cy.contains("which is not available in the active theme").should("exist");
     cy.request("/api/themes/" + core).then(({ body }) =>
@@ -151,21 +178,16 @@ describe("V2.0.4 theme workflows", () => {
       .then(({ body }) => {
         const id = body.id;
         cy.visit("/admin/themes/edit/" + id);
-        cy.get('[aria-label="Template to edit"]').select("default");
-        cy.get('[role="radio"][aria-label="Outline"]').click();
-        const root =
-          ".theme-outline > cl-theme-block-tree > .theme-tree-node > .theme-tree-children";
-        const order = () =>
-          cy
-            .get(root)
-            .then((tree) =>
-              [...tree[0].children]
-                .filter((el) => el.matches("cl-theme-block-tree"))
-                .map((el) =>
-                  el
-                    .querySelector(":scope > .theme-tree-node")
-                    ?.getAttribute("data-block-type"),
-                ),
+        chooseTemplate("default");
+        control("Outline").click();
+        const root = ".theme-outline .outline-tree > cl-theme-block-tree";
+        const typesIn = (tree) =>
+          [...tree[0].children]
+            .filter((el) => el.matches("cl-theme-block-tree"))
+            .map((el) =>
+              el
+                .querySelector(":scope > .theme-tree-node")
+                ?.getAttribute("data-block-type"),
             );
         const dragTo = (type, index, pointerId) => {
           cy.get(`${root} > .theme-drop-zone[data-drop-index="${index}"]`)
@@ -213,23 +235,31 @@ describe("V2.0.4 theme workflows", () => {
                   }),
                 );
             });
-          cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+          cy.get(".theme-editor-viewport").should(
+            "not.have.class",
+            "is-dragging",
+          );
         };
-        order().then((types) => {
-          expect(types[0]).eq("theme/part-header");
-          expect(types.at(-1)).eq("theme/part-footer");
-          dragTo("theme/part-header", types.length, 10);
-        });
-        order().then((types) => {
-          expect(types.at(-1)).eq("theme/part-header");
-          dragTo("theme/part-footer", 0, 11);
-        });
-        order().then((types) => {
+        cy.get(root)
+          .should((tree) => {
+            const types = typesIn(tree);
+            expect(types[0]).eq("theme/part-header");
+            expect(types.at(-1)).eq("theme/part-footer");
+          })
+          .then((tree) =>
+            dragTo("theme/part-header", typesIn(tree).length, 10),
+          );
+        cy.get(root)
+          .should((tree) => {
+            expect(typesIn(tree).at(-1)).eq("theme/part-header");
+          })
+          .then(() => dragTo("theme/part-footer", 0, 11));
+        cy.get(root).should((tree) => {
+          const types = typesIn(tree);
           expect(types[0]).eq("theme/part-footer");
           expect(types.at(-1)).eq("theme/part-header");
         });
-        cy.get(".theme-more summary").click();
-        cy.get(".theme-more").contains("button", "Save Draft").click();
+        control("Save draft").click();
         cy.contains("Draft saved").should("exist");
         cy.request("/api/themes/" + id).then(({ body: record }) => {
           const types = record.draft.templates.default.children.map(
@@ -240,7 +270,7 @@ describe("V2.0.4 theme workflows", () => {
         });
       });
   });
-  it("edits a shared part with undo and redo while keeping it protected from deletion", () => {
+  it("edits a shared part with undo and redo while keeping its document root protected", () => {
     cy.request("/api/themes/" + core)
       .then(({ body }) =>
         cy.request({
@@ -253,40 +283,38 @@ describe("V2.0.4 theme workflows", () => {
       .then(({ body }) => {
         const id = body.id;
         cy.visit("/admin/themes/edit/" + id);
-        cy.get('[role="radio"][aria-label="Outline"]').click();
+        control("Outline").click();
         cy.get('[data-block-type="theme/part-header"]')
           .find(".theme-tree-row")
           .should("have.attr", "draggable", "false");
+        inspector();
         cy.get(".theme-parts").contains("button", "header").click();
         cy.contains("Editing shared header").should("be.visible");
         cy.get(".blocks-trigger").then((button) => {
-          if (button.attr("aria-expanded") !== "true") cy.wrap(button).click();
+          if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
         });
         cy.get('[data-library-block="core/heading"]').click();
+        inspector();
         cy.get(".theme-inspector")
           .contains("label", "Text")
           .find("input")
           .clear()
           .type("Shared greeting");
-        cy.get(".theme-editor-subbar")
-          .find('button[aria-label="Undo"]')
-          .click();
+        control("Undo").click();
         cy.get(".theme-inspector")
           .contains("label", "Text")
           .find("input")
           .should("not.have.value", "Shared greeting");
-        cy.get(".theme-editor-subbar")
-          .find('button[aria-label="Redo"]')
-          .click();
+        control("Redo").click();
         cy.get(".theme-inspector")
           .contains("label", "Text")
           .find("input")
           .should("have.value", "Shared greeting");
-        cy.get(".theme-inspector").contains("button", "Duplicate").click();
-        cy.get(".theme-inspector").contains("button", "Delete").click();
-        cy.get(".theme-more summary").click();
-        cy.get(".theme-more").contains("button", "Save Draft").click();
-        cy.get(".theme-more summary").click();
+        cy.get(
+          '.contextual-block-toolbar [aria-label="Duplicate block"]',
+        ).click();
+        cy.get('.contextual-block-toolbar [aria-label="Delete block"]').click();
+        control("Save draft").click();
         cy.contains("Draft saved").should("exist");
         cy.request("/api/themes/" + id).then(({ body: record }) => {
           expect(record.draft.compiled.default).to.contain("Shared greeting");

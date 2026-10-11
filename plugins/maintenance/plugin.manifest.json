@@ -3,7 +3,7 @@
   "name": "Maintenance",
   "description": "Create and publish maintenance layouts with the block editor.",
   "isCore": false,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "settings",
   "license": "MIT",

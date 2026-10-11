@@ -154,11 +154,25 @@ async function canonicalSnapshot() {
   }
 }
 function equalRow(a, b, columns, builtIn = false) {
+  const blockId = /blk_[a-f0-9-]{36}/gi;
+  const themeSnapshot = (text, depth = 0) =>
+    text
+      .replace(/{{block:([A-Za-z0-9+/=]+)}}/g, (token, payload) => {
+        if (depth >= 24) return token;
+        try {
+          return (
+            "{{block:" + btoa(themeSnapshot(atob(payload), depth + 1)) + "}}"
+          );
+        } catch {
+          return token;
+        }
+      })
+      .replace(blockId, "builtin_block");
   const value = (row, column) =>
     builtIn &&
     typeof row[column] === "string" &&
     ["published", "draft"].includes(column)
-      ? row[column].replace(/blk_[a-f0-9-]{36}/gi, "builtin_block")
+      ? themeSnapshot(row[column])
       : row[column];
   return columns.every(
     (column) =>

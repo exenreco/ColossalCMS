@@ -11,6 +11,7 @@ import {
 import { renderContentCanvas } from "./theme-engine.mjs";
 import { publicHtml, unavailablePublicRender } from "./public-html.mjs";
 import { WORKSPACE_STEPS } from "../shared/workspace-progress.ts";
+import { editorPreferences } from "./editor-preferences.mjs";
 import {
   readAdSettings,
   validateAdSettings,
@@ -545,6 +546,8 @@ export default {
         return json({ user, passwordAuth: env.PASSWORD_AUTH === true });
       }
       const user = await identity(request, db);
+      if (path === "/api/admin/editor/preferences")
+        return await editorPreferences(request, db, user);
       if (path.startsWith("/api/maintenance"))
         return await handleMaintenance(request, env, user, path);
       if (path.startsWith("/api/admin/connections"))

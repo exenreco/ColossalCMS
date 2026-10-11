@@ -1,4 +1,17 @@
 describe("V2.0.5 editor", () => {
+  const control = (name) =>
+    cy.get(`.shared-editor button[aria-label="${name}"]`).filter(":visible");
+  const inspector = () => {
+    cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+    });
+  };
+  const chooseTemplate = (id) => {
+    control("Choose template").click();
+    cy.get(
+      `dialog[aria-label="Choose template"][open] [data-template-id="${id}"]`,
+    ).click();
+  };
   const headers = { Origin: "http://127.0.0.1:4201" };
   let id;
   beforeEach(() => {
@@ -8,6 +21,12 @@ describe("V2.0.5 editor", () => {
       headers,
       body: {},
       failOnStatusCode: false,
+    });
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers,
+      body: { walkthroughVersion: 1 },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -48,15 +67,14 @@ describe("V2.0.5 editor", () => {
         cy.get('[aria-label="Underline"]').should("exist");
         cy.get('[aria-label="Heading level"]').should("exist");
       });
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
+    control("Save draft").click();
     cy.request("/api/themes/" + id).then(({ body }) => {
       const nodes = [];
       const visit = (n) => {
         nodes.push(n);
         (n.children || []).forEach(visit);
       };
-      visit(body.draft.templates.default);
+      visit(body.draft.templates.home);
       expect(
         nodes.some(
           (n) => n.type === "core/heading" && n.settings.bold === true,
@@ -65,7 +83,7 @@ describe("V2.0.5 editor", () => {
     });
   });
   it("creates two Columns and wraps a dropped Heading in another Column", () => {
-    cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
+    control("Blocks").click();
     for (const type of ["core/row", "core/group", "core/content", "core/gltf"])
       cy.get('[data-library-block="' + type + '"]').should("exist");
     cy.get('[data-library-block="core/column"]').should("be.disabled");
@@ -74,10 +92,9 @@ describe("V2.0.5 editor", () => {
     cy.get('[data-library-block="core/column"]').should("not.be.disabled");
     cy.get('[data-library-block="core/heading"]').click();
     cy.contains("Wrapped in a Column.").should("exist");
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
+    control("Save draft").click();
     cy.request("/api/themes/" + id).then(({ body }) => {
-      const columns = body.draft.templates.default.children.find(
+      const columns = body.draft.templates.home.children.find(
         (n) => n.type === "core/columns",
       );
       expect(columns.children).to.have.length(3);
@@ -176,7 +193,7 @@ describe("404 page routing", () => {
         });
       });
     });
-    cy.visit("/a-page-that-does-not-exist");
+    cy.visit("/a-page-that-does-not-exist", { failOnStatusCode: false });
     cy.get(".theme-root")
       .should("contain.text", "Lost page")
       .and("contain.text", "Custom missing page body");

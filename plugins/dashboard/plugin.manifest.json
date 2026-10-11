@@ -3,7 +3,7 @@
   "name": "Dashboard",
   "description": "Your content and workspace at a glance.",
   "isCore": true,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "dashboard",
   "admin": {

@@ -240,7 +240,7 @@ import { MaintenanceState } from "./maintenance-state";
             <span
               >Colossal CMS <span class="muted">/</span> Built for what’s
               next.</span
-            ><span>v0.0.1</span>
+            ><span>v0.0.3</span>
           </footer>
         </div>
       </div>
@@ -402,7 +402,10 @@ export class AdminComponent implements OnInit {
       this.setup = !!session.setup;
       if (!this.setup) {
         const path = location.pathname.replace(/^\/admin/, "");
-        this.router.navigateByUrl(!path || path === "/" ? "/dashboard" : path);
+        this.router.navigateByUrl(
+          (!path || path === "/" ? "/dashboard" : path) +
+            location.search + location.hash,
+        );
       }
     } catch (e) {
       this.error = (e as Error).message;

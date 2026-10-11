@@ -14,8 +14,8 @@ test("every core block has a unique icon and mapped toolbar tools", () => {
   const catalog = definitions.filter(
     (b) => !b.legacy && b.type.startsWith("core/"),
   );
-  assert.equal(catalog.length, 21);
-  assert.equal(new Set(catalog.map((b) => b.icon)).size, 21);
+  assert.equal(catalog.length, 30);
+  assert.equal(new Set(catalog.map((b) => b.icon)).size, catalog.length);
   const actions = new Set([
     "bold",
     "italic",
@@ -27,7 +27,8 @@ test("every core block has a unique icon and mapped toolbar tools", () => {
     "removeColumn",
   ]);
   for (const block of catalog) {
-    assert.ok(block.toolbar?.length, block.type);
+    if (block.type === "core/rich-text") assert.deepEqual(block.toolbar, []);
+    else assert.ok(block.toolbar?.length, block.type);
     const fields = new Set(block.fields.map((f) => f.key));
     for (const tool of block.toolbar)
       assert.ok(fields.has(tool) || actions.has(tool), block.type + " " + tool);
@@ -100,7 +101,7 @@ test("default theme shares Content and renders Row and Columns layout settings",
   });
   const compiled = compileDocument(doc);
   assert.match(compiled.compiled.default, /theme-part-content/);
-  assert.match(compiled.compiled["full-width"], /data-block-id="row"/);
+  assert.match(compiled.compiled["full-width"], /data-source-block-id="row"/);
   assert.match(compiled.generatedCss, /gap:19px/);
   assert.match(compiled.generatedCss, /justify-content:space-between/);
 });

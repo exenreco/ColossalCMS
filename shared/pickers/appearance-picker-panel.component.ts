@@ -114,7 +114,15 @@ export class AppearancePickerPanelComponent {
   @Output() settingChange = new EventEmitter<PickerChange>();
   get textBlock() {
     return [
+      "core/button",
+      "core/menu",
+      "core/menu-item",
+      "core/custom-link",
       "core/heading",
+      "core/paragraph",
+      "core/title",
+      "core/excerpt",
+      "core/site-brand",
       "core/rich-text",
       "core/post-content",
       "core/content",
@@ -129,6 +137,7 @@ export class AppearancePickerPanelComponent {
       "core/columns",
       "core/slide",
       "core/overlay",
+      "core/post-list",
     ].includes(this.blockType);
   }
   emit(key: string, value: unknown) {

@@ -1,4 +1,4 @@
-# Glassey artwork
+# Glossy artwork
 
 ## Royal ice throne
 

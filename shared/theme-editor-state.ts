@@ -1,11 +1,27 @@
-import { Injectable, signal } from "@angular/core";
+import { ApiService } from "./api.service";
+import { Injectable, signal, inject } from "@angular/core";
 import { BlockDefinition, BlockNode, ThemeDocument } from "./theme-models";
 import definitions from "./theme-blocks.json";
 import { normalizeDocumentColumns } from "./theme-layout";
+import { normalizeFormattedHtmlNames } from "./formatted-html";
+import {
+  sharedPartDefinitions,
+  sharedPartName,
+  sharedPartPlacementError,
+  sharedPartsError,
+} from "./shared-part-blocks";
+import {
+  canPlacePagination,
+  normalizeContextDocument,
+  normalizeMenuDocument,
+  paginationPlacementValid,
+  postListChildren,
+} from "./context-blocks";
 
 /** A bounded undo journal shared by the outline, drop targets and inspector. */
 @Injectable()
 export class ThemeEditorState {
+  private api = inject(ApiService);
   document = signal<ThemeDocument | null>(null);
   selected = signal("");
   dragSource: { id?: string; type?: string } | null = null;
@@ -20,6 +36,23 @@ export class ThemeEditorState {
     )
       return false;
     const block = source.id ? this.find(source.id) : undefined;
+    if (
+      sharedPartPlacementError(
+        block || { id: "", type: source.type || "", settings: {} },
+        this.document()?.parts || {},
+        this.part,
+        this.rootLabel === "Main",
+      )
+    )
+      return false;
+    if (
+      !canPlacePagination(
+        this.root!,
+        parent,
+        block || { id: "", type: source.type || "", settings: {} },
+      )
+    )
+      return false;
     if (!this.accepts(parent.type, block?.type || source.type || ""))
       return false;
     if (
@@ -47,7 +80,11 @@ export class ThemeEditorState {
       depth +
         1 +
         (wrapped ? 1 : 0) +
-        (block ? this.depth(block) : source.type === "core/columns" ? 1 : 0) <=
+        (block
+          ? this.depth(block)
+          : ["core/columns", "core/post-list"].includes(source.type || "")
+            ? 1
+            : 0) <=
       8
     );
   }
@@ -59,9 +96,21 @@ export class ThemeEditorState {
     return true;
   }
 
-  templateId = "home";
+  private currentTemplate = signal("home");
+  private currentPart = signal("");
+  get templateId() {
+    return this.currentTemplate();
+  }
+  set templateId(value: string) {
+    this.currentTemplate.set(value);
+  }
   rootLabel: "Body" | "Main" = "Body";
-  part = "";
+  get part() {
+    return this.currentPart();
+  }
+  set part(value: string) {
+    this.currentPart.set(value);
+  }
   error = "";
   notice = "";
   past: string[] = [];
@@ -69,6 +118,12 @@ export class ThemeEditorState {
   clipboard: BlockNode | null = null;
   saved = "";
   onChange = () => {};
+  onEditPart?: (name: string) => void;
+  onConfirmRemoval?: (
+    title: string,
+    message: string,
+    confirmLabel: string,
+  ) => Promise<boolean>;
   onDragStart = () => {};
   onDragEnd = () => {};
   onPointerStart?: (
@@ -87,15 +142,15 @@ export class ThemeEditorState {
     return [
       ...(definitions as BlockDefinition[]),
       ...(this.document()?.blocks || []).filter(
-        (block) => !definitions.some((builtin) => builtin.type === block.type),
+        (block) =>
+          !definitions.some((builtin) => builtin.type === block.type) &&
+          !sharedPartName(block.type),
       ),
-      {
-        type: "core/html",
-        label: "HTML fragment",
-        category: "Theme",
-        icon: "fas fa-code",
-        fields: [{ key: "html", label: "Sanitized HTML", type: "textarea" }],
-      },
+      ...sharedPartDefinitions(
+        this.document()?.parts || {},
+        this.part,
+        this.rootLabel === "Main",
+      ),
     ];
   }
   /** The unique icon for a block type, falling back to a generic glyph. */
@@ -111,7 +166,16 @@ export class ThemeEditorState {
   load(d: ThemeDocument) {
     this.document.set(structuredClone(d));
     this.saved = JSON.stringify(d);
+    normalizeFormattedHtmlNames(this.document()!);
+    normalizeContextDocument(this.document()!);
+    const workspace = this.api.state();
+    normalizeMenuDocument(
+      this.document()!,
+      workspace?.content,
+      workspace?.settings || {},
+    );
     const wrapped = normalizeDocumentColumns(this.document()!);
+    this.ensureEmptyDocuments();
     this.notice = [
       ...(d.notices || []),
       ...(wrapped
@@ -128,7 +192,7 @@ export class ThemeEditorState {
           template.appliesTo.includes("home"),
         )?.id || d.manifest.templates[0].id;
     this.part = "";
-    this.selected.set(this.root!.id);
+    this.selected.set(this.initialSelection());
     this.onChange();
   }
   find(id: string, node = this.root): BlockNode | undefined {
@@ -136,6 +200,30 @@ export class ThemeEditorState {
     return node.id === id
       ? node
       : node.children?.map((c) => this.find(id, c)).find(Boolean);
+  }
+  /** Only document roots get a starting paragraph; empty layout blocks stay empty. */
+  private ensureEmptyDocuments() {
+    const document = this.document();
+    if (!document) return;
+    for (const root of [
+      ...Object.values(document.templates),
+      ...Object.values(document.parts),
+    ]) {
+      if (root.type !== "core/container" || root.children?.length) continue;
+      const paragraph = this.create("core/paragraph");
+      root.children = [paragraph];
+      if (root === this.root && this.selected() === root.id)
+        this.selected.set(paragraph.id);
+    }
+  }
+  initialSelection() {
+    const root = this.root;
+    const first = root?.children?.[0];
+    return root?.children?.length === 1 &&
+      first?.type === "core/paragraph" &&
+      !first.settings["html"]
+      ? first.id
+      : root?.id || "";
   }
   parent(id: string, node = this.root): BlockNode | undefined {
     return node?.children?.some((c) => c.id === id)
@@ -145,12 +233,10 @@ export class ThemeEditorState {
   label(b: BlockNode) {
     return b === this.root && !this.part
       ? this.rootLabel
-      : b.type.startsWith("theme/part-")
-        ? b.type.replace("theme/part-", "") + " · shared part"
-        : this.blocks.find((d) => d.type === b.type)?.label || b.type;
+      : this.blocks.find((d) => d.type === b.type)?.label || b.type;
   }
   protected(b: BlockNode) {
-    return b === this.root || b.type.startsWith("theme/part-");
+    return b === this.root;
   }
   movable(b: BlockNode) {
     return b !== this.root;
@@ -160,6 +246,20 @@ export class ThemeEditorState {
     this.error = "";
     try {
       change();
+      this.ensureEmptyDocuments();
+      const partError =
+        sharedPartsError(this.document()!.parts) ||
+        sharedPartPlacementError(
+          this.root!,
+          this.document()!.parts,
+          this.part,
+          this.rootLabel === "Main",
+        );
+      if (partError) throw Error(partError);
+      if (!paginationPlacementValid(this.root!))
+        throw Error(
+          "Pagination must be inside a Post list or one of its layout blocks.",
+        );
       if (this.depth(this.root!) > 8)
         throw Error("Blocks can be nested up to eight levels.");
     } catch (e) {
@@ -194,12 +294,17 @@ export class ThemeEditorState {
   create(type: string): BlockNode {
     const def = this.blocks.find((b) => b.type === type);
     if (!def) throw Error("Unknown block");
+    if (def.disabled)
+      throw Error(def.description || "This block cannot be placed here.");
     return {
       id: "blk_" + crypto.randomUUID(),
       type,
-      settings: Object.fromEntries(
-        def.fields.map((f) => [f.key, structuredClone(f.default ?? "")]),
-      ),
+      settings: {
+        ...(type === "core/menu" ? { automaticPages: false } : {}),
+        ...Object.fromEntries(
+          def.fields.map((f) => [f.key, structuredClone(f.default ?? "")]),
+        ),
+      },
       ...(def.container
         ? {
             children:
@@ -207,7 +312,28 @@ export class ThemeEditorState {
                 ? [this.create("core/column"), this.create("core/column")]
                 : type === "core/slider"
                   ? [this.create("core/slide"), this.create("core/slide")]
-                  : [],
+                  : type === "core/post-list"
+                    ? postListChildren((childType, settings) => {
+                        const child = this.create(childType);
+                        Object.assign(child.settings, settings);
+                        return child;
+                      })
+                    : type === "core/menu"
+                      ? (this.api.state()?.content || [])
+                          .filter(
+                            (page) =>
+                              page.kind === "page" &&
+                              page.status === "published" &&
+                              page.id !==
+                                this.api.state()?.settings.notFoundPageId,
+                          )
+                          .map((page) => {
+                            const item = this.create("core/menu-item");
+                            item.settings["pageId"] = page.id;
+                            item.settings["href"] = "";
+                            return item;
+                          })
+                      : [],
           }
         : {}),
     };
@@ -231,6 +357,29 @@ export class ThemeEditorState {
       p.children.splice(i, 0, this.forParent(b, p));
       this.selected.set(b.id);
     });
+  }
+  insertFromParagraph(
+    id: string,
+    type: string,
+    html: string,
+    replace: boolean,
+  ) {
+    const node = this.find(id),
+      parent = this.parent(id);
+    if (!node || !parent?.children) return "";
+    const index = parent.children.indexOf(node);
+    if (!this.canDrop(parent.id, index, { type })) return "";
+    const block = this.create(type);
+    this.commit(() => {
+      const wrapped = this.forParent(block, parent);
+      if (replace) parent.children!.splice(index, 1, wrapped);
+      else {
+        node.settings["html"] = html;
+        parent.children!.splice(index + 1, 0, wrapped);
+      }
+      this.selected.set(block.id);
+    });
+    return this.find(block.id) ? block.id : "";
   }
   move(id: string, parentId: string, index: number) {
     this.commit(() => {
@@ -257,19 +406,39 @@ export class ThemeEditorState {
       this.move(b.id, p.id, index + (delta > 0 ? 2 : -1));
     }
   }
-  remove() {
-    const b = this.node;
-    if (!b || this.protected(b)) return;
-    const parent = this.parent(b.id);
-    if (
-      b.type === "core/column" &&
+  confirmRemoval(id: string): boolean | Promise<boolean> {
+    return this.lastColumnGroup(id)
+      ? (this.onConfirmRemoval?.(
+          "Remove the last column?",
+          "This also removes its Columns block and everything inside it. You can undo the change after removing it.",
+          "Remove Columns",
+        ) ?? false)
+      : true;
+  }
+  lastColumnGroup(id: string) {
+    const block = this.find(id),
+      parent = this.parent(id);
+    return block?.type === "core/column" &&
       parent?.type === "core/columns" &&
-      parent.children?.length === 1 &&
-      !confirm(
-        "This will remove the last column and the Columns block. Continue?",
-      )
-    )
+      parent.children?.length === 1
+      ? parent
+      : undefined;
+  }
+  remove(id = this.selected()) {
+    const b = this.find(id);
+    if (!b || this.protected(b)) return;
+    const confirmation = this.confirmRemoval(id);
+    if (typeof confirmation !== "boolean") {
+      void confirmation.then((confirmed) => {
+        if (confirmed) this.removeConfirmed(id);
+      });
       return;
+    }
+    if (confirmation) this.removeConfirmed(id);
+  }
+  private removeConfirmed(id: string) {
+    const b = this.find(id);
+    if (!b || this.protected(b) || !this.parent(id)) return;
     this.commit(() => {
       const p = this.parent(b.id)!;
       if (
@@ -344,6 +513,10 @@ export class ThemeEditorState {
     });
   }
   private forParent(b: BlockNode, p: BlockNode): BlockNode {
+    if (!canPlacePagination(this.root!, p, b))
+      throw Error(
+        "Pagination must be inside a Post list or one of its layout blocks.",
+      );
     if (!this.accepts(p.type, b.type))
       throw Error(`${this.label(b)} cannot be placed inside ${this.label(p)}.`);
     if (b.type === "core/column" && p.type !== "core/columns")
@@ -355,6 +528,11 @@ export class ThemeEditorState {
     return wrapper;
   }
   private accepts(parentType: string, childType: string) {
+    if (["core/menu", "core/menu-item"].includes(parentType))
+      return ["core/button", "core/menu-item", "core/custom-link"].includes(
+        childType,
+      );
+    if (childType === "core/menu-item") return false;
     if (parentType === "core/slider") return childType === "core/slide";
     if (childType === "core/slide") return false;
     if (parentType === "core/gltf") return childType === "core/overlay";

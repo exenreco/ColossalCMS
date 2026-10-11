@@ -3,7 +3,7 @@
   "name": "Login Security",
   "description": "Limit failed sign-ins, monitor login activity and manage blocked IP addresses.",
   "isCore": false,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "shield",
   "license": "MIT",

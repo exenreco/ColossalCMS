@@ -1,3 +1,5 @@
+import { hydrateMenus } from "../../../shared/menu-host";
+import { hydrateGeometry } from "../../../shared/geometry-host";
 import { RichContentComponent } from "../../../shared/rich-content.component";
 import {
   PostsListSkeletonComponent,
@@ -231,7 +233,9 @@ class FrontendComponent implements OnInit, OnDestroy {
     if (this.initialRender) this.applyRender(this.initialRender);
     afterEveryRender(() => {
       hydrateModels(document);
+      hydrateGeometry(document);
       hydrateSliders(document);
+      hydrateMenus(document);
       if (this.adsEnabled && !this.isPreview) hydrateAds(document);
       document.body.dataset["cmsEnhanced"] = "true";
     });

@@ -95,14 +95,12 @@ cl-picker-popover {
   display: none;
 }
 .cl-picker > summary::after {
-  content: "⌄";
-  margin-left: auto;
-  color: var(--muted);
+  content: none;
 }
 .cl-picker[open] > summary {
   border-bottom: 1px solid var(--border);
 }
-.cl-picker[open] > summary::after {
+.cl-picker[open] > summary .cl-picker-chevron {
   transform: rotate(180deg);
 }
 .cl-picker-badge {
@@ -534,7 +532,15 @@ cl-picker-popover {
   border-left-color: #111;
 }
 .cl-picker-checkbox {
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.cl-picker-field.cl-picker-checkbox input[type="checkbox"] {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  margin: 0;
 }
 .cl-color-channels {
   display: grid;

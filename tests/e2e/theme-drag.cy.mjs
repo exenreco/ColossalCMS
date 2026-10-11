@@ -20,6 +20,12 @@ describe("Populated theme drag targets", () => {
       headers: origin,
       failOnStatusCode: false,
     });
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers: origin,
+      body: { walkthroughVersion: 1 },
+    });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
         cy.request({
@@ -35,7 +41,7 @@ describe("Populated theme drag targets", () => {
       })
       .then(({ body }) => {
         const document = body.published;
-        document.templates.default = container("drag-root", [
+        document.templates.home = container("drag-root", [
           container("group-a", [
             heading("a-one", "First item"),
             heading("a-two", "Second item"),
@@ -155,12 +161,10 @@ describe("Populated theme drag targets", () => {
       "a-two",
       "col-two",
     ]);
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
-    cy.get(".theme-more summary").click();
+    cy.get('button[aria-label="Save draft"]').click();
     cy.contains("Draft saved").should("exist");
     cy.request("/api/themes/" + themeId).then(({ body: record }) => {
-      const children = record.draft.templates.default.children;
+      const children = record.draft.templates.home.children;
       expect(children[0].children).to.have.length(0);
       expect(children[1].children.map((n) => n.id)).deep.eq(["a-one", "b-one"]);
       expect(children[2].children.map((n) => n.id)).deep.eq([
@@ -199,7 +203,7 @@ describe("Populated theme drag targets", () => {
     body()
       .find('[data-block-id="a-one"] [aria-label="Move block"]')
       .trigger("dragstart", { dataTransfer: transfer });
-    cy.get(".theme-editor-panes").should("have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("have.class", "is-dragging");
     cy.wait("@pendingRender");
     cy.window().then(
       (win) =>
@@ -211,14 +215,14 @@ describe("Populated theme drag targets", () => {
       expect(frame[0].contentDocument).eq(originalDocument),
     );
     cy.get("body").trigger("keydown", { key: "Escape", force: true });
-    cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
     cy.get(".theme-live-preview").should((frame) => {
       expect(frame[0].contentDocument).not.eq(originalDocument);
       expect(frame[0].contentDocument.body.textContent).contain(
         "Edited before dragging",
       );
     });
-    cy.get('[aria-label="Outline"][role="radio"]').click();
+    cy.get('[aria-label="Outline"]').click();
     cy.get(".theme-outline").should("be.visible");
   });
   it("drags new drawer blocks repeatedly across the iframe and cancels without trapping the editor", () => {
@@ -272,7 +276,7 @@ describe("Populated theme drag targets", () => {
         const x = rect.left + block.left + 30,
           y = rect.top + block.bottom - 3;
         pointer("pointermove", x, y);
-        cy.get(".theme-editor-panes").should("have.class", "is-dragging");
+        cy.get(".theme-editor-viewport").should("have.class", "is-dragging");
         cy.get(".theme-live-preview").should((f) =>
           expect(
             f[0].contentDocument.querySelector(".cl-drop-indicator").hidden,
@@ -280,7 +284,7 @@ describe("Populated theme drag targets", () => {
         );
         pointer("pointerup", x, y);
       });
-      cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+      cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
       cy.get(".theme-live-preview").should((frame) =>
         expect(
           frame[0].contentDocument.querySelectorAll(
@@ -288,14 +292,14 @@ describe("Populated theme drag targets", () => {
           ).length,
         ).eq(i + 2),
       );
-      cy.get(".blocks-trigger").should("have.attr", "aria-expanded", "true");
+      cy.get(".blocks-trigger").should("have.attr", "aria-pressed", "true");
     }
     begin();
     pointer("pointermove", 600, 250);
-    cy.get(".theme-editor-panes").should("have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("have.class", "is-dragging");
     cy.get("body").trigger("keydown", { key: "Escape", force: true });
     pointer("pointerup", 600, 250);
-    cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
     cy.get(".theme-live-preview").should((frame) =>
       expect(
         frame[0].contentDocument.querySelectorAll(
@@ -304,10 +308,9 @@ describe("Populated theme drag targets", () => {
       ).eq(3),
     );
     cy.get(".blocks-trigger").click();
-    cy.get('[aria-label="Outline"][role="radio"]').click();
+    cy.get('[aria-label="Outline"]').click();
     cy.get(".theme-outline").should("be.visible");
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
+    cy.get('button[aria-label="Save draft"]').click();
     cy.contains("Draft saved").should("exist");
   });
   it("keeps a nested outline target stable while dragging a new Container into it", () => {
@@ -318,18 +321,27 @@ describe("Populated theme drag targets", () => {
         win.sessionStorage.setItem("colossal.inspector.open", "false");
       },
     });
-    cy.get('[aria-label="Outline"][role="radio"]').click();
-    cy.get(".blocks-trigger").click();
-    cy.get('[data-library-block="core/container"]')
-      .last()
-      .then((row) => {
-        const rect = row[0].getBoundingClientRect();
-        cy.wrap(row).trigger("pointerdown", {
-          eventConstructor: "PointerEvent",
-          pointerId: 1,
-          button: 0,
-          clientX: rect.left + 8,
-          clientY: rect.top + 8,
+    cy.get('[aria-label="Outline"]').click();
+    cy.get('[aria-label="Add top-level block"]').click();
+    cy.get('[aria-label="Find a block to insert"]').type("Container");
+    cy.get(".outline-insert-options").contains("button", "Container").click();
+    cy.window()
+      .should((win) => {
+        expect(win.colossalThemeEditor.getOutline().selectedId).not.eq(
+          "drag-root",
+        );
+      })
+      .then((win) => {
+        const id = win.colossalThemeEditor.getOutline().selectedId;
+        cy.get(`[data-outline-id="${id}"] > .theme-tree-row`).then((row) => {
+          const rect = row[0].getBoundingClientRect();
+          cy.wrap(row).trigger("pointerdown", {
+            eventConstructor: "PointerEvent",
+            pointerId: 1,
+            button: 0,
+            clientX: rect.left + 8,
+            clientY: rect.top + 8,
+          });
         });
       });
     cy.get('[data-drop-parent="group-b"]')
@@ -372,7 +384,7 @@ describe("Populated theme drag targets", () => {
     cy.get('.theme-tree-node[data-outline-id="group-b"]')
       .find('.theme-tree-node[data-block-type="core/container"]')
       .should("have.length", 1);
-    cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
     cy.get('.theme-tree-node[data-outline-id="group-b"]')
       .find('.theme-tree-node[data-block-type="core/container"]')
       .find(".theme-drop-zone")
@@ -426,9 +438,11 @@ describe("Populated theme drag targets", () => {
     cy.get('.theme-tree-node[data-outline-id="group-b"]')
       .find('.theme-tree-node[data-outline-id="group-a"]')
       .should("exist");
-    cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+    cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
     cy.get(".blocks-trigger").click();
-    cy.get('[aria-label="Canvas"][role="radio"]').click();
+    cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+    });
     cy.get(".theme-live-preview").should("be.visible");
   });
   it("keeps occupied outline drop zones stationary and accepts drops on populated container rows", () => {
@@ -437,14 +451,11 @@ describe("Populated theme drag targets", () => {
         win.sessionStorage.setItem("colossal.block-library.open", "false");
       },
     });
-    cy.get('[role="radio"][aria-label="Outline"]').click();
-    cy.get(".blocks-trigger").then((button) => {
-      if (button.attr("aria-expanded") !== "true") cy.wrap(button).click();
-    });
+    cy.get('[aria-label="Outline"]').click();
     const transfer = new DataTransfer();
-    cy.get('[data-library-block="core/heading"]')
-      .first()
-      .trigger("dragstart", { dataTransfer: transfer });
+    cy.get('[data-outline-id="a-one"] > .theme-tree-row').trigger("dragstart", {
+      dataTransfer: transfer,
+    });
     cy.get('[data-drop-parent="group-b"][data-drop-index="1"]')
       .then((el) => {
         const height = el[0].getBoundingClientRect().height;
@@ -457,20 +468,30 @@ describe("Populated theme drag targets", () => {
       })
       .trigger("drop", { dataTransfer: transfer });
     cy.get(
-      '[data-outline-id="group-b"] > .theme-tree-children > cl-theme-block-tree',
+      '[data-outline-id="group-b"] > .outline-branch > .theme-tree-children > cl-theme-block-tree',
     ).should("have.length", 2);
-    cy.get('[data-library-block="core/spacer"]')
-      .first()
-      .trigger("dragstart", { dataTransfer: transfer });
+    cy.get('[data-outline-id="a-two"] > .theme-tree-row').trigger("dragstart", {
+      dataTransfer: transfer,
+    });
     cy.get('[data-outline-id="group-b"] > .theme-tree-row')
-      .trigger("dragover", { dataTransfer: transfer })
-      .trigger("drop", { dataTransfer: transfer });
+      .scrollIntoView()
+      .then((row) => {
+        const rect = row[0].getBoundingClientRect();
+        const point = {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer: transfer,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+        };
+        const DragEvent = row[0].ownerDocument.defaultView.DragEvent;
+        row[0].dispatchEvent(new DragEvent("dragover", point));
+        row[0].dispatchEvent(new DragEvent("drop", point));
+      });
     cy.get(
-      '[data-outline-id="group-b"] > .theme-tree-children > cl-theme-block-tree',
+      '[data-outline-id="group-b"] > .outline-branch > .theme-tree-children > cl-theme-block-tree',
     ).should("have.length", 3);
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
-    cy.get(".theme-more summary").click();
+    cy.get('button[aria-label="Save draft"]').click();
     cy.contains("Draft saved").should("exist");
   });
 });

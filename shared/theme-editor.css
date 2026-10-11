@@ -938,7 +938,8 @@ cl-block-list-drawer {
   cursor: grabbing;
 }
 .contextual-block-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
   gap: 5px;
   padding: 8px;
@@ -947,12 +948,100 @@ cl-block-list-drawer {
   background: #fff;
   color: #243e2f;
   box-shadow: 0 8px 24px #172d2526;
-  overflow-x: auto;
+  overflow: hidden;
   min-height: 44px;
   animation: cl-toolbar-in 120ms ease-out;
 }
 .contextual-block-toolbar > * {
+  min-width: 0;
+}
+.block-toolbar-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-right: 1px solid var(--editor-border, #d1d9cc);
+}
+.block-toolbar-tools {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  align-items: center;
+  min-width: 0;
+}
+.block-toolbar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+}
+.shared-editor .contextual-block-toolbar .block-toolbar-scroll {
+  scrollbar-width: none;
+}
+.block-toolbar-scroll > * {
   flex-shrink: 0;
+}
+.shared-editor .contextual-block-toolbar .block-toolbar-scroll::-webkit-scrollbar {
+  display: none;
+}
+.block-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-left: 1px solid var(--editor-border, #d1d9cc);
+  padding-left: 5px;
+}
+.contextual-block-toolbar .toolbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 32px;
+  padding: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.contextual-block-toolbar .toolbar-icon:hover:not(:disabled) {
+  background: var(--editor-hover, #edf1e9);
+}
+.contextual-block-toolbar .toolbar-icon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.contextual-block-toolbar .toolbar-icon:focus-visible {
+  outline: 2px solid var(--editor-accent, #2f6b4f);
+  outline-offset: -2px;
+}
+.contextual-block-toolbar .tool-prev,
+.contextual-block-toolbar .tool-next {
+  width: 26px;
+}
+.tool-prev cl-editor-icon {
+  transform: rotate(90deg);
+}
+.tool-next cl-editor-icon {
+  transform: rotate(-90deg);
+}
+.block-toolbar-drag {
+  cursor: grab !important;
+}
+@media (max-width: 600px) {
+  .contextual-block-toolbar {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 2px;
+    padding: 4px;
+  }
+  .contextual-block-toolbar .block-toolbar-actions .toolbar-icon {
+    width: 24px;
+    padding: 3px;
+  }
+  .block-toolbar-actions {
+    gap: 0;
+    padding-left: 2px;
+  }
 }
 .contextual-block-toolbar label {
   display: flex;
@@ -975,6 +1064,23 @@ cl-block-list-drawer {
 .contextual-block-toolbar select {
   width: auto;
   max-width: 120px;
+}
+.contextual-block-toolbar .editor-toolbar-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.contextual-block-toolbar .editor-toolbar-select select {
+  appearance: none;
+  min-width: 75px;
+  padding-right: 28px;
+}
+.contextual-block-toolbar .editor-select-chevron {
+  position: absolute;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
 }
 .contextual-block-toolbar [aria-pressed="true"] {
   background: #d2debd;

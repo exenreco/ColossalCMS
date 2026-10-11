@@ -2,14 +2,14 @@ import { Component, Input } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { PickerBase } from "./picker-base";
 import { UnitInputComponent } from "./unit-input.component";
+import { PickerPopoverComponent } from "./picker-popover.component";
 
 @Component({
   selector: "cl-dimensions-picker",
   standalone: true,
-  imports: [FormsModule, UnitInputComponent],
+  imports: [FormsModule, UnitInputComponent, PickerPopoverComponent],
   template: `
-    <details class="cl-picker">
-      <summary><span class="cl-picker-badge">S</span>Size</summary>
+    <cl-picker-popover label="Size" badge="S">
       <div class="cl-picker-body">
         <label class="cl-picker-field cl-picker-range-field">
           <span class="cl-picker-range-label">Max width</span>
@@ -25,14 +25,13 @@ import { UnitInputComponent } from "./unit-input.component";
           />
         </label>
         @if (blockType === "core/container" || blockType === "core/slider") {
-          <label class="cl-picker-field">
-            <span>Min height</span>
+          <label class="cl-picker-field cl-picker-checkbox">
             <input
               type="checkbox"
               [ngModel]="settings['minHeightEnabled'] || false"
               (ngModelChange)="set('minHeightEnabled', $event)"
             />
-            Enable
+            <span>Min height enabled</span>
           </label>
           @if (settings["minHeightEnabled"]) {
             <label class="cl-picker-field cl-picker-range-field">
@@ -79,7 +78,7 @@ import { UnitInputComponent } from "./unit-input.component";
           }
         }
       </div>
-    </details>
+    </cl-picker-popover>
   `,
 })
 export class DimensionsPickerComponent extends PickerBase {

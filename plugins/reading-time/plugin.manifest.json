@@ -3,7 +3,7 @@
   "name": "Reading time",
   "description": "Help readers find their next five-minute read.",
   "isCore": false,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "clock",
   "admin": {

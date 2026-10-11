@@ -84,12 +84,11 @@ import { UnitInputComponent } from "./unit-input.component";
           </label>
         }
         <label class="cl-picker-field cl-picker-checkbox"
-          >Loop animation
-          <input
+          ><input
             type="checkbox"
             [ngModel]="current.loop || false"
             (ngModelChange)="update('loop', $event)"
-          />
+          /><span>Loop animation</span>
         </label>
       </div>
     </cl-picker-popover>

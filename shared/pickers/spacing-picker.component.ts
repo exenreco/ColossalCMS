@@ -2,17 +2,17 @@ import { Component, Input } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { PickerBase } from "./picker-base";
 import { UnitInputComponent } from "./unit-input.component";
+import { PickerPopoverComponent } from "./picker-popover.component";
 
 @Component({
   selector: "cl-spacing-picker",
   standalone: true,
-  imports: [FormsModule, UnitInputComponent],
+  imports: [FormsModule, UnitInputComponent, PickerPopoverComponent],
   template: `
-    <details class="cl-picker">
-      <summary>
-        <span class="cl-picker-badge">{{ kind === "padding" ? "P" : "M" }}</span
-        >{{ kind === "padding" ? "Padding" : "Margin" }}
-      </summary>
+    <cl-picker-popover
+      [label]="kind === 'padding' ? 'Padding' : 'Margin'"
+      [badge]="kind === 'padding' ? 'P' : 'M'"
+    >
       <div class="cl-picker-body">
         <div class="cl-spacing-diagram" [attr.aria-label]="kind + ' by side'">
           @for (side of sides; track side) {
@@ -31,7 +31,7 @@ import { UnitInputComponent } from "./unit-input.component";
           <span class="cl-spacing-center">Content</span>
         </div>
       </div>
-    </details>
+    </cl-picker-popover>
   `,
 })
 export class SpacingPickerComponent extends PickerBase {

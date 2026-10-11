@@ -2,11 +2,48 @@
 import { defaultTheme, CMS_VERSION } from "./theme-engine.mjs";
 import { upgradeColossal2027Document } from "./colossal-2027-ice-world.mjs";
 import { migrateGlasseyDocument } from "./glassey-migration.mjs";
+import { normalizeFormattedHtmlNames } from "../shared/formatted-html.ts";
+import {
+  normalizeContextDocument,
+  normalizeMenuDocument,
+} from "../shared/context-blocks.ts";
 
-export function migrateThemeDocument(input) {
+/** Old bundled layouts injected a standalone excerpt into full content views. */
+export function removeStandaloneExcerptBlocks(document) {
+  if (!document?.templates || !document.parts) return 0;
+  let removed = 0;
+  const visit = (node) => {
+    if (!node.children) return;
+    node.children = node.children.filter((child) => {
+      const excerptOnly =
+        ["core/rich-text", "core/html", "core/paragraph"].includes(
+          child.type,
+        ) &&
+        /^\s*(?:\{\{content\.excerpt\}\}|<p(?:\s[^>]*)?>\s*\{\{content\.excerpt\}\}\s*<\/p>)\s*$/i.test(
+          child.settings?.html || "",
+        );
+      if (excerptOnly) removed++;
+      else visit(child);
+      return !excerptOnly;
+    });
+  };
+  [
+    ...Object.values(document.templates),
+    ...Object.values(document.parts),
+  ].forEach(visit);
+  if (removed) delete document.compiled;
+  return removed;
+}
+
+export function migrateThemeDocument(
+  input,
+  { relocatePagination = true } = {},
+) {
   if (!input?.manifest || !input.templates || !input.parts) return input;
   const d = structuredClone(input);
+  normalizeFormattedHtmlNames(d);
   migrateGlasseyDocument(d);
+  removeStandaloneExcerptBlocks(d);
   d.notices = [];
   // Rebase bundled prototype themes when the public release version is reset.
   if (
@@ -203,5 +240,8 @@ export function migrateThemeDocument(input) {
   }
   if (added)
     d.notices.push(`${added} standard templates were added to this theme.`);
-  return upgradeColossal2027Document(d);
+  const upgraded = upgradeColossal2027Document(d);
+  normalizeContextDocument(upgraded, relocatePagination);
+  normalizeMenuDocument(upgraded);
+  return upgraded;
 }

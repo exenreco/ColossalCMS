@@ -20,6 +20,80 @@ const block = (id, type, settings = {}, children) => ({
   ...(children ? { children } : {}),
 });
 
+test("content canvas inherits the resolved template Body background while keeping Main settings separate", () => {
+  const theme = defaultTheme();
+  for (const [id, kind, color] of [
+    ["canvas-page", "page", "#123456"],
+    ["canvas-post", "post", "#234567"],
+    ["canvas-home", "home", "#345678"],
+  ]) {
+    theme.manifest.templates.push({
+      id,
+      name: id,
+      file: `templates/${id}.html`,
+      appliesTo: [kind],
+      isTypeDefault: true,
+    });
+    theme.templates[id] = block(
+      "body" + kind + "fixture",
+      "core/container",
+      { background: color, padding: 80, classes: "canvas-body" },
+      [],
+    );
+    theme.manifest.templates.forEach((template) => {
+      if (template.id !== id && template.appliesTo.includes(kind))
+        template.isTypeDefault = false;
+    });
+  }
+  const preview = (kind, content = {}, settings = {}) =>
+    renderContentCanvas(
+      theme,
+      {
+        kind,
+        content: {
+          details: {
+            contentMain: { background: "#abcdef", padding: 16 },
+            contentBlocks: [],
+          },
+          ...content,
+        },
+        settings,
+        allContent: [],
+        media: [],
+      },
+      "blk_main-background",
+    );
+  assert.match(preview("page").body.style, /background-color:#123456/);
+  assert.match(preview("post").body.style, /background-color:#234567/);
+  const home = preview("page", { id: "home" }, { homePageId: "home" });
+  assert.match(home.body.style, /background-color:#345678/);
+  assert.equal(home.body.templateId, "canvas-home");
+  assert.equal(home.body.className, "canvas-body");
+  assert.doesNotMatch(home.body.style, /padding/);
+  assert.match(home.html, /background-color:#abcdef/);
+  assert.doesNotMatch(home.html, /theme-part-/);
+  theme.manifest.templates.push({
+    id: "custom-page",
+    name: "Custom",
+    file: "templates/custom.html",
+    appliesTo: ["page"],
+  });
+  theme.templates["custom-page"] = block(
+    "bodycustomfixture",
+    "core/container",
+    { background: "#456789" },
+    [],
+  );
+  assert.match(
+    preview("page", { templateId: "custom-page" }).body.style,
+    /background-color:#456789/,
+  );
+  assert.match(
+    preview("page", { templateId: "missing" }).body.style,
+    /background-color:#123456/,
+  );
+});
+
 test("post and page theme blocks validate and render nested layout settings", async () => {
   const blocks = [
     block("heading01", "core/heading", { text: "Block heading", level: "h3" }),

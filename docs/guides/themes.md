@@ -14,12 +14,27 @@ Choose **New theme** to make an independent copy of Colossal Default. **Preview*
 2. Search the block library. Drag a block into an insertion zone or click it to add it to the selected container.
 3. Select a block in the canvas for its floating toolbar, or use the Inspector for all settings. Containers, Groups, Rows and Columns accept nested blocks, up to eight levels. A Columns block creates two Column children; adding other blocks directly to Columns wraps them in a new Column.
 4. Drag existing blocks between containers, or use the move arrows. Duplicate, delete, copy/paste, undo and redo are available in the editor. Ctrl/Cmd+Z undoes and Ctrl/Cmd+Shift+Z redoes. Ctrl/Cmd+S saves.
-5. Open **Shared parts** to edit Header, Footer, Sidebar or Content. Place `core/content` in the Content part to render the current page or post body, then place `theme/part-content` in templates that need the body. Every template using the part updates together. Use **← Template** to return.
-6. Choose **Preview** and a Desktop, Tablet or Mobile width to review the result.
+5. Open **Blocks → Shared Parts** to insert Header, Footer, Sidebar or Content. Existing shared parts automatically appear here. Move, duplicate, copy, cut or delete these blocks like other blocks. Deleting a placed block leaves its shared source intact. Select **Edit shared content** to edit the source used by every template; use **← Template** to return. Each placed block has independent appearance settings. Place `core/content` in the Content part to render the current page or post body, then insert the Content shared block in templates that need the body. Circular references are prevented.
+
+Posts and pages can explicitly insert shared blocks from their active theme. They display only blocks added to that entry. A shared part that renders the page body cannot be inserted inside the body itself. **Edit shared content** opens the Theme Editor in a separate tab so the current entry stays open. 6. Choose **Preview** and a Desktop, Tablet or Mobile width to review the result.
 
 Template settings in the inspector let you rename the template, choose applicable content types and set theme/type defaults. **More → New template** copies the current layout to a new named template.
 
 Every theme includes Home, Page, Posts, Single, Search and 404 templates. Older themes gain missing role templates while retaining their existing layouts and additional templates. Home is used for an assigned Home page; with Latest posts at `/`, the Posts template still renders the index. The 404 template renders the assigned 404 page's content when one is selected.
+
+### Site identity and content blocks
+
+Use **Site identity** to show the site name or logo from administrator Settings, or both. Its Inspector controls display mode, name element, logo height, orientation, spacing and a home link. Automatic display shows the logo when one is configured, otherwise the site name. The shared Typography picker styles the name.
+
+**Title**, **Featured image** and **Excerpt** read the current post or page. Change their source in the post/page settings; the block Inspector controls their presentation. Title has heading level, link and Typography controls without an editable text field. Featured image supports visibility, linking, aspect ratio and image fitting. Excerpt supports Typography, **Show excerpt** and **Excerpt word limit** (0–100 words; 0 shows the full saved summary). Empty excerpts and missing images are omitted.
+
+### Design post lists and search results
+
+Expand **Post list** in List or Outline view to edit its result layout. Drag layout blocks such as Container, Row or Columns into the list and arrange Title, Featured image, Excerpt and other blocks within them. The same layout repeats for every result with that result's data. Selecting a repeated block on Canvas edits its shared result layout. Each list keeps its own settings, including lists added to post and page content.
+
+Select the list's **Excerpt** child to adjust summary display or word limit. Place **Pagination** inside Post list or one of its layout children. It renders once for the list and cannot be moved outside the list. Its page count follows that list's filters.
+
+The Search block supplies the search form; the Post list in the Search template supplies its results. Core themes use these dedicated blocks. Existing saved themes automatically convert standalone site/title placeholders, give flat Post lists editable child blocks and move sibling Pagination into the list. Other authored blocks and styling are retained. Home, Page, Full Width and Single do not insert Excerpt automatically; the Excerpt field in the content editor remains available for summaries and metadata.
 
 Use **More → Show block toolbar** to toggle the floating toolbar. Alt+F10 focuses it; arrow keys move between its controls, and Escape returns focus to the block. Formatting buttons use the current Heading or Rich Text selection when one exists. The glTF block accepts a model from the Media Library or an HTTPS URL; add a model description and optional poster image.
 

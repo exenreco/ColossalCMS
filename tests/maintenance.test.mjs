@@ -5,6 +5,76 @@ import { localDatabase } from "../scripts/local-database.mjs";
 import { MAINTENANCE_ID, maintenanceHtml } from "../server/maintenance.mjs";
 import { references } from "../server/v2-utils.mjs";
 import { CORE_THEME_ID } from "../server/theme-engine.mjs";
+import { upgradeMidnight } from "../server/midnight-maintenance.mjs";
+
+test("Midnight upgrades existing published layouts and drafts once while retaining message edits and block IDs", async () => {
+  const { DB, call } = await fixture();
+  try {
+    await call("/api/maintenance");
+    const data = JSON.parse(
+      (
+        await DB.prepare(
+          "SELECT value FROM config WHERE id='maintenance'",
+        ).first()
+      ).value,
+    );
+    const midnight = data.layouts.find((layout) => layout.name === "Midnight");
+    const doc = midnight.published;
+    doc.css = doc.css.split("/* Midnight geometry v1 */")[0];
+    doc.templates.home.children.shift();
+    doc.blocks = doc.blocks.filter(
+      (block) => block.type !== "maintenance/geometry",
+    );
+    doc.manifest.blocks = doc.manifest.blocks.filter(
+      (block) => block.type !== "maintenance/geometry",
+    );
+    const heading = doc.templates.home.children[0].children.find(
+      (block) => block.type === "core/heading",
+    );
+    heading.settings.text = "Our edited announcement";
+    const id = heading.id;
+    midnight.draft = structuredClone(doc);
+    await DB.prepare("UPDATE config SET value=? WHERE id='maintenance'")
+      .bind(JSON.stringify(data))
+      .run();
+    const record = (await call("/api/maintenance/" + midnight.id)).data;
+    for (const document of [record.published, record.draft]) {
+      assert.equal(
+        document.templates.home.children[0].type,
+        "maintenance/geometry",
+      );
+      assert.ok(JSON.stringify(document).includes(id));
+      assert.ok(JSON.stringify(document).includes("Our edited announcement"));
+      assert.equal(upgradeMidnight(document), false);
+    }
+    const first = (
+      await DB.prepare(
+        "SELECT value FROM config WHERE id='maintenance'",
+      ).first()
+    ).value;
+    await call("/api/maintenance");
+    assert.equal(
+      (
+        await DB.prepare(
+          "SELECT value FROM config WHERE id='maintenance'",
+        ).first()
+      ).value,
+      first,
+    );
+    const rendered = (
+      await call("/api/maintenance/" + midnight.id + "/render", "POST", {
+        document: record.published,
+        templateId: "home",
+      })
+    ).data;
+    assert.match(rendered.html, /data-geometry-count="72"/);
+    assert.match(rendered.html, /theme-site-brand/);
+    assert.match(rendered.css, /rgba\(3,14,48,.88\)/);
+    assert.doesNotMatch(rendered.html, /<script|<iframe/);
+  } finally {
+    DB.close();
+  }
+});
 
 async function fixture() {
   const DB = localDatabase();

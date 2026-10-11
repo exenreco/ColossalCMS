@@ -16,7 +16,7 @@ import {
 
 test("release version, bundled manifests and default theme agree and Brilliant is not installed", async () => {
   const pkg = JSON.parse(await readFile("package.json", "utf8"));
-  assert.equal(pkg.version, "0.0.1");
+  assert.equal(pkg.version, "0.0.3");
   assert.equal(CMS_VERSION, pkg.version);
   for (const plugin of catalog) {
     assert.equal(plugin.version, CMS_VERSION);

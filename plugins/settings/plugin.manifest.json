@@ -3,7 +3,7 @@
   "name": "Settings",
   "description": "Your site identity, preferences, and team.",
   "isCore": true,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "settings",
   "admin": {

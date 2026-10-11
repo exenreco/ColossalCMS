@@ -12,6 +12,7 @@ import { NgTemplateOutlet } from "@angular/common";
 import { BlockDefinition } from "./theme-models";
 import { BlockIconComponent } from "./block-icon.component";
 import { ApiService } from "./api.service";
+import { EditorIconComponent } from "./editor-icon.component";
 
 /**
  * Session-persistent block library contents, hosted in the editor's left drawer.
@@ -19,7 +20,12 @@ import { ApiService } from "./api.service";
 @Component({
   selector: "cl-block-library-drawer",
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, BlockIconComponent],
+  imports: [
+    FormsModule,
+    NgTemplateOutlet,
+    BlockIconComponent,
+    EditorIconComponent,
+  ],
   template: `
     @if (open) {
       <div
@@ -70,7 +76,13 @@ import { ApiService } from "./api.service";
                 [attr.aria-expanded]="!collapsed.has(group.name)"
                 (click)="toggle(group.name)"
               >
-                {{ group.name }} <span>{{ group.blocks.length }}</span>
+                <span class="block-library__category-name">{{
+                  group.name
+                }}</span>
+                <span class="block-library__count">{{
+                  group.blocks.length
+                }}</span>
+                <cl-editor-icon class="block-library__caret" name="chevron" />
               </button>
               @if (!collapsed.has(group.name)) {
                 @for (b of group.blocks; track b.type) {
@@ -94,7 +106,10 @@ import { ApiService } from "./api.service";
           [style.opacity]="
             columnsSelected && b.type !== 'core/column' ? 0.6 : 1
           "
-          [disabled]="b.type === 'core/column' && !columnsSelected"
+          [disabled]="
+            b.disabled || (b.type === 'core/column' && !columnsSelected)
+          "
+          [attr.title]="b.disabled ? b.description : null"
           draggable="false"
           (pointerdown)="pointerStart.emit({ event: $event, type: b.type })"
           [attr.data-library-block]="b.type"

@@ -1,11 +1,34 @@
 describe("Post and page HTML editing", () => {
   const headers = { Origin: "http://127.0.0.1:4201" };
+  const control = (name) =>
+    cy.get(`.shared-editor button[aria-label="${name}"]`).filter(":visible");
   const openOutline = () => {
-    cy.get('[aria-label="View mode"] [aria-label="Outline"]').click();
-    cy.get(".content-theme-outline > cl-theme-block-tree .theme-node-label")
-      .first()
-      .should("contain.text", "Main");
-    cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
+    control("Outline").then(($button) => {
+      if ($button.attr("aria-pressed") !== "true") cy.wrap($button).click();
+    });
+    cy.get(".content-theme-outline .outline-document-settings").should(
+      "contain.text",
+      "Main settings",
+    );
+    cy.get(".content-live-preview").should("be.visible");
+  };
+  const inspector = () => {
+    cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+    });
+  };
+  const publish = () => {
+    control("Editor settings").click();
+    cy.get('dialog[aria-label="Editor settings"]:popover-open')
+      .find("button.editor-publish")
+      .click();
+  };
+  const insert = (type) => {
+    control("Blocks").then(($button) => {
+      if ($button.attr("aria-pressed") !== "true") cy.wrap($button).click();
+    });
+    cy.get(`[data-library-block="${type}"]`).first().click();
+    inspector();
   };
   beforeEach(() => {
     cy.request({
@@ -15,16 +38,42 @@ describe("Post and page HTML editing", () => {
       headers,
       failOnStatusCode: false,
     });
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers,
+      body: { walkthroughVersion: 1, colorMode: "dark" },
+    });
   });
   for (const kind of ["post", "page"]) {
     it(`opens the canvas block list and edits ${kind} blocks`, () => {
       cy.visit(`/admin/${kind}s`);
       cy.contains("button", `Create ${kind}`).first().click();
       cy.get('[aria-label="Title"]').type(`Block list ${kind}`);
-      cy.get('.theme-editor-subbar [aria-label="Block list"]').click();
+      control("Outline").click();
       cy.get("#block-list-drawer").should("be.visible");
-      cy.get("#block-list-drawer .block-list-tree").should("contain", "Main");
-      cy.get("#block-list-drawer [data-block-type='core/rich-text']")
+      cy.get("#block-list-drawer .outline-document-settings").should(
+        "contain",
+        "Main settings",
+      );
+      cy.get("cl-contextual-block-toolbar").should(($toolbar) => {
+        const drawer =
+          $toolbar[0].ownerDocument.querySelector("#block-list-drawer");
+        expect($toolbar[0].getBoundingClientRect().left).at.least(
+          drawer.getBoundingClientRect().right,
+        );
+      });
+      cy.get("#block-list-drawer .outline-document-settings").click();
+      cy.get(".content-block-inspector").should(
+        "contain.text",
+        "MAIN SETTINGS",
+      );
+      openOutline();
+      cy.get("#block-list-drawer .outline-tree [aria-level='1']").should(
+        "have.length",
+        1,
+      );
+      cy.get("#block-list-drawer [data-block-type='core/paragraph']")
         .first()
         .find(".theme-tree-row")
         .first()
@@ -32,47 +81,47 @@ describe("Post and page HTML editing", () => {
       cy.get('[aria-label="Block actions"]')
         .contains("button", "Duplicate")
         .click();
-      cy.get("#block-list-drawer [data-block-type='core/rich-text']").should(
+      cy.get("#block-list-drawer [data-block-type='core/paragraph']").should(
         "have.length",
         2,
       );
-      cy.get("#block-list-drawer [data-block-type='core/rich-text']")
+      cy.get("#block-list-drawer [data-block-type='core/paragraph']")
         .first()
         .invoke("attr", "data-outline-id")
         .then((id) => {
           const transfer = new DataTransfer();
-          cy.get("#block-list-drawer [data-block-type='core/rich-text']")
+          cy.get("#block-list-drawer [data-block-type='core/paragraph']")
             .first()
             .find(".theme-tree-row")
             .first()
             .trigger("dragstart", { dataTransfer: transfer });
           cy.get(
-            "#block-list-drawer .block-list-tree > cl-theme-block-tree > .theme-tree-node > .theme-tree-children > .theme-drop-zone",
+            "#block-list-drawer .outline-tree > cl-theme-block-tree > .theme-drop-zone",
           )
             .last()
             .trigger("dragover", { dataTransfer: transfer })
             .trigger("drop", { dataTransfer: transfer });
           cy.get(
-            "#block-list-drawer .block-list-tree > cl-theme-block-tree > .theme-tree-node > .theme-tree-children > cl-theme-block-tree > .theme-tree-node",
+            "#block-list-drawer .outline-tree > cl-theme-block-tree > cl-theme-block-tree > .theme-tree-node",
           )
             .last()
             .should("have.attr", "data-outline-id", id);
         });
-      cy.get("#block-list-drawer [data-block-type='core/rich-text']")
+      cy.get("#block-list-drawer [data-block-type='core/paragraph']")
         .last()
         .find(".theme-tree-row")
         .first()
         .rightclick();
       cy.get('[aria-label="Block actions"]').contains("button", "Cut").click();
-      cy.get("#block-list-drawer [data-block-type='core/rich-text']").should(
+      cy.get("#block-list-drawer [data-block-type='core/paragraph']").should(
         "have.length",
         1,
       );
-      cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
+      control("Blocks").click();
       cy.get("#block-list-drawer").should("not.be.visible");
       cy.get("#block-library-drawer").should("be.visible");
     });
-    it(`edits a ${kind} as HTML and keeps its excerpt in the right panel`, () => {
+    it(`edits a ${kind} as HTML and keeps its excerpt in Inspector`, () => {
       cy.visit(`/admin/${kind}s`);
       cy.contains("button", `Create ${kind}`).first().click();
       cy.get('[aria-label="Title"]').type(`HTML ${kind} story`);
@@ -81,12 +130,14 @@ describe("Post and page HTML editing", () => {
         "not.contain",
         "A short introduction for your readers",
       );
+      inspector();
       cy.get(".editor-options").within(() => {
         cy.get('[aria-label="Excerpt"]').type(`Summary for ${kind}`);
       });
       if (kind === "post") {
-        cy.get(".editor-writing").scrollTo("top");
-        cy.get(".editor-options").scrollTo("top");
+        cy.get(".editor-inspector-scroll").scrollTo("top", {
+          ensureScrollable: false,
+        });
         cy.screenshot("post-editor-blocks", { capture: "viewport" });
       }
       cy.get('[aria-label="Editor mode"]').contains("button", "HTML").click();
@@ -97,10 +148,9 @@ describe("Post and page HTML editing", () => {
         )
         .trigger("input");
       if (kind === "post") {
-        cy.get(".editor-writing").scrollTo("top");
         cy.screenshot("post-editor-html", { capture: "viewport" });
       }
-      cy.get(".editor-topbar").contains("button", "Save draft").click();
+      control("Save draft").click();
       cy.contains("All changes saved").should("be.visible");
       cy.request("/api/admin/state").then(({ body }) => {
         const item = body.content.find((c) => c.title === `HTML ${kind} story`);
@@ -113,7 +163,7 @@ describe("Post and page HTML editing", () => {
         ).eq(true);
       });
       cy.get('[aria-label="Editor mode"]').contains("button", "Blocks").click();
-      cy.get('[aria-label="View mode"] [aria-label="Outline"]').click();
+      control("Outline").click();
       cy.get('[data-block-type="core/rich-text"]').should("exist");
       cy.get(".content-block-inspector textarea").should(
         "contain.value",
@@ -124,7 +174,7 @@ describe("Post and page HTML editing", () => {
         "contain.value",
         "<strong>from HTML</strong>",
       );
-      cy.get(".editor-topbar").contains("button", "Publish").click();
+      publish();
       cy.contains(`Your ${kind} is published.`).should("exist");
       if (kind === "page") {
         cy.visit("/html-page-story");
@@ -144,13 +194,14 @@ describe("Post and page HTML editing", () => {
         .invoke("val", fragment)
         .trigger("input");
       cy.get('[aria-label="Editor mode"]').contains("button", "Blocks").click();
-      cy.get(".content-live-preview")
-        .its("0.contentDocument.body")
-        .find(".story-block pre code")
-        .should("contain.text", "const answer = 42;");
+      cy.get(".content-live-preview").should((frames) => {
+        expect(
+          frames[0].contentDocument.querySelector("[data-html-editor]")?.value,
+        ).eq(fragment);
+      });
       cy.get('[aria-label="Editor mode"]').contains("button", "HTML").click();
       cy.get('[aria-label="HTML source"]').should("have.value", fragment);
-      cy.get(".editor-topbar").contains("button", "Save draft").click();
+      control("Save draft").click();
       cy.contains("All changes saved").should("be.visible");
       cy.request("/api/admin/state").then(({ body }) => {
         const item = body.content.find((entry) => entry.title === title);
@@ -161,38 +212,36 @@ describe("Post and page HTML editing", () => {
       cy.get('[aria-label="HTML source"]').should("have.value", fragment);
     });
   }
-  it("edits the selected HTML fragment block without changing other blocks", () => {
+  it("edits the selected Formatted HTML block without changing other blocks", () => {
     const fragment =
       '<section class="feature-grid"><div><code>renderBlock()</code></div></section>';
     cy.visit("/admin/pages");
     cy.contains("button", "Create page").first().click();
     cy.get('[aria-label="Title"]').type("HTML fragment page");
-    cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
-    cy.get("#block-library-drawer.content-theme-library")
-      .contains(".block-library__heading", "Theme")
-      .click();
-    cy.get('[data-library-block="core/html"]').first().click();
+    control("Blocks").click();
+    cy.get('[data-library-block="core/html"]').should("not.exist");
+    cy.get('[data-library-block="core/rich-text"]').first().click();
     cy.get('[aria-label="Editor mode"]').contains("button", "HTML").click();
-    cy.get(".editor-html-help").should("contain.text", "HTML fragment");
+    cy.get(".editor-html-help").should("contain.text", "Formatted HTML");
     cy.get('[aria-label="HTML source"]')
       .invoke("val", fragment)
       .trigger("input");
     cy.get('[aria-label="Editor mode"]').contains("button", "Blocks").click();
     cy.get(".content-live-preview")
       .its("0.contentDocument.body")
-      .find(".feature-grid code")
-      .should("contain.text", "renderBlock()");
+      .find("[data-html-editor]")
+      .should("have.value", fragment);
     cy.get('[aria-label="Editor mode"]').contains("button", "HTML").click();
     cy.get('[aria-label="HTML source"]').should("have.value", fragment);
-    cy.get(".editor-topbar").contains("button", "Save draft").click();
+    control("Save draft").click();
     cy.contains("All changes saved").should("be.visible");
     cy.request("/api/admin/state").then(({ body }) => {
       const item = body.content.find(
         (entry) => entry.title === "HTML fragment page",
       );
       expect(item.details.contentBlocks).to.have.length(2);
-      expect(item.details.contentBlocks[0].type).eq("core/rich-text");
-      expect(item.details.contentBlocks[1].type).eq("core/html");
+      expect(item.details.contentBlocks[0].type).eq("core/paragraph");
+      expect(item.details.contentBlocks[1].type).eq("core/rich-text");
       expect(item.details.contentBlocks[1].settings.html).eq(fragment);
     });
   });
@@ -214,11 +263,6 @@ describe("Post and page HTML editing", () => {
     cy.get('[aria-label="Title"]').type("Canvas preview page");
     cy.wait("@renderDraft").its("response.statusCode").should("eq", 200);
     cy.get('.content-canvas-status [role="alert"]').should("not.exist");
-    cy.get('[aria-label="View mode"] [aria-label="Canvas"]').should(
-      "have.attr",
-      "aria-checked",
-      "true",
-    );
     cy.get(".content-live-preview")
       .invoke("attr", "srcdoc")
       .should("not.contain", "Canvas preview page");
@@ -226,13 +270,14 @@ describe("Post and page HTML editing", () => {
       .its("0.contentDocument.body")
       .find("main.content-main")
       .should("not.contain.text", "Canvas preview page");
-    cy.get(
-      '[aria-label="Responsive preview"] [aria-label="Mobile preview"]',
-    ).click();
+    control("Viewport").click();
+    cy.get('dialog[aria-label="Viewport options"]:popover-open')
+      .contains("button", "Mobile")
+      .click();
     cy.get(".content-live-preview").should("have.css", "width", "390px");
-    cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
-    cy.get(".content-editor-panes").should("have.class", "library-open");
-    cy.get("#block-library-drawer.content-theme-library").should("be.visible");
+    control("Blocks").click();
+    control("Blocks").should("have.attr", "aria-pressed", "true");
+    cy.get("#block-library-drawer").should("be.visible");
     cy.get('[data-library-block="core/heading"]').first().scrollIntoView();
     cy.get('[data-library-block="core/heading"]')
       .first()
@@ -271,11 +316,11 @@ describe("Post and page HTML editing", () => {
           }),
         );
       });
-    cy.get('[aria-label="View mode"] [aria-label="Outline"]').click();
-    cy.get('[data-block-type="core/rich-text"]').should("exist");
+    control("Outline").click();
+    cy.get('[data-block-type="core/paragraph"]').should("exist");
     cy.get('[data-block-type="core/heading"]').should("exist");
-    cy.get('.theme-editor-subbar [aria-label="Blocks"]').click();
-    cy.get(".content-editor-panes").should("not.have.class", "library-open");
+    inspector();
+    control("Blocks").should("have.attr", "aria-pressed", "false");
     cy.get('.editor-options [aria-label="Excerpt"]').should("exist");
   });
   it("shows selected block tools in the post Canvas and Outline", () => {
@@ -310,13 +355,15 @@ describe("Post and page HTML editing", () => {
     cy.get(
       "cl-contextual-block-toolbar [aria-label='Duplicate block']",
     ).click();
-    cy.get('[aria-label="View mode"] [aria-label="Outline"]').click();
-    cy.get('[data-block-type="core/rich-text"]').should("have.length", 2);
+    control("Outline").click();
+    cy.get('[data-block-type="core/paragraph"]').should("have.length", 2);
     cy.get("cl-contextual-block-toolbar").should("be.visible");
     cy.get("cl-contextual-block-toolbar [aria-label='Delete block']").click();
-    cy.get('[data-block-type="core/rich-text"]').should("have.length", 1);
+    cy.get('[data-block-type="core/paragraph"]').should("have.length", 1);
   });
   it("shows only current page content and styles the Main wrapper", () => {
+    let canvasDocument;
+    let mainElement;
     cy.visit("/admin/pages");
     cy.contains("button", "Create page").first().click();
     cy.get('[aria-label="Title"]').type("Header click preview");
@@ -333,19 +380,29 @@ describe("Post and page HTML editing", () => {
       ).eq(null);
       expect(preview.querySelector(".theme-site-brand,.theme-menu")).eq(null);
     });
-    cy.get(".content-live-preview")
-      .its("0.contentDocument.body")
-      .find("main.content-main")
-      .trigger("click");
+    control("Outline").click();
+    cy.get(".content-theme-outline .outline-document-settings").click();
     cy.get(".content-block-inspector").should("contain.text", "MAIN SETTINGS");
+    cy.get(".content-live-preview").then(($frame) => {
+      canvasDocument = $frame[0].contentDocument;
+      mainElement = canvasDocument.querySelector("main.content-main");
+    });
     cy.get(
-      ".content-block-inspector cl-spacing-picker[kind='padding'] summary",
+      ".content-block-inspector cl-spacing-picker[kind='padding'] .cl-picker-trigger",
     ).click();
     cy.get(
       ".content-block-inspector cl-spacing-picker[kind='padding'] .cl-spacing-top input[type='number']",
     )
       .clear()
       .type("24");
+    cy.get(".content-live-preview").should(($frame) => {
+      expect($frame[0].contentDocument).eq(canvasDocument);
+      expect($frame[0].contentDocument.querySelector("main.content-main")).eq(
+        mainElement,
+      );
+      expect(mainElement.style.paddingTop).eq("24px");
+    });
+    cy.get(".content-live-preview").should("be.visible");
     cy.get(".content-live-preview").should(($frame) => {
       expect(
         $frame[0].contentDocument.querySelector("main.content-main").style
@@ -358,7 +415,8 @@ describe("Post and page HTML editing", () => {
     cy.get(".content-live-preview")
       .its("0.contentDocument.body")
       .should("not.contain.text", "Header click preview");
-    cy.get(".editor-topbar").contains("button", "Save draft").click();
+    control("Save draft").click();
+    cy.contains("All changes saved").should("be.visible");
     cy.request("/api/admin/state").then(({ body }) => {
       const item = body.content.find(
         (entry) => entry.title === "Header click preview",
@@ -370,11 +428,11 @@ describe("Post and page HTML editing", () => {
     cy.visit("/admin/posts");
     cy.contains("button", "Create post").first().click();
     cy.get('[aria-label="Title"]').type("Structured blocks");
-    openOutline();
+    inspector();
     cy.get(".content-block-inspector textarea")
       .clear()
-      .type("<p>Opening paragraph</p>");
-    cy.get('[data-library-block="core/heading"]').first().click();
+      .type("Opening paragraph");
+    insert("core/heading");
     cy.get(".content-block-inspector")
       .contains("label", "Text")
       .find("input")
@@ -384,25 +442,33 @@ describe("Post and page HTML editing", () => {
       .contains("label", "Heading level")
       .find("select")
       .select("h3");
-    cy.get('[data-library-block="core/columns"]').first().click();
+    insert("core/columns");
+    openOutline();
     cy.get('[data-block-type="core/column"]').should("have.length", 2);
-    cy.get('[data-library-block="core/heading"]').first().click();
+    inspector();
+    insert("core/heading");
     cy.get(".content-block-inspector")
       .contains("label", "Text")
       .find("input")
       .clear()
       .type("Inside columns");
+    openOutline();
     cy.get('[data-block-type="core/column"]').should("have.length", 3);
-    cy.get(".content-block-inspector").contains("button", "Duplicate").click();
+    inspector();
+    cy.get('.contextual-block-toolbar [aria-label="Duplicate block"]').click();
+    openOutline();
     cy.get('[data-block-type="core/heading"]').should("have.length", 3);
-    cy.get(".content-block-inspector").contains("button", "Delete").click();
+    inspector();
+    cy.get('.contextual-block-toolbar [aria-label="Delete block"]').click();
+    openOutline();
     cy.get('[data-block-type="core/heading"]').should("have.length", 2);
-    cy.get(".editor-topbar").contains("button", "Save draft").click();
+    inspector();
+    control("Save draft").click();
     cy.contains("All changes saved").should("be.visible");
     cy.request("/api/admin/state").then(({ body }) => {
       const item = body.content.find((c) => c.title === "Structured blocks");
       expect(item.details.contentBlocks.map((n) => n.type)).deep.eq([
-        "core/rich-text",
+        "core/paragraph",
         "core/heading",
         "core/columns",
       ]);
@@ -412,10 +478,10 @@ describe("Post and page HTML editing", () => {
     cy.get('[aria-label="Editor mode"]').contains("button", "HTML").click();
     cy.get('[aria-label="HTML source"]').should(
       "contain.value",
-      "<p>Opening paragraph</p>",
+      "Opening paragraph",
     );
     cy.get('[aria-label="Editor mode"]').contains("button", "Blocks").click();
-    cy.get(".editor-topbar").contains("button", "Publish").click();
+    publish();
     cy.request("/api/public").then(({ body }) => {
       const item = body.content.find((c) => c.title === "Structured blocks");
       const date = new Date(item.publishAt);
@@ -427,54 +493,16 @@ describe("Post and page HTML editing", () => {
     cy.get(".theme-root").should("contain", "Inside columns");
     cy.get(".theme-root [data-block-id]").should("have.length.greaterThan", 3);
   });
-  it("drags a library block onto an occupied content outline", () => {
+  it("adds a block to an occupied content outline and reorders it", () => {
     cy.visit("/admin/posts");
     cy.contains("button", "Create post").first().click();
     cy.get('[aria-label="Title"]').type("Dragged content block");
     openOutline();
-    cy.get('[data-library-block="core/heading"]').first().scrollIntoView();
-    cy.get(
-      '[data-block-type="core/rich-text"] > .theme-tree-row',
-    ).scrollIntoView();
-    cy.get('[data-library-block="core/heading"]')
-      .first()
-      .then(($source) => {
-        const source = $source[0];
-        const doc = source.ownerDocument;
-        const target = doc.querySelector(
-          '[data-block-type="core/rich-text"] > .theme-tree-row',
-        );
-        const origin = source.getBoundingClientRect();
-        const destination = target.getBoundingClientRect();
-        const point = (rect) => ({
-          clientX: rect.left + rect.width / 2,
-          clientY: rect.top + rect.height / 2,
-        });
-        source.dispatchEvent(
-          new PointerEvent("pointerdown", {
-            bubbles: true,
-            button: 0,
-            pointerId: 7,
-            ...point(origin),
-          }),
-        );
-        doc.dispatchEvent(
-          new PointerEvent("pointermove", {
-            bubbles: true,
-            button: 0,
-            pointerId: 7,
-            ...point(destination),
-          }),
-        );
-        doc.dispatchEvent(
-          new PointerEvent("pointerup", {
-            bubbles: true,
-            button: 0,
-            pointerId: 7,
-            ...point(destination),
-          }),
-        );
-      });
+    cy.get('[aria-label="Add top-level block"]').click();
+    cy.get('[aria-label="Find a block to insert"]').type("Heading");
+    cy.get(".outline-insert-options")
+      .contains("button", /^Heading$/)
+      .click();
     cy.get('[data-block-type="core/heading"]').should("have.length", 1);
     cy.get('[data-block-type="core/heading"] > .theme-tree-row').then(
       ($row) => {
@@ -503,13 +531,13 @@ describe("Post and page HTML editing", () => {
         );
       },
     );
-    cy.get(".editor-topbar").contains("button", "Save draft").click();
+    control("Save draft").click();
     cy.request("/api/admin/state").then(({ body }) => {
       const item = body.content.find(
         (entry) => entry.title === "Dragged content block",
       );
       expect(item.details.contentBlocks.map((node) => node.type)).deep.eq([
-        "core/rich-text",
+        "core/paragraph",
         "core/heading",
       ]);
     });
@@ -522,7 +550,7 @@ describe("Post and page HTML editing", () => {
     cy.get('[aria-label="HTML source"]')
       .invoke("val", '<p>Safe text</p><script>alert("bad")</script>')
       .trigger("input");
-    cy.get(".editor-topbar").contains("button", "Save draft").click();
+    control("Save draft").click();
     cy.contains("Remove scripts, embeds, and forms").should("be.visible");
     cy.request("/api/admin/state").then(({ body }) => {
       expect(body.content.some((c) => c.title === "Unsafe source check")).eq(
@@ -537,7 +565,7 @@ describe("Post and page HTML editing", () => {
     cy.get('[aria-label="HTML source"]')
       .invoke("val", "<p>Unsaved source</p>")
       .trigger("input");
-    cy.get('[aria-label="Close editor"]').click();
+    control("Back to workspace").click();
     cy.contains("Leave unsaved changes?").should("be.visible");
     cy.contains("button", "Keep editing").click();
     cy.get('[aria-label="HTML source"]').should(

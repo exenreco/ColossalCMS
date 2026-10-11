@@ -1,6 +1,22 @@
 describe("Slider and overlay blocks", () => {
   const origin = { Origin: "http://127.0.0.1:4201" };
   let themeId;
+  const control = (name) =>
+    cy.get(`.shared-editor button[aria-label="${name}"]`).filter(":visible");
+  const inspector = () => {
+    cy.get('[aria-label="Toggle Inspector"]').then((button) => {
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+    });
+  };
+  const outline = () => {
+    cy.get(".blocks-trigger").then((button) => {
+      if (button.attr("aria-pressed") === "true") control("Outline").click();
+      else
+        cy.get('[aria-label="Outline"]').then((button) => {
+          if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
+        });
+    });
+  };
   beforeEach(() => {
     cy.request({
       method: "POST",
@@ -8,6 +24,12 @@ describe("Slider and overlay blocks", () => {
       body: {},
       headers: origin,
       failOnStatusCode: false,
+    });
+    cy.request({
+      method: "PUT",
+      url: "/api/admin/editor/preferences",
+      headers: origin,
+      body: { walkthroughVersion: 1 },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -25,67 +47,80 @@ describe("Slider and overlay blocks", () => {
     cy.get(`.theme-outline .theme-tree-node[data-block-type="${type}"]`);
   const search = (value) => {
     cy.get(".blocks-trigger").then((button) => {
-      if (button.attr("aria-expanded") !== "true") cy.wrap(button).click();
+      if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
     });
     cy.get(".block-library__search").clear().type(value);
   };
   const dragLibraryInto = (type, parentId, pointerId) => {
-    cy.get(`[data-drop-parent="${parentId}"]`)
-      .last()
-      .scrollIntoView()
-      .then((zone) => {
-        const doc = zone[0].ownerDocument;
-        const source = doc.querySelector(`[data-library-block="${type}"]`);
-        expect(source).not.eq(null);
-        const start = source.getBoundingClientRect();
-        source.dispatchEvent(
-          new doc.defaultView.PointerEvent("pointerdown", {
+    cy.get(".theme-live-preview")
+      .its("0.contentDocument.body")
+      .find(`[data-block-id="${parentId}"]`)
+      .scrollIntoView();
+    cy.get(`[data-library-block="${type}"]`).then((source) => {
+      const doc = source[0].ownerDocument;
+      const frame = doc.querySelector(".theme-live-preview");
+      const block = frame.contentDocument.querySelector(
+        `[data-block-id="${parentId}"]`,
+      );
+      block.scrollIntoView({ block: "center", inline: "nearest" });
+      const rect = frame.getBoundingClientRect();
+      const target = block.getBoundingClientRect();
+      const start = source[0].getBoundingClientRect();
+      const point = {
+        clientX: rect.left + target.left + target.width / 2,
+        clientY: rect.top + target.top + Math.min(target.height / 2, 100),
+      };
+      expect(doc.elementFromPoint(point.clientX, point.clientY)).eq(frame);
+      const hitId = frame.contentDocument
+        .elementFromPoint(point.clientX - rect.left, point.clientY - rect.top)
+        ?.closest("[data-block-id]")?.dataset.blockId;
+      expect(hitId, "visible parent under the drop point").eq(parentId);
+      source[0].dispatchEvent(
+        new doc.defaultView.PointerEvent("pointerdown", {
+          bubbles: true,
+          cancelable: true,
+          pointerId,
+          pointerType: "mouse",
+          button: 0,
+          buttons: 1,
+          clientX: start.left + 8,
+          clientY: start.top + 8,
+        }),
+      );
+      for (const name of ["pointermove", "pointerup"]) {
+        doc.dispatchEvent(
+          new doc.defaultView.PointerEvent(name, {
             bubbles: true,
             cancelable: true,
             pointerId,
             pointerType: "mouse",
             button: 0,
-            buttons: 1,
-            clientX: start.left + 8,
-            clientY: start.top + 8,
+            buttons: name === "pointerup" ? 0 : 1,
+            ...point,
           }),
         );
-        const target = zone[0].getBoundingClientRect();
-        const point = {
-          clientX: target.left + target.width / 2,
-          clientY: target.top + target.height / 2,
-        };
-        expect(
-          doc
-            .elementFromPoint(point.clientX, point.clientY)
-            ?.closest(".theme-drop-zone,.theme-tree-row"),
-        ).eq(zone[0]);
-        for (const name of ["pointermove", "pointerup"])
-          doc.dispatchEvent(
-            new doc.defaultView.PointerEvent(name, {
-              bubbles: true,
-              cancelable: true,
-              pointerId,
-              pointerType: "mouse",
-              button: 0,
-              buttons: name === "pointerup" ? 0 : 1,
-              ...point,
-            }),
-          );
-      });
-    cy.get(".theme-editor-panes").should("not.have.class", "is-dragging");
+        if (name === "pointermove")
+          expect(
+            frame.contentDocument.querySelector(".cl-drop-indicator")?.hidden,
+          ).eq(false);
+      }
+    });
+    cy.get(".theme-editor-viewport").should("not.have.class", "is-dragging");
+    outline();
   };
 
   it("edits a Slide image background through the shared popover", () => {
     cy.visit("/admin/themes/edit/" + themeId);
-    cy.get('[aria-label="Outline"][role="radio"]').click();
+
     search("Slider");
     cy.get('[data-library-block="core/slider"]').click();
+    outline();
     find("core/slide")
       .first()
       .find(".theme-tree-row .theme-node-label")
       .first()
       .click();
+    inspector();
     cy.get(
       ".theme-inspector cl-slide-background-picker .cl-picker-trigger",
     ).click();
@@ -106,7 +141,7 @@ describe("Slider and overlay blocks", () => {
     picker().contains("button", "Choose media").click();
     cy.get(".media-picker-dialog").should("be.visible");
     cy.get(".media-picker-dialog").contains("button", "Cancel").click();
-    cy.get('[aria-label="Canvas"][role="radio"]').click();
+    cy.get(".theme-live-preview").should("be.visible");
     cy.get(".theme-live-preview").should((frame) => {
       const doc = frame[0].contentDocument;
       const slide = doc.querySelector(".cl-swiper .swiper-slide");
@@ -126,17 +161,18 @@ describe("Slider and overlay blocks", () => {
         win.sessionStorage.setItem("colossal.block-library.open", "false");
       },
     });
-    cy.get('[aria-label="Outline"][role="radio"]').click();
-    cy.get(".blocks-trigger").click();
+
     search("Slider");
     cy.get('[data-library-block="core/slider"]').click();
+    outline();
     find("core/slider").should("have.length", 1);
     find("core/slide").should("have.length", 2);
     cy.get(".theme-inspector")
       .contains("label", "Slides per view")
       .should("exist");
     cy.get(".theme-inspector cl-animation-picker").should("not.exist");
-    cy.get(".theme-inspector cl-dimensions-picker summary").click();
+    inspector();
+    cy.get(".theme-inspector cl-dimensions-picker .cl-picker-trigger").click();
     cy.get(".theme-inspector cl-dimensions-picker")
       .contains("label", "Min height")
       .find("input[type='checkbox']")
@@ -146,6 +182,7 @@ describe("Slider and overlay blocks", () => {
       .find("input[type='number']")
       .clear()
       .type("600");
+    outline();
     find("core/slide")
       .first()
       .then((slide) => {
@@ -165,22 +202,21 @@ describe("Slider and overlay blocks", () => {
       .click();
     search("Heading");
     cy.get('[data-library-block="core/heading"]').last().click();
+    outline();
     find("core/slide")
       .first()
       .find('.theme-tree-node[data-block-type="core/overlay"]')
       .find('.theme-tree-node[data-block-type="core/heading"]')
       .should("have.length", 1);
-    cy.get(
-      ".theme-outline > cl-theme-block-tree > .theme-tree-node > .theme-tree-row .theme-node-label",
-    )
-      .first()
-      .click();
+    cy.get(".outline-document-settings").click();
     search("3D model");
     cy.get('[data-library-block="core/gltf"]').click();
+    inspector();
     cy.get(".theme-inspector")
       .contains("label", "Model description")
       .find("input")
       .type("A model with a caption");
+    outline();
     find("core/gltf").then((model) => {
       const id = model.attr("data-outline-id");
       search("Overlay");
@@ -189,7 +225,7 @@ describe("Slider and overlay blocks", () => {
         .find('.theme-tree-node[data-block-type="core/overlay"]')
         .should("have.length", 1);
     });
-    cy.get('[aria-label="Canvas"][role="radio"]').click();
+    cy.get(".theme-live-preview").should("be.visible");
     cy.get(".theme-live-preview").should((frame) => {
       const doc = frame[0].contentDocument;
       const swiper = doc.querySelector(".cl-swiper[data-swiper-ready='true']");
@@ -216,11 +252,10 @@ describe("Slider and overlay blocks", () => {
       );
       expect(slides[1].classList.contains("swiper-slide-active")).eq(true);
     });
-    cy.get(".theme-more summary").click();
-    cy.get(".theme-more").contains("button", "Save Draft").click();
+    control("Save draft").click();
     cy.contains("Draft saved").should("exist");
     cy.request("/api/themes/" + themeId).then(({ body }) => {
-      const tree = body.draft.templates.default;
+      const tree = body.draft.templates.home;
       const slider = tree.children.find((node) => node.type === "core/slider");
       const model = tree.children.find((node) => node.type === "core/gltf");
       expect(slider.children).to.have.length(2);
@@ -235,7 +270,7 @@ describe("Slider and overlay blocks", () => {
     cy.request({
       method: "POST",
       url: "/api/themes/" + themeId + "/preview",
-      body: {},
+      body: { templateId: "home" },
       headers: origin,
     }).then(({ body }) => {
       const token = new URL(body.url, "http://127.0.0.1:4201").searchParams.get(

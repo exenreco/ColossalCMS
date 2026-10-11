@@ -5,6 +5,7 @@ export interface BlockNode {
   type: string;
   settings: Record<string, any>;
   children?: BlockNode[];
+  editor?: { label?: string; icon?: string };
 }
 export interface BlockField {
   key: string;
@@ -12,6 +13,10 @@ export interface BlockField {
   type: string;
   default?: any;
   options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  help?: string;
 }
 export interface BlockDefinition {
   type: string;
@@ -24,6 +29,7 @@ export interface BlockDefinition {
   template?: string;
   pluginId?: string;
   legacy?: boolean;
+  disabled?: boolean;
   toolbar?: string[];
 }
 export interface ThemeTemplate {

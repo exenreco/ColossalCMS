@@ -32,8 +32,126 @@ import {
   sceneTint,
 } from "../shared/ice-scene/scene-math.ts";
 import { modelFieldVisible } from "../shared/model-field-visibility.ts";
+import { upgradeGlasseyNativeBlocks } from "../server/glassey-native-blocks.mjs";
+import { migrateGlasseyDocument } from "../server/glassey-migration.mjs";
 
-test("Glassey is seeded as an inactive regular theme without replacing a site's theme, edits, or content", async () => {
+test("Glossy migrates installed branding and navigation once, retaining IDs and custom menu links", () => {
+  const document = colossal2027Theme();
+  document.manifest.name = "Glassey";
+  document.css = document.css.split(
+    "/* Glossy identity and mobile navigation */",
+  )[0];
+  const identity = document.parts.header.children[0];
+  const id = identity.id;
+  identity.type = "core/rich-text";
+  identity.settings = {
+    html: '<a class="c27-brand" href="/"><span class="c27-brand-monogram">eb.</span><span>Old name</span></a>',
+    editorLabel: "My identity",
+  };
+  const menu = document.parts.header.children[1];
+  menu.settings.mobileMode = "expanded";
+  menu.children[0].settings.href = "/custom-projects";
+  const children = structuredClone(menu.children);
+  migrateGlasseyDocument(document);
+  assert.equal(document.manifest.name, "Glossy");
+  assert.equal(identity.id, id);
+  assert.equal(identity.type, "core/site-brand");
+  assert.equal(identity.settings.editorLabel, "My identity");
+  assert.equal(menu.settings.mobileMode, "collapsed");
+  assert.equal(menu.settings.mobileIcon, "bars");
+  assert.deepEqual(menu.children, children);
+  menu.settings.mobileIcon = "dots";
+  document.manifest.name = "My portfolio";
+  const before = JSON.stringify(document);
+  migrateGlasseyDocument(document);
+  assert.equal(JSON.stringify(document), before);
+});
+
+test("Glossy uses native blocks for ordinary content and uses Site Identity and hamburger navigation without HTML fragments", () => {
+  const document = colossal2027Theme();
+  const nodes = [];
+  const visit = (node) => {
+    nodes.push(node);
+    (node.children || []).forEach(visit);
+  };
+  [
+    ...Object.values(document.templates),
+    ...Object.values(document.parts),
+  ].forEach(visit);
+  const html = nodes.filter((node) => node.type === "core/rich-text");
+  assert.equal(html.length, 0);
+  assert.equal(document.manifest.name, "Glossy");
+  const identity = nodes.find((node) => node.type === "core/site-brand");
+  assert.equal(identity.settings.display, "logo-and-name");
+  const menu = nodes.find((node) => node.type === "core/menu");
+  assert.equal(menu.settings.mobileIcon, "bars");
+  assert.equal(menu.settings.mobileMode, "collapsed");
+  for (const type of [
+    "core/paragraph",
+    "core/button",
+    "core/image",
+    "core/menu",
+    "core/menu-item",
+  ])
+    assert.ok(
+      nodes.some((node) => node.type === type),
+      type,
+    );
+  const before = JSON.stringify(document);
+  upgradeGlasseyNativeBlocks(document);
+  assert.equal(JSON.stringify(document), before);
+  const rendered = renderTheme(document, {
+    kind: "home",
+    settings: { title: "Portfolio" },
+    allContent: [],
+    media: [],
+  });
+  assert.match(rendered.html, /src="\/themes\/colossal-2027\/project-cms.svg"/);
+  assert.match(rendered.html, /theme-menu-link/);
+});
+
+test("Glossy conversion preserves edited content, existing IDs and settings and leaves unsupported HTML intact", () => {
+  const document = {
+    templates: {
+      home: {
+        id: "root",
+        type: "core/container",
+        settings: {},
+        children: [
+          {
+            id: "copy",
+            type: "core/rich-text",
+            editor: { label: "My copy" },
+            settings: {
+              html: '<p class="c27-small-label">My edited copy</p><p>Second paragraph</p>',
+              background: "#123456",
+              classes: "authored",
+            },
+          },
+          {
+            id: "custom",
+            type: "core/rich-text",
+            settings: { html: "<table><tr><td>Custom</td></tr></table>" },
+          },
+        ],
+      },
+    },
+    parts: {},
+    css: ".authored{color:red}",
+  };
+  const originalCustom = structuredClone(document.templates.home.children[1]);
+  upgradeGlasseyNativeBlocks(document);
+  const copy = document.templates.home.children[0];
+  assert.equal(copy.id, "copy");
+  assert.equal(copy.type, "core/group");
+  assert.equal(copy.editor.label, "My copy");
+  assert.equal(copy.settings.background, "#123456");
+  assert.equal(copy.children[0].settings.html, "My edited copy");
+  assert.equal(copy.children[1].settings.html, "Second paragraph");
+  assert.deepEqual(document.templates.home.children[1], originalCustom);
+});
+
+test("Glossy is seeded as an inactive regular theme without replacing a site's theme, edits, or content", async () => {
   const db = localDatabase();
   try {
     await initialize(db, { email: "owner@example.test" });
@@ -43,7 +161,7 @@ test("Glassey is seeded as an inactive regular theme without replacing a site's 
       .first();
     assert.equal(first.active, 0);
     assert.equal(first.is_core, 0);
-    assert.equal(JSON.parse(first.manifest).name, "Glassey");
+    assert.equal(JSON.parse(first.manifest).name, "Glossy");
     assert.equal(JSON.parse(first.manifest).isCore, false);
     assert.equal(
       (await db.prepare("SELECT id FROM themes WHERE active=1").first()).id,
@@ -73,7 +191,7 @@ test("Glassey is seeded as an inactive regular theme without replacing a site's 
   }
 });
 
-test("existing Colossal 2027 installations and exports become Glassey without replacing published content, drafts, or history", async () => {
+test("existing Colossal 2027 installations and exports become Glossy without replacing published content, drafts, or history", async () => {
   const db = localDatabase();
   try {
     await initialize(db, { email: "owner@example.test" });
@@ -82,9 +200,9 @@ test("existing Colossal 2027 installations and exports become Glassey without re
     published.manifest.name = "Colossal 2027";
     published.manifest.isCore = true;
     const footerCopy =
-      published.parts.footer.children[0].children[0].children[1];
+      published.parts.footer.children[0].children[0].children[1].children[1];
     footerCopy.settings.html = footerCopy.settings.html.replace(
-      "GLASSEY / PORTFOLIO",
+      "GLOSSY / PORTFOLIO",
       "COLOSSAL 2027 / PORTFOLIO",
     );
     published.css += ".theme-root .authored{color:#123456}";
@@ -146,19 +264,19 @@ test("existing Colossal 2027 installations and exports become Glassey without re
     assert.equal(migrated.is_core, 0);
     assert.equal(migrated.active, 1);
     assert.equal(migrated.revision, 10);
-    published.manifest.name = draft.manifest.name = "Glassey";
+    published.manifest.name = draft.manifest.name = "Glossy";
     published.manifest.isCore = draft.manifest.isCore = false;
     footerCopy.settings.html = footerCopy.settings.html.replace(
       "COLOSSAL 2027 / PORTFOLIO",
-      "GLASSEY / PORTFOLIO",
+      "GLOSSY / PORTFOLIO",
     );
-    draft.parts.footer.children[0].children[0].children[1].settings.html =
+    draft.parts.footer.children[0].children[0].children[1].children[1].settings.html =
       footerCopy.settings.html;
     assert.deepEqual(JSON.parse(migrated.published), published);
     assert.deepEqual(JSON.parse(migrated.draft), draft);
     assert.deepEqual(JSON.parse(migrated.manifest), published.manifest);
     for (const [suffix, name] of [
-      ["export", "Glassey"],
+      ["export", "Glossy"],
       ["custom", "My custom portfolio"],
     ]) {
       const row = await db
@@ -173,7 +291,7 @@ test("existing Colossal 2027 installations and exports become Glassey without re
       .first();
     assert.equal(JSON.parse(history.snapshot).manifest.name, "Colossal 2027");
     const restored = migrateThemeDocument(JSON.parse(history.snapshot));
-    assert.equal(restored.manifest.name, "Glassey");
+    assert.equal(restored.manifest.name, "Glossy");
     assert.equal(restored.manifest.isCore, false);
     await ensureThemes(db);
     assert.deepEqual(
@@ -188,7 +306,7 @@ test("existing Colossal 2027 installations and exports become Glassey without re
   }
 });
 
-test("Glassey can be deleted while inactive and stays deleted; the active and default themes remain protected", async () => {
+test("Glossy can be deleted while inactive and stays deleted; the active and default themes remain protected", async () => {
   const db = localDatabase();
   const remove = (id) =>
     handleThemes(

@@ -1,5 +1,17 @@
-import { themeMediaIds } from "./theme-engine.mjs";
+import { navigationSettingsError } from "../shared/navigation-blocks.ts";
+import { normalizeFormattedHtmlBlocks } from "../shared/formatted-html.ts";
+import { themeMediaIds, sanitizeParagraph } from "./theme-engine.mjs";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
+import { normalizeIconSettings, validIcon } from "../shared/icon-catalog.ts";
+import {
+  sharedPartName,
+  sharedPartPlacementError,
+  sharedPartDefinitions,
+} from "../shared/shared-part-blocks.ts";
+import {
+  normalizeContextBlockTrees,
+  paginationPlacementValid,
+} from "../shared/context-blocks.ts";
 export const fail = (message, status = 400, extra = {}) => {
   throw Object.assign(new Error(message), { status, ...extra });
 };
@@ -339,18 +351,32 @@ export async function validateDetails(db, details = {}) {
   }
   if (details.contentBlocks !== undefined) {
     if (!Array.isArray(details.contentBlocks)) fail("Invalid content blocks.");
+    normalizeFormattedHtmlBlocks(details.contentBlocks);
+    normalizeContextBlockTrees(details.contentBlocks, false);
+    if (!details.contentBlocks.every((node) => paginationPlacementValid(node)))
+      fail(
+        "Pagination must be inside a Post list or one of its layout blocks.",
+      );
     const allowed = new Set(
       definitions.filter((d) => !d.legacy).map((d) => d.type),
     );
     const active = await db
       .prepare("SELECT published FROM themes WHERE active=1")
       .first();
-    const customDefinitions = active?.published
-      ? JSON.parse(active.published).blocks || []
-      : [];
+    const activeDocument = active?.published
+      ? JSON.parse(active.published)
+      : {};
+    const sharedParts = activeDocument.parts || {};
+    const customDefinitions = [
+      ...(activeDocument.blocks || []),
+      ...sharedPartDefinitions(sharedParts),
+    ];
+    for (const block of details.contentBlocks) {
+      const partError = sharedPartPlacementError(block, sharedParts, "", true);
+      if (partError) fail(partError);
+    }
     for (const definition of customDefinitions)
       if (definition?.type && !definition.legacy) allowed.add(definition.type);
-    allowed.add("core/html");
     let blockCount = 0;
     const ids = new Set();
     const checkBlock = (block, depth = 0, parent = "root") => {
@@ -383,6 +409,20 @@ export async function validateDetails(db, details = {}) {
         !["core/slide", "core/gltf"].includes(parent)
       )
         fail("An Overlay must be inside a Slide or 3D model.");
+      if (
+        ["core/menu", "core/menu-item"].includes(parent) &&
+        !["core/button", "core/menu-item", "core/custom-link"].includes(
+          block.type,
+        )
+      )
+        fail(
+          "Menus and Menu Items accept Menu Item, Custom Link, and Button blocks only.",
+        );
+      if (
+        block.type === "core/menu-item" &&
+        !["core/menu", "core/menu-item"].includes(parent)
+      )
+        fail("A Menu Item must be inside a Menu or another Menu Item.");
       if (parent === "core/gltf" && block.type !== "core/overlay")
         fail("3D models may contain Overlay blocks only.");
       if (
@@ -395,6 +435,8 @@ export async function validateDetails(db, details = {}) {
       const definition = [...definitions, ...customDefinitions].find(
         (d) => d.type === block.type,
       );
+      if (sharedPartName(block.type) && !allowed.has(block.type))
+        fail("Unknown shared part.");
       const container = definition
         ? !!definition.container
         : Array.isArray(block.children);
@@ -408,6 +450,19 @@ export async function validateDetails(db, details = {}) {
       )
         fail("Invalid block settings.");
       const settings = JSON.parse(JSON.stringify(block.settings));
+      const navigationError = navigationSettingsError(block.type, settings);
+      if (navigationError) fail(navigationError);
+      if (block.type === "core/icon") {
+        if (
+          settings.iconName !== undefined &&
+          settings.iconName !== "" &&
+          !validIcon(settings.iconName)
+        )
+          fail("Choose an icon from the bundled library.");
+        normalizeIconSettings(settings);
+      }
+      if (block.type === "core/paragraph" && settings.html !== undefined)
+        settings.html = sanitizeParagraph(settings.html);
       for (const key of Object.keys(settings))
         if (!/^[a-zA-Z][\w-]{0,60}$/.test(key)) fail("Invalid block setting.");
       return {

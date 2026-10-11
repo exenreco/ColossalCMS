@@ -3,7 +3,7 @@
   "name": "Pages",
   "description": "Create and publish the pages that make up your site.",
   "isCore": true,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "Colossal Core Team",
   "icon": "pages",
   "admin": {

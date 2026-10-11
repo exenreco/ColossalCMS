@@ -5,6 +5,7 @@ import {
   themeMediaIds,
   esc,
 } from "./theme-engine.mjs";
+import { upgradeMidnight } from "./midnight-maintenance.mjs";
 import {
   all,
   parse,
@@ -56,9 +57,14 @@ function starter(
     "core/container",
     { classes: "maintenance-card", maxWidth: 760, padding: 48 },
     [
-      node("core/rich-text", {
-        html: '<p class="maintenance-eyebrow">{{site.title}} · UNDER MAINTENANCE</p>',
-      }),
+      node("core/row", { classes: "maintenance-eyebrow", gap: 8 }, [
+        node("core/site-brand", {
+          display: "name",
+          level: "span",
+          linkHome: false,
+        }),
+        node("core/paragraph", { html: "· UNDER MAINTENANCE" }),
+      ]),
       node("core/heading", { text, level: "h1" }),
       node("core/rich-text", {
         html: "<p>We’re updating our website. Thank you for your patience while we put the finishing touches on it.</p>",
@@ -78,6 +84,7 @@ function starter(
   const dark = variant === "midnight",
     studio = variant === "studio";
   d.css = `.theme-root{margin:0;font-family:system-ui,sans-serif;line-height:1.7;background-color:${dark ? "#101426" : studio ? "#faf3e8" : "#f2f6f4"};color:${dark ? "#f0f3ff" : "#203d34"}}.theme-root.maintenance-body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}.theme-root h1{font-size:clamp(36px,7vw,76px);line-height:1.06;letter-spacing:-2px;margin:24px 0}.theme-root .maintenance-card{width:100%;border-radius:28px;${dark ? "background-image:linear-gradient(135deg,#252845,#151b32);border:1px solid #4a4d70" : studio ? "box-shadow:inset 8px 0 0 #db6d43;background-color:#fffaf3" : "background-color:#ffffff;border:1px solid #dbe5df"}}.theme-root .maintenance-eyebrow{font-size:12px;font-weight:700;letter-spacing:2px}.theme-root .maintenance-note{margin-top:36px;font-size:13px;opacity:.7}@media(max-width:600px){.theme-root .maintenance-card{padding:28px!important}}`;
+  upgradeMidnight(d);
   return validateDocument(d);
 }
 function layout(document) {
@@ -124,7 +131,28 @@ async function store(db, seed = false) {
       .bind(key)
       .first();
   }
-  return { raw: row?.value, data: parse(row?.value, null) };
+  const state = { raw: row?.value, data: parse(row?.value, null) };
+  let changed = false;
+  for (const record of state.data?.layouts || []) {
+    let updated = upgradeMidnight(record.published);
+    if (record.draft) updated = upgradeMidnight(record.draft) || updated;
+    if (updated) {
+      record.published = validateDocument(record.published);
+      if (record.draft) record.draft = validateDocument(record.draft);
+      record.revision++;
+      changed = true;
+    }
+  }
+  if (changed) {
+    try {
+      await persist(db, state);
+    } catch (error) {
+      if (error.status === 409) return store(db);
+      throw error;
+    }
+    state.raw = JSON.stringify(state.data);
+  }
+  return state;
 }
 async function persist(db, state) {
   state.data.revision++;

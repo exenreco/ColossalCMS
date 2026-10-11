@@ -86,6 +86,7 @@
         "key": "fullBleed",
         "label": "Full bleed",
         "type": "checkbox",
+        "help": "Ignores this container’s maximum width so it can fill the available width of its parent.",
         "default": false
       }
     ],
@@ -209,15 +210,131 @@
     ]
   },
   {
-    "type": "core/rich-text",
-    "label": "Rich text",
+    "type": "core/title",
+    "label": "Title",
+    "category": "Dynamic",
+    "description": "Display the current post or page title without changing its content",
+    "icon": "fas fa-text-height",
+    "container": false,
+    "fields": [
+      {
+        "key": "level",
+        "label": "Heading level",
+        "type": "select",
+        "default": "h2",
+        "options": ["h1", "h2", "h3", "h4", "h5", "h6"]
+      },
+      {
+        "key": "linkToContent",
+        "label": "Link to post or page",
+        "type": "checkbox",
+        "default": false
+      }
+    ],
+    "toolbar": ["level", "linkToContent"]
+  },
+  {
+    "type": "core/excerpt",
+    "label": "Excerpt",
+    "category": "Dynamic",
+    "description": "Display the current post or page summary",
+    "icon": "fas fa-align-justify",
+    "container": false,
+    "fields": [
+      {
+        "key": "showExcerpt",
+        "label": "Show excerpt",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "excerptLength",
+        "label": "Excerpt word limit",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "help": "0 shows the full saved excerpt. Edit its content in the post or page settings."
+      }
+    ],
+    "toolbar": ["showExcerpt", "excerptLength"]
+  },
+  {
+    "type": "core/paragraph",
+    "label": "Paragraph",
     "category": "Content",
-    "icon": "fas fa-align-left",
+    "description": "Write and edit a paragraph directly on the canvas",
+    "icon": "fas fa-paragraph",
     "container": false,
     "fields": [
       {
         "key": "html",
-        "label": "Content",
+        "label": "Paragraph text (inline HTML)",
+        "type": "textarea",
+        "default": ""
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right", "justify"]
+      }
+    ],
+    "toolbar": ["bold", "italic", "underline", "strike", "inlineCode", "align"]
+  },
+  {
+    "type": "core/icon",
+    "label": "Icon",
+    "category": "Content",
+    "description": "Choose a bundled SVG icon and customize its size and appearance",
+    "icon": "fas fa-icons",
+    "container": false,
+    "fields": [
+      {
+        "key": "iconName",
+        "label": "Icon",
+        "type": "icon",
+        "default": ""
+      },
+      {
+        "key": "iconSize",
+        "label": "Icon size (px)",
+        "type": "number",
+        "default": 32,
+        "min": 8,
+        "max": 512,
+        "step": 1
+      },
+      {
+        "key": "decorative",
+        "label": "Decorative icon",
+        "type": "checkbox",
+        "default": true,
+        "help": "Decorative icons are hidden from screen readers. Turn this off for an icon that conveys information."
+      },
+      {
+        "key": "accessibleLabel",
+        "label": "Accessible label",
+        "type": "text",
+        "default": "",
+        "help": "Describe the icon's meaning when it is not decorative."
+      }
+    ],
+    "toolbar": ["iconSize", "decorative"]
+  },
+  {
+    "type": "core/rich-text",
+    "label": "Formatted HTML",
+    "category": "Content",
+    "description": "Edit formatted HTML source directly in the canvas",
+    "icon": "fas fa-code",
+    "container": false,
+    "fields": [
+      {
+        "key": "html",
+        "label": "HTML source",
         "type": "textarea",
         "default": "<p>A little space for your next idea.</p>"
       },
@@ -229,7 +346,7 @@
         "options": ["left", "center", "right"]
       }
     ],
-    "toolbar": ["bold", "italic", "underline", "strike", "inlineCode", "align"]
+    "toolbar": []
   },
   {
     "type": "core/image",
@@ -259,7 +376,8 @@
       },
       {
         "key": "url",
-        "label": "HTTPS image URL",
+        "label": "Image URL",
+        "help": "Use an HTTPS URL or a site path such as /themes/example/image.png.",
         "type": "text",
         "default": ""
       },
@@ -385,37 +503,216 @@
     "container": false,
     "fields": [
       {
-        "key": "mediaId",
-        "label": "Fallback image",
-        "type": "image"
+        "key": "showImage",
+        "label": "Show featured image",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "linkToContent",
+        "label": "Link to post or page",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "aspectRatio",
+        "label": "Aspect ratio",
+        "type": "select",
+        "default": "original",
+        "options": ["original", "16/9", "4/3", "1/1", "3/4"]
+      },
+      {
+        "key": "objectFit",
+        "label": "Image fit",
+        "type": "select",
+        "default": "cover",
+        "options": ["cover", "contain"]
       }
     ],
-    "legacy": true,
-    "toolbar": ["mediaId"]
+    "toolbar": ["showImage", "linkToContent", "aspectRatio", "objectFit"]
+  },
+  {
+    "type": "core/button",
+    "label": "Button",
+    "category": "Content",
+    "icon": "fas fa-arrow-right",
+    "container": false,
+    "fields": [
+      {
+        "key": "text",
+        "label": "Button text",
+        "type": "text",
+        "default": "Button"
+      },
+      {
+        "key": "href",
+        "label": "Button link",
+        "type": "text",
+        "default": "/"
+      },
+      {
+        "key": "newTab",
+        "label": "Open in new tab",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "iconPosition",
+        "label": "Icon position",
+        "type": "select",
+        "default": "none",
+        "options": ["none", "before", "after"]
+      },
+      {
+        "key": "iconName",
+        "label": "Button icon",
+        "type": "icon",
+        "default": "arrow-right"
+      },
+      {
+        "key": "iconSize",
+        "label": "Icon size (px)",
+        "type": "number",
+        "default": 20,
+        "min": 8,
+        "max": 512
+      }
+    ],
+    "toolbar": ["text", "iconPosition"]
   },
   {
     "type": "core/menu",
     "label": "Menu",
     "category": "Dynamic",
     "icon": "fas fa-bars",
-    "container": false,
+    "container": true,
     "fields": [
       {
         "key": "orientation",
-        "label": "Orientation",
+        "label": "Desktop orientation",
         "type": "select",
         "default": "horizontal",
         "options": ["horizontal", "vertical"]
       },
       {
         "key": "align",
-        "label": "Alignment",
+        "label": "Desktop alignment",
         "type": "select",
         "default": "left",
         "options": ["left", "center", "right"]
+      },
+      {
+        "key": "mobileBreakpoint",
+        "label": "Mobile breakpoint (px)",
+        "type": "select",
+        "default": "768",
+        "options": ["640", "768", "1024"]
+      },
+      {
+        "key": "mobileMode",
+        "label": "Mobile menu",
+        "type": "select",
+        "default": "collapsed",
+        "options": ["collapsed", "expanded"]
+      },
+      {
+        "key": "mobileOrientation",
+        "label": "Mobile orientation",
+        "type": "select",
+        "default": "vertical",
+        "options": ["vertical", "horizontal"]
+      },
+      {
+        "key": "mobileAlign",
+        "label": "Mobile alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right"]
+      },
+      {
+        "key": "mobileIcon",
+        "label": "Mobile toggle icon",
+        "type": "icon",
+        "default": "bars"
+      },
+      {
+        "key": "mobileLabel",
+        "label": "Mobile toggle text",
+        "type": "text",
+        "default": "Menu"
+      },
+      {
+        "key": "menuLabel",
+        "label": "Accessible navigation label",
+        "type": "text",
+        "default": "Site navigation"
       }
     ],
     "toolbar": ["orientation", "align"]
+  },
+  {
+    "type": "core/menu-item",
+    "label": "Menu Item",
+    "category": "Dynamic",
+    "icon": "fas fa-link",
+    "container": true,
+    "description": "A page or custom link. Nest Menu Items to create dropdowns.",
+    "fields": [
+      {
+        "key": "label",
+        "label": "Item label",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "pageId",
+        "label": "Site page",
+        "type": "menu-page",
+        "default": ""
+      },
+      {
+        "key": "href",
+        "label": "Custom link",
+        "type": "text",
+        "default": "/"
+      },
+      {
+        "key": "newTab",
+        "label": "Open in new tab",
+        "type": "checkbox",
+        "default": false
+      }
+    ],
+    "toolbar": ["label", "newTab"]
+  },
+  {
+    "type": "core/custom-link",
+    "label": "Custom Link",
+    "category": "Dynamic",
+    "icon": "fas fa-external-link-alt",
+    "container": false,
+    "description": "A custom URL link for menus, dropdowns, or page content.",
+    "fields": [
+      {
+        "key": "label",
+        "label": "Link text",
+        "type": "text",
+        "default": "Link"
+      },
+      {
+        "key": "href",
+        "label": "Link URL",
+        "type": "text",
+        "default": "/"
+      },
+      {
+        "key": "newTab",
+        "label": "Open in new tab",
+        "type": "checkbox",
+        "default": false
+      }
+    ],
+    "toolbar": ["label", "href", "newTab"]
   },
   {
     "type": "core/search",
@@ -428,7 +725,7 @@
         "key": "placeholder",
         "label": "Placeholder",
         "type": "text",
-        "default": "Search stories…"
+        "default": "Search stories\u2026"
       },
       {
         "key": "buttonLabel",
@@ -451,7 +748,8 @@
     "label": "Post list",
     "category": "Dynamic",
     "icon": "fas fa-list",
-    "container": false,
+    "description": "Design one result with layout and dynamic blocks; the list repeats it for each post or search result",
+    "container": true,
     "fields": [
       {
         "key": "portfolio",
@@ -479,12 +777,6 @@
         "options": ["grid", "list"]
       },
       {
-        "key": "showExcerpt",
-        "label": "Show excerpt",
-        "type": "checkbox",
-        "default": true
-      },
-      {
         "key": "orderBy",
         "label": "Order by",
         "type": "select",
@@ -499,35 +791,13 @@
         "options": ["descending", "ascending"]
       },
       {
-        "key": "showFeaturedImage",
-        "label": "Show featured image",
-        "type": "checkbox",
-        "default": true
-      },
-      {
-        "key": "showDate",
-        "label": "Show date",
-        "type": "checkbox",
-        "default": true
-      },
-      {
         "key": "category",
         "label": "Category filter",
         "type": "text",
         "default": ""
       }
     ],
-    "toolbar": [
-      "portfolio",
-      "limit",
-      "columns",
-      "layout",
-      "showExcerpt",
-      "orderBy",
-      "order",
-      "showFeaturedImage",
-      "showDate"
-    ]
+    "toolbar": ["portfolio", "limit", "columns", "layout", "orderBy", "order"]
   },
   {
     "type": "core/post-content",
@@ -578,7 +848,7 @@
       {
         "key": "separator",
         "label": "Separator",
-        "type": " · ",
+        "type": " \u00b7 ",
         "default": ""
       }
     ],
@@ -619,9 +889,54 @@
     "label": "Site identity",
     "category": "Dynamic",
     "icon": "fas fa-globe",
-    "fields": [],
-    "legacy": true,
-    "toolbar": []
+    "container": false,
+    "description": "Display the site name or logo configured in administrator settings",
+    "fields": [
+      {
+        "key": "display",
+        "label": "Display",
+        "type": "select",
+        "default": "auto",
+        "options": ["auto", "logo", "name", "logo-and-name"]
+      },
+      {
+        "key": "level",
+        "label": "Name element",
+        "type": "select",
+        "default": "h2",
+        "options": ["span", "p", "h1", "h2", "h3", "h4", "h5", "h6"]
+      },
+      {
+        "key": "logoHeight",
+        "label": "Logo height (px)",
+        "type": "number",
+        "default": 52,
+        "min": 8,
+        "max": 512
+      },
+      {
+        "key": "orientation",
+        "label": "Orientation",
+        "type": "select",
+        "default": "horizontal",
+        "options": ["horizontal", "vertical"]
+      },
+      {
+        "key": "gap",
+        "label": "Gap (px)",
+        "type": "number",
+        "default": 12,
+        "min": 0,
+        "max": 120
+      },
+      {
+        "key": "linkHome",
+        "label": "Link to home",
+        "type": "checkbox",
+        "default": true
+      }
+    ],
+    "toolbar": ["display", "linkHome"]
   },
   {
     "type": "core/group",
@@ -782,7 +1097,12 @@
         "default": "slide",
         "options": ["slide", "fade"]
       },
-      { "key": "loop", "label": "Loop", "type": "checkbox", "default": false },
+      {
+        "key": "loop",
+        "label": "Loop",
+        "type": "checkbox",
+        "default": false
+      },
       {
         "key": "autoplay",
         "label": "Autoplay",
@@ -925,7 +1245,7 @@
       },
       {
         "key": "moonSize",
-        "label": "Moon size (1–7)",
+        "label": "Moon size (1\u20137)",
         "type": "number",
         "default": 4.5
       },
@@ -938,7 +1258,7 @@
       },
       {
         "key": "moonElevation",
-        "label": "Moon elevation (−4–5)",
+        "label": "Moon elevation (\u22124\u20135)",
         "type": "number",
         "default": 0
       },
@@ -962,25 +1282,25 @@
       },
       {
         "key": "snowDensity",
-        "label": "Snow density (0–1800)",
+        "label": "Snow density (0\u20131800)",
         "type": "number",
         "default": 160
       },
       {
         "key": "snowSize",
-        "label": "Snowflake size (0.3–2)",
+        "label": "Snowflake size (0.3\u20132)",
         "type": "number",
         "default": 1.2
       },
       {
         "key": "snowSpeed",
-        "label": "Snowfall speed (0.25–3)",
+        "label": "Snowfall speed (0.25\u20133)",
         "type": "number",
         "default": 1.4
       },
       {
         "key": "snowFlutter",
-        "label": "Snowflake flutter (0–3)",
+        "label": "Snowflake flutter (0\u20133)",
         "type": "number",
         "default": 1.3
       },
@@ -992,19 +1312,19 @@
       },
       {
         "key": "windStrength",
-        "label": "Wind strength (0–3)",
+        "label": "Wind strength (0\u20133)",
         "type": "number",
         "default": 1
       },
       {
         "key": "sceneSpeed",
-        "label": "Scene animation speed (0.25–3)",
+        "label": "Scene animation speed (0.25\u20133)",
         "type": "number",
         "default": 1.35
       },
       {
         "key": "backgroundZoom",
-        "label": "Background zoom amount (0–0.25)",
+        "label": "Background zoom amount (0\u20130.25)",
         "type": "number",
         "default": 0.1
       },
@@ -1016,7 +1336,7 @@
       },
       {
         "key": "sceneVeilOpacity",
-        "label": "Glass overlay opacity (0–0.85)",
+        "label": "Glass overlay opacity (0\u20130.85)",
         "type": "number",
         "default": 0.75
       },
@@ -1034,25 +1354,25 @@
       },
       {
         "key": "sceneRainDensity",
-        "label": "Rain line density (0–96)",
+        "label": "Rain line density (0\u201396)",
         "type": "number",
         "default": 36
       },
       {
         "key": "sceneRainSpeed",
-        "label": "Rain line speed (0.25–3)",
+        "label": "Rain line speed (0.25\u20133)",
         "type": "number",
         "default": 1
       },
       {
         "key": "sceneRainWidth",
-        "label": "Rain line width (0.3–4 px)",
+        "label": "Rain line width (0.3\u20134 px)",
         "type": "number",
         "default": 2
       },
       {
         "key": "sceneRainOpacity",
-        "label": "Rain line opacity (0–1)",
+        "label": "Rain line opacity (0\u20131)",
         "type": "number",
         "default": 0.35
       },
@@ -1064,13 +1384,13 @@
       },
       {
         "key": "scenePixelSize",
-        "label": "Pixel texture size (1–8)",
+        "label": "Pixel texture size (1\u20138)",
         "type": "number",
         "default": 3
       },
       {
         "key": "fragmentCount",
-        "label": "Crystal fragments (0–40)",
+        "label": "Crystal fragments (0\u201340)",
         "type": "number",
         "default": 18
       },
@@ -1082,7 +1402,7 @@
       },
       {
         "key": "motionStrength",
-        "label": "Pointer motion strength (0–2)",
+        "label": "Pointer motion strength (0\u20132)",
         "type": "number",
         "default": 0.6
       },
@@ -1094,7 +1414,7 @@
       },
       {
         "key": "lightIntensity",
-        "label": "Light intensity (0–5)",
+        "label": "Light intensity (0\u20135)",
         "type": "number",
         "default": 2
       },

@@ -48,3 +48,9 @@ All endpoints below require an administrator and an active plugin. Writes follow
 ## Verification
 
 `tests/maintenance.test.mjs` covers starter seeding, roles, origin checks, public HTML/HEAD responses, administrator bypass, static assets, signed theme previews, draft privacy, publishing, template selection, private previews, history, cloning, deletion, concurrency, and media protection. Run `pnpm test`, `pnpm lint`, and `pnpm build` when changing integration behavior.
+
+## Midnight interactive template
+
+Midnight uses a full-viewport geometric canvas, a deep blue `rgba(3,14,48,0.88)` overlay, a transparent centered message, and Site Identity sourced from Admin settings. Circles drift and connect/disconnect by proximity; pointer movement adds local connections. The **Moving geometry** block Inspector controls circle count, movement speed, and connection distance. Its trusted host renderer runs in public previews and the script-free editor canvas. It pauses in hidden documents, limits pixel density to 2, honors reduced motion, and releases observers and animation frames when removed.
+
+Existing Midnight published layouts and drafts upgrade once while retaining message edits, block IDs, selection, and maintenance activation. Quiet, Studio, custom layouts, and historical snapshots remain intact. Template markup contains no executable scripts.
