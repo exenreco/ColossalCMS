@@ -1,0 +1,458 @@
+/* Shared admin tables and details drawers; public themes and editor canvas stay independent. */
+cl-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+cl-admin table :is(th, td) {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+cl-admin table th {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface);
+  white-space: nowrap;
+}
+cl-admin table tbody tr:last-child td {
+  border-bottom: 0;
+}
+cl-admin table tbody tr:hover {
+  background: color-mix(in srgb, var(--green) 5%, var(--surface));
+}
+cl-admin table tbody tr.row-selected {
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+}
+cl-admin .selection-cell {
+  width: 44px;
+  min-width: 44px;
+  padding: 12px;
+}
+cl-admin table input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  vertical-align: middle;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+cl-admin .table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+cl-admin .table-sort cl-icon {
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg);
+  opacity: 0.5;
+}
+cl-admin th[aria-sort="ascending"] .table-sort cl-icon {
+  transform: rotate(-90deg);
+  opacity: 1;
+}
+cl-admin th[aria-sort="descending"] .table-sort cl-icon {
+  opacity: 1;
+}
+cl-admin .content-toolbar {
+  padding: 16px;
+  gap: 12px;
+}
+cl-admin .content-toolbar select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+cl-admin .table-scroll .content-title-cell {
+  min-width: 250px;
+  padding-bottom: 0;
+}
+cl-admin .table-scroll [data-column="views30Days"] {
+  text-align: center;
+}
+cl-admin .table-scroll .title-inline-menu {
+  left: 42px;
+  bottom: 0;
+  height: 20px;
+  gap: 8px;
+}
+cl-admin .table-scroll .title-inline-menu button {
+  font-size: 11px;
+}
+cl-admin .table-scroll .title-inline-menu .action-separator {
+  color: var(--muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+cl-admin .table-scroll .content-title-cell:hover .content-title small,
+cl-admin .table-scroll .content-title-cell:focus-within .content-title small {
+  visibility: hidden;
+}
+cl-admin .content-title strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+cl-admin .content-title small {
+  font-size: 11px;
+}
+cl-admin .content-icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+cl-admin .content-icon cl-icon {
+  width: 15px;
+  height: 15px;
+}
+cl-admin .badge {
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 5px;
+}
+html[data-admin-mode="dark"] cl-admin .badge.published {
+  background: #56df9514;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .badge.draft {
+  background: #ffffff0a;
+  color: var(--muted);
+}
+html[data-admin-mode="dark"] cl-admin .badge.pending,
+html[data-admin-mode="dark"] cl-admin .badge.scheduled {
+  background: #fbba3014;
+  color: #f3c66c;
+}
+cl-admin .table-scroll,
+cl-admin .plugin-table-wrap,
+cl-admin .table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+cl-admin .plugin-table-wrap .plugin-table :is(th, td) {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+cl-admin .plugin-table-wrap .plugin-table .selection-cell {
+  padding: 12px;
+}
+cl-admin .plugin-table-wrap .plugin-table .description {
+  margin: 6px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+cl-admin .plugin-table-wrap .plugin-table .plugin-meta {
+  font-size: 11px;
+  margin-top: 4px;
+}
+cl-admin .admin-bulk-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+cl-admin cl-plugins .admin-bulk-actions {
+  border-bottom: 0;
+  padding-left: 0;
+}
+cl-admin .admin-bulk-actions strong {
+  font-weight: 500;
+  color: var(--muted);
+}
+cl-admin .admin-bulk-actions select {
+  min-width: 140px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+cl-admin .admin-bulk-result {
+  padding: 12px 16px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+cl-admin .admin-table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+cl-admin .admin-table-pagination label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+cl-admin .admin-table-pagination select {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+cl-admin .admin-table-pagination nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+cl-admin .admin-table-pagination button {
+  min-width: 30px;
+  height: 30px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+}
+cl-admin .admin-table-pagination button.selected {
+  border-color: var(--border);
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 8%, var(--surface));
+}
+cl-admin .admin-table-pagination button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+cl-admin .pagination-prev {
+  transform: rotate(180deg);
+}
+cl-admin .admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  justify-content: flex-end;
+  background: #0005;
+  backdrop-filter: blur(6px);
+}
+cl-admin .admin-modal {
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+  color: var(--ink);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 60px #0003;
+  display: flex;
+  flex-direction: column;
+  animation: admin-drawer-enter 0.22s ease-out;
+}
+cl-admin .admin-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+cl-admin .admin-modal-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, var(--surface));
+}
+cl-admin .admin-modal-header > div {
+  flex: 1;
+  min-width: 0;
+}
+cl-admin .admin-modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+cl-admin .admin-modal-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+cl-admin .admin-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+cl-admin .admin-modal .quick-edit-dialog {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+cl-admin .admin-modal .standalone-field :is(input, select) {
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+}
+cl-admin .admin-modal .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+html[data-admin-mode="dark"] cl-admin table tbody tr:hover {
+  background: #56df9508;
+}
+html[data-admin-mode="dark"] cl-admin table tbody tr.row-selected {
+  background: #56df9514;
+}
+@keyframes admin-drawer-enter {
+  from {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  cl-admin .admin-modal {
+    animation: none;
+  }
+}
+@media (max-width: 600px) {
+  cl-admin .admin-modal {
+    width: 100%;
+  }
+  cl-admin .admin-modal-header,
+  cl-admin .admin-modal-body {
+    padding: 18px;
+  }
+}
+
+cl-admin .content-filter-panel {
+  margin-bottom: 16px;
+}
+cl-admin .content-filter-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  align-items: center;
+}
+cl-admin .content-filter-columns .search-field {
+  width: 100%;
+  max-width: none;
+  justify-self: end;
+}
+cl-admin .content-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+cl-admin .content-actions-row .admin-bulk-actions {
+  border: 0;
+  padding: 0;
+}
+cl-admin .content-scope-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+cl-admin .content-scope-filters select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  cl-admin .content-filter-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+cl-admin .admin-bulk-actions.clear-below {
+  display: grid;
+  grid-template-columns: minmax(140px, auto) auto;
+  align-items: start;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+cl-admin .admin-bulk-actions.clear-below .bulk-clear-selection {
+  grid-column: 1;
+  justify-self: start;
+  padding: 0;
+  min-height: 22px;
+}
+cl-admin .admin-bulk-actions .bulk-clear-selection.selection-empty {
+  visibility: hidden;
+}
+cl-admin .admin-bulk-actions.clear-below [role="status"] {
+  grid-column: 1 / -1;
+}
+cl-admin .content-actions-row {
+  align-items: flex-start;
+}
+
+cl-admin .screen-options-trigger > cl-icon {
+  transform: rotate(90deg);
+  width: 12px;
+  height: 12px;
+}
+.admin-screen-options fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.admin-screen-options legend {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.admin-screen-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  cursor: pointer;
+}
+.admin-screen-options input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--green);
+  margin: 0;
+}
+.admin-screen-options small {
+  margin-left: 6px;
+  opacity: 0.65;
+  font-size: 10px;
+}
+cl-admin table :is(th, td)[hidden] {
+  display: none;
+}

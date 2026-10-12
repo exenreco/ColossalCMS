@@ -5,6 +5,7 @@ import { ApiService } from "../../../../shared/api.service";
 
 @Component({
   standalone: true,
+  host: { class: "admin-plugin-form" },
   imports: [FormsModule, DatePipe],
   selector: "cl-login-security",
   styles: [
@@ -79,8 +80,25 @@ import { ApiService } from "../../../../shared/api.service";
       .status {
         padding: 4px 8px;
         border-radius: 6px;
-        background: #eef3f0;
+        background: var(--bg);
+        color: var(--muted);
         font-size: 12px;
+      }
+      .status[data-tone="success"] {
+        background: var(--status-success-bg, #dcfce7);
+        color: var(--status-success-text, #166534);
+      }
+      .status[data-tone="warning"] {
+        background: var(--status-warning-bg, #ffedd5);
+        color: var(--status-warning-text, #9a3412);
+      }
+      .status[data-tone="error"] {
+        background: var(--status-error-bg, #fee2e2);
+        color: var(--status-error-text, #991b1b);
+      }
+      .status[data-tone="info"] {
+        background: var(--status-info-bg, #dbeafe);
+        color: var(--status-info-text, #1e40af);
       }
       .error {
         color: #a13333;
@@ -252,7 +270,10 @@ import { ApiService } from "../../../../shared/api.service";
                 <tr>
                   <td class="ip">{{ row.ip }}</td>
                   <td>
-                    <span class="status">{{ row.source }}</span
+                    <span
+                      class="status"
+                      [attr.data-tone]="statusTone(row.source)"
+                      >{{ row.source }}</span
                     ><br />{{ row.reason }}
                   </td>
                   <td>{{ row.created_at | date: "medium" }}</td>
@@ -353,7 +374,11 @@ import { ApiService } from "../../../../shared/api.service";
                   <td class="ip">{{ row.ip }}</td>
                   <td>{{ row.email || "—" }}</td>
                   <td>
-                    <span class="status">{{ row.outcome }}</span>
+                    <span
+                      class="status"
+                      [attr.data-tone]="statusTone(row.outcome)"
+                      >{{ row.outcome }}</span
+                    >
                   </td>
                 </tr>
               } @empty {
@@ -384,6 +409,15 @@ export class LoginSecurityComponent implements OnInit {
   error = "";
   loading = false;
   busy = false;
+  statusTone(value: string): string {
+    const status = String(value || "").toLowerCase();
+    if (["success", "successful", "ok"].includes(status)) return "success";
+    if (["warn", "warning", "automatic"].includes(status)) return "warning";
+    if (["error", "failed", "failure", "blocked"].includes(status))
+      return "error";
+    if (["info", "manual"].includes(status)) return "info";
+    return "neutral";
+  }
   ngOnInit() {
     void this.load();
   }

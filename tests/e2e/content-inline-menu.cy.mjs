@@ -45,11 +45,32 @@ describe("Content title inline menus", () => {
         });
         cy.get("@row").contains("button", "Quick Edit").click();
         cy.contains("h2", `Quick Edit ${kind}`).should("be.visible");
-        cy.get('form.confirm-dialog input[name="title"]')
+        if (kind === "page")
+          cy.get('form.quick-edit-dialog input[name="order"]')
+            .should("have.value", "0")
+            .clear()
+            .type("-2");
+        else
+          cy.get('form.quick-edit-dialog input[name="order"]').should(
+            "not.exist",
+          );
+        cy.get('form.quick-edit-dialog input[name="title"]')
           .clear()
           .type(`Updated inline ${kind}`);
-        cy.get("form.confirm-dialog").contains("button", "Save").click();
+        cy.get("form.quick-edit-dialog").contains("button", "Save").click();
         cy.contains("tr", `Updated inline ${kind}`).as("updated");
+        if (kind === "page") {
+          cy.get("tbody tr").first().should("contain", "Updated inline page");
+          cy.reload();
+          cy.get("tbody tr").first().should("contain", "Updated inline page");
+          cy.get("@updated").find(".title-button").focus();
+          cy.get("@updated").contains("button", "Quick Edit").click();
+          cy.get('form.quick-edit-dialog input[name="order"]').should(
+            "have.value",
+            "-2",
+          );
+          cy.get("form.quick-edit-dialog").contains("button", "Cancel").click();
+        }
         cy.get("@updated").find(".title-button").focus();
         cy.get("@updated").contains("button", "Delete").click();
         cy.contains("h2", `Delete this ${kind}?`).should("be.visible");

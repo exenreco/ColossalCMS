@@ -1,10 +1,11 @@
 import { Injectable, inject, signal } from "@angular/core";
 import { ApiService } from "./api.service";
+import { AdminAppearanceService } from "./admin-appearance.service";
 
 @Injectable({ providedIn: "root" })
 export class EditorPreferencesService {
   private api = inject(ApiService);
-  colorMode = signal<"light" | "dark">("dark");
+  colorMode = inject(AdminAppearanceService).colorMode;
   walkthroughVersion = signal(0);
   ready = signal(false);
   private user = "";
@@ -18,7 +19,6 @@ export class EditorPreferencesService {
     this.pending = this.api
       .request("/admin/editor/preferences")
       .then((p) => {
-        this.colorMode.set(p.colorMode);
         this.walkthroughVersion.set(p.walkthroughVersion);
         this.ready.set(true);
       })
@@ -29,7 +29,6 @@ export class EditorPreferencesService {
         );
         try {
           const p = JSON.parse(cache || "{}");
-          this.colorMode.set(p.colorMode === "light" ? "light" : "dark");
           this.walkthroughVersion.set(p.walkthroughVersion === 1 ? 1 : 0);
         } catch {
           this.walkthroughVersion.set(0);
@@ -38,8 +37,7 @@ export class EditorPreferencesService {
       });
     return this.pending;
   }
-  update(patch: { colorMode?: "light" | "dark"; walkthroughVersion?: number }) {
-    if (patch.colorMode) this.colorMode.set(patch.colorMode);
+  update(patch: { walkthroughVersion?: number }) {
     if (patch.walkthroughVersion)
       this.walkthroughVersion.set(patch.walkthroughVersion);
     const current = {
@@ -53,7 +51,6 @@ export class EditorPreferencesService {
     this.writes = this.writes
       .then(() =>
         this.api.request("/admin/editor/preferences", "PUT", {
-          colorMode: current.colorMode,
           ...(current.walkthroughVersion === 1
             ? { walkthroughVersion: 1 }
             : {}),

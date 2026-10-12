@@ -20,6 +20,8 @@ import {
   submitIndexNow,
 } from "./seo.mjs";
 import { editorPreferences } from "./editor-preferences.mjs";
+import { migrateSiteAppearance } from "./site-appearance.mjs";
+import { contentViewAnalytics, recordContentView } from "./content-views.mjs";
 import {
   readAdSettings,
   validateAdSettings,
@@ -85,7 +87,7 @@ const rowToContent = (r) => ({
   publishAt: r.publish_at,
   updatedAt: r.updated_at,
   author: r.author,
-  details: parse(r.details),
+  details: { order: 0, ...parse(r.details) },
   templateId: r.template_id || "",
 });
 export const isPublished = (c) =>
@@ -160,6 +162,7 @@ export async function initialize(db, user, report = () => {}) {
   );
   report(2);
   if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) {
+    await migrateSiteAppearance(db);
     await migrateSampleContent(db);
     report(3);
     return;
@@ -225,9 +228,14 @@ async function state(db, user) {
         ? all(db, "SELECT id,name,created_at FROM api_keys")
         : [],
     ]);
+  const viewData = user ? await contentViewAnalytics(db, rows) : null;
   return {
     user,
-    content: rows.map(rowToContent),
+    ...(viewData ? { viewAnalytics: viewData.analytics } : {}),
+    content: rows.map((row) => ({
+      ...rowToContent(row),
+      ...(viewData ? { views30Days: viewData.counts[row.id] || 0 } : {}),
+    })),
     activeTheme: { manifest: (await activeTheme(db)).manifest },
     plugins: [
       ...catalog.map((p) => {
@@ -425,6 +433,10 @@ export default {
           headers.delete("ETag");
           headers.set("Cache-Control", "no-store");
           headers.set("Content-Type", "text/html; charset=utf-8");
+          // Analytics failure must never replace a successfully rendered page.
+          await recordContentView(database(env), request, rendered).catch(
+            () => {},
+          );
           let html =
             request.method === "HEAD"
               ? null
@@ -911,6 +923,7 @@ export default {
         const updates = [
           db.prepare("DELETE FROM content WHERE id=?").bind(id),
           db.prepare("DELETE FROM revisions WHERE content_id=?").bind(id),
+          db.prepare("DELETE FROM content_views WHERE content_id=?").bind(id),
         ];
         if (clearedRoles.length) {
           updates.push(
@@ -989,7 +1002,16 @@ export default {
             ?.value,
         );
         const merged = { ...prior, ...body };
-        const { title, tagline, accent, logo, announcement } = merged;
+        const {
+          title,
+          tagline,
+          accent,
+          logo = "",
+          announcement,
+          adminColorMode = "system",
+        } = merged;
+        if (!["light", "dark", "system"].includes(adminColorMode))
+          fail("Choose Light, Dark, or System for admin appearance.");
         const { titleFormat = "page-site", titleSeparator = "·" } = merged;
         if (
           !TITLE_FORMATS.includes(titleFormat) ||
@@ -1079,7 +1101,7 @@ export default {
               titleSeparator,
               tagline,
               accent,
-              logo,
+              adminColorMode,
               announcement,
               siteIconId,
               postRouting,

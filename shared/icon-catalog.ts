@@ -130,6 +130,13 @@ export const BLOCK_ICON_PATHS: Record<string, string[]> = {
 };
 
 export const APP_ICON_PATHS: Record<string, string> = {
+  login: "M15 3h6v18h-6M3 12h12M10 7l5 5-5 5",
+  download: "M12 3v12M7 10l5 5 5-5M3 16v5h18v-5",
+  details: "M12 11v6M12 7h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
+  document:
+    "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5",
+  "edit-square":
+    "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M16 3l5 5-10 10-5 1 1-5L16 3M14 5l5 5",
   pillar: "M5 3h14v3H5z M7 6h10v3H7z M8 9v10 M12 9v10 M16 9v10 M6 19h12v2H6z",
   themes: "M3 3h18v18H3z M3 9h18 M9 9v12 M6 6h.01 M9 6h.01",
   media: "M3 3h18v18H3z M3 16l5-5 4 4 3-3 6 6 M15 7h.01",
@@ -137,9 +144,9 @@ export const APP_ICON_PATHS: Record<string, string> = {
   pages:
     "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5",
   posts: "M4 20h4L20 8l-4-4L4 16v4z M14 6l4 4",
-  plugins: "M8 3h8v5h5v8h-5v5H8v-5H3V8h5z",
+  plugins: "M9 3v5M15 3v5M6 8h12M7 8v4a5 5 0 0 0 10 0V8M12 17v4",
   settings:
-    "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2",
+    "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M10 2h4l.5 3 2 1 2.8-1 2 3.5-2.3 2v3l2.3 2-2 3.5-2.8-1-2 1-.5 3h-4l-.5-3-2-1-2.8 1-2-3.5 2.3-2v-3l-2.3-2 2-3.5 2.8 1 2-1z",
   arrow: "M5 12h14 M13 6l6 6-6 6",
   external:
     "M14 3h7v7 M21 3L10 14 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5",

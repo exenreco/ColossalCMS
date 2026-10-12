@@ -4,6 +4,7 @@ import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { ThemesListSkeletonComponent } from "../../../../shared/skeleton-compositions";
+import { AdminModalComponent } from "../../../../shared/admin-modal.component";
 import { ThemeSummary } from "../../../../shared/theme-models";
 import { themeBodyAttributes } from "../../../../shared/theme-body";
 @Component({
@@ -14,6 +15,7 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
     RouterOutlet,
     IconComponent,
     ThemesListSkeletonComponent,
+    AdminModalComponent,
   ],
   template: ` <section class="theme-management">
       <div class="page-heading">
@@ -82,6 +84,40 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
                     ? "Core theme"
                     : "Ready to make yours"
               }}</span>
+              <div class="theme-preview-overlay">
+                <button
+                  type="button"
+                  class="theme-details-trigger"
+                  [attr.aria-label]="'Theme details for ' + t.name"
+                  (click)="detailId = t.id"
+                >
+                  <span>Theme details</span>
+                </button>
+                <div class="theme-preview-actions">
+                  @if (!t.active) {
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [disabled]="busy"
+                      [attr.aria-label]="'Activate ' + t.name"
+                      title="Activate theme"
+                      (click)="activate(t)"
+                    >
+                      <cl-icon name="check" /><span>Activate</span>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="icon-button"
+                    [disabled]="busy"
+                    [attr.aria-label]="'Preview ' + t.name"
+                    title="Preview theme"
+                    (click)="preview(t)"
+                  >
+                    <cl-icon name="eye" /><span>Preview</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="theme-card-body">
               <div class="theme-card-title">
@@ -93,35 +129,11 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
                 </h2>
                 <span>v{{ t.version }}</span>
               </div>
-              <p>{{ t.description }}</p>
               <small
                 >By {{ t.author }} · {{ t.templates.length }} templates{{
                   t.hasDraft ? " · Draft saved" : ""
                 }}</small
               >
-              <div class="theme-card-actions">
-                <a class="button primary" [routerLink]="['edit', t.id]"
-                  >Edit theme</a
-                >
-                @if (!t.active) {
-                  <button
-                    class="button"
-                    [disabled]="busy"
-                    (click)="activate(t)"
-                  >
-                    Activate
-                  </button>
-                }
-                <button class="button" (click)="preview(t)">Preview</button
-                ><a class="button" [href]="'/api/themes/' + t.id + '/export'"
-                  >Export</a
-                >
-                @if (!t.isCore && !t.active) {
-                  <button class="button danger" (click)="remove(t)">
-                    Delete
-                  </button>
-                }
-              </div>
             </div>
           </article>
         }
@@ -131,6 +143,90 @@ import { themeBodyAttributes } from "../../../../shared/theme-body";
         for pages, posts, search, and archives.
       </div>
     </section>
+    @if (detail; as t) {
+      <cl-admin-modal
+        [title]="t.name"
+        icon="themes"
+        description="Theme details"
+        [busy]="busy"
+        [width]="640"
+        (dismissed)="detailId = ''"
+      >
+        <div class="theme-details-content">
+          <div class="theme-thumbnail theme-details-preview">
+            @if (thumbnailErrors[t.id]) {
+              <p class="theme-thumbnail-error" role="status">
+                {{ thumbnailErrors[t.id] }}
+              </p>
+            } @else {
+              <iframe
+                [title]="t.name + ' theme preview'"
+                sandbox=""
+                tabindex="-1"
+                [srcdoc]="thumbnails[t.id] || ''"
+              ></iframe>
+            }
+          </div>
+          <p class="theme-details-description">{{ t.description }}</p>
+          <dl class="theme-details-meta">
+            <dt>Version</dt>
+            <dd>{{ t.version }}</dd>
+            <dt>Author</dt>
+            <dd>{{ t.author }}</dd>
+            <dt>Templates</dt>
+            <dd>{{ t.templates.length }}</dd>
+            <dt>Status</dt>
+            <dd>
+              {{ t.active ? "Active theme" : "Inactive"
+              }}{{ t.isCore ? " · Core theme" : ""
+              }}{{ t.hasDraft ? " · Draft saved" : "" }}
+            </dd>
+          </dl>
+          @if (error) {
+            <p class="error-message" role="alert">{{ error }}</p>
+          }
+          <div class="theme-card-actions theme-details-actions">
+            <a
+              class="button primary"
+              [routerLink]="['edit', t.id]"
+              (click)="detailId = ''"
+              ><cl-icon name="edit-square" />Edit theme</a
+            >
+            @if (!t.active) {
+              <button
+                type="button"
+                class="button"
+                [disabled]="busy"
+                (click)="activate(t)"
+              >
+                <cl-icon name="check" />Activate
+              </button>
+            }
+            <button
+              type="button"
+              class="button"
+              [disabled]="busy"
+              (click)="preview(t)"
+            >
+              <cl-icon name="eye" />Preview
+            </button>
+            <a class="button" [href]="'/api/themes/' + t.id + '/export'"
+              ><cl-icon name="download" />Export</a
+            >
+            @if (!t.isCore && !t.active) {
+              <button
+                type="button"
+                class="button danger"
+                [disabled]="busy"
+                (click)="remove(t)"
+              >
+                <cl-icon name="trash" />Delete
+              </button>
+            }
+          </div>
+        </div>
+      </cl-admin-modal>
+    }
     <router-outlet (deactivate)="load()" />`,
 })
 export class ThemesComponent implements OnInit {
@@ -140,6 +236,10 @@ export class ThemesComponent implements OnInit {
   themes: ThemeSummary[] = [];
   thumbnails: Record<string, SafeHtml> = {};
   thumbnailErrors: Record<string, string> = {};
+  detailId = "";
+  get detail() {
+    return this.themes.find((t) => t.id === this.detailId);
+  }
   error = "";
   busy = false;
   loading = true;

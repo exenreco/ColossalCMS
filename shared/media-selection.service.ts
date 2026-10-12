@@ -1,7 +1,7 @@
 import { Injectable, signal } from "@angular/core";
 import { MediaItem } from "./models";
 export interface MediaSelectionOptions {
-  accept?: ("image" | "audio" | "video" | "model")[];
+  accept?: MediaItem["type"][];
   multiple?: boolean;
   initialSelectionIds?: string[];
 }

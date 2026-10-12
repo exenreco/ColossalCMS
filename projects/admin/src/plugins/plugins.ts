@@ -1,14 +1,25 @@
 import { DialogFocusDirective } from "../../../../shared/dialog-focus.directive";
-import { Component, inject } from "@angular/core";
+import { ChangeDetectorRef, Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
+import { AdminModalComponent } from "../../../../shared/admin-modal.component";
+import { BulkActionsComponent } from "../../../../shared/bulk-actions.component";
+import { TablePaginationComponent } from "../../../../shared/table-pagination.component";
+import { TableSelection } from "../../../../shared/table-selection";
 import { Plugin } from "../../../../shared/models";
 import { PluginViewState } from "../plugin-view-state";
 @Component({
   selector: "cl-plugins",
   standalone: true,
-  imports: [DialogFocusDirective, FormsModule, IconComponent],
+  imports: [
+    DialogFocusDirective,
+    FormsModule,
+    IconComponent,
+    AdminModalComponent,
+    BulkActionsComponent,
+    TablePaginationComponent,
+  ],
   styles: `
     .plugin-search-tools {
       display: flex;
@@ -22,19 +33,19 @@ import { PluginViewState } from "../plugin-view-state";
       gap: 3px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: var(--surface);
     }
     .plugin-view-toggle button {
       border: 0;
       border-radius: 5px;
       padding: 6px 8px;
       display: flex;
-      color: #647460;
+      color: var(--muted);
       background: transparent;
     }
     .plugin-view-toggle button.selected {
-      background: #edf3e9;
-      color: #336b45;
+      background: color-mix(in srgb, var(--green) 10%, var(--surface));
+      color: var(--green);
     }
     .plugin-table-wrap {
       overflow-x: auto;
@@ -43,15 +54,22 @@ import { PluginViewState } from "../plugin-view-state";
       min-width: 720px;
     }
     .plugin-table tbody tr:nth-child(odd) {
-      background: #f2f5ef;
+      background: color-mix(in srgb, var(--green) 3%, var(--surface));
     }
     .plugin-table tbody tr:nth-child(even) {
-      background: #fff;
+      background: var(--surface);
+    }
+    .plugin-table tbody tr:hover {
+      background: color-mix(in srgb, var(--green) 5%, var(--surface));
+    }
+    .plugin-table tbody tr.row-selected {
+      background: color-mix(in srgb, var(--green) 10%, var(--surface));
     }
     .plugin-table th,
     .plugin-table td {
       white-space: normal;
-      vertical-align: top;
+      vertical-align: middle;
+      padding: 12px 16px;
     }
     .plugin-table .plugin-name {
       display: flex;
@@ -59,16 +77,17 @@ import { PluginViewState } from "../plugin-view-state";
       gap: 12px;
     }
     .plugin-table .plugin-name strong {
-      font-size: 14px;
+      font-size: 13px;
     }
     .plugin-table .description {
-      margin-top: 8px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #647460;
+      margin: 4px 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
     }
     .plugin-table .plugin-meta {
-      margin: 8px 0 0;
+      margin: 4px 0 0;
+      font-size: 11px;
     }
     .plugin-table .plugin-actions {
       display: flex;
@@ -156,6 +175,7 @@ import { PluginViewState } from "../plugin-view-state";
         <label class="search-field"
           ><cl-icon name="search" /><input
             [(ngModel)]="search"
+            (ngModelChange)="page = 1"
             placeholder="Find a plugin…"
             aria-label="Find a plugin"
         /></label>
@@ -190,19 +210,98 @@ import { PluginViewState } from "../plugin-view-state";
     @if (error) {
       <p class="error" role="alert">{{ error }}</p>
     }
+    @if (bulkUninstallConfirm) {
+      <cl-admin-modal
+        title="Uninstall selected plugins?"
+        icon="plugins"
+        [busy]="busy"
+        (dismissed)="bulkUninstallConfirm = false"
+      >
+        <p>
+          {{ selection.ids.size }} plugins will be uninstalled. Core plugins
+          cannot be changed; existing plugin restrictions still apply.
+        </p>
+        <div class="dialog-actions">
+          <button
+            class="button"
+            [disabled]="busy"
+            (click)="bulkUninstallConfirm = false"
+          >
+            Cancel</button
+          ><button
+            class="button danger"
+            [disabled]="busy"
+            (click)="runBulk('uninstall')"
+          >
+            Uninstall selected
+          </button>
+        </div>
+      </cl-admin-modal>
+    }
     @if (viewState.view() === "list") {
+      @if (isAdmin) {
+        <cl-bulk-actions
+          [count]="selection.ids.size"
+          [showCount]="false"
+          [busy]="busy"
+          [actions]="bulkActions"
+          [progress]="bulkProgress"
+          [progressTotal]="bulkTotal"
+          (applied)="chooseBulk($event)"
+          (cleared)="selection.clear()"
+        />
+      }
+      @if (bulkMessage) {
+        <p class="admin-bulk-result" role="status">{{ bulkMessage }}</p>
+      }
       <div class="panel plugin-table-wrap">
         <table class="plugin-table" aria-label="Plugins">
           <thead>
             <tr>
-              <th scope="col">Plugin</th>
+              <th class="selection-cell">
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible plugins"
+                  [checked]="selection.all(visibleIds)"
+                  [indeterminate]="selection.some(visibleIds)"
+                  [disabled]="busy || !isAdmin || !visibleIds.length"
+                  (change)="
+                    selection.toggleAll(visibleIds, $any($event.target).checked)
+                  "
+                />
+              </th>
+              <th
+                scope="col"
+                [attr.aria-sort]="
+                  sortKey === 'name'
+                    ? sortDirection === 1
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                "
+              >
+                <button class="table-sort" (click)="sort('name')">
+                  Plugin<cl-icon name="chevron" />
+                </button>
+              </th>
               <th scope="col">Status</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
-            @for (p of filtered; track p.id) {
-              <tr>
+            @for (p of paginated; track p.id) {
+              <tr [class.row-selected]="selection.ids.has(p.id)">
+                <td class="selection-cell">
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'Select ' + p.name"
+                    [checked]="selection.ids.has(p.id)"
+                    [disabled]="busy || !isAdmin || p.isCore"
+                    (change)="
+                      selection.toggle(p.id, $any($event.target).checked)
+                    "
+                  />
+                </td>
                 <td>
                   <div class="plugin-name">
                     <span class="plugin-tile" [class.extension]="!p.isCore"
@@ -291,7 +390,7 @@ import { PluginViewState } from "../plugin-view-state";
               </tr>
             } @empty {
               <tr>
-                <td colspan="3" class="empty-cell">
+                <td colspan="4" class="empty-cell">
                   <h3>
                     {{
                       search ? "No matching plugins" : "No plugins in this view"
@@ -306,6 +405,13 @@ import { PluginViewState } from "../plugin-view-state";
             }
           </tbody>
         </table>
+        <cl-table-pagination
+          [total]="filtered.length"
+          [page]="currentPage"
+          [pageSize]="pageSize"
+          (pageChanged)="page = $event"
+          (pageSizeChanged)="pageSize = $event; page = 1"
+        />
       </div>
     } @else {
       <div class="plugin-grid">
@@ -433,6 +539,110 @@ import { PluginViewState } from "../plugin-view-state";
   `,
 })
 export class PluginsComponent {
+  private bulkCdr = inject(ChangeDetectorRef);
+  selection = new TableSelection();
+  page = 1;
+  pageSize = 10;
+  sortKey = "";
+  sortDirection = 1;
+  sort(key: string) {
+    this.sortDirection = this.sortKey === key ? -this.sortDirection : 1;
+    this.sortKey = key;
+    this.page = 1;
+  }
+  bulkProgress = 0;
+  bulkTotal = 0;
+  bulkMessage = "";
+  bulkUninstallConfirm = false;
+  bulkActions = [
+    { value: "install", label: "Install" },
+    { value: "activate", label: "Activate" },
+    { value: "deactivate", label: "Deactivate" },
+    { value: "uninstall", label: "Uninstall" },
+  ];
+  get currentPage() {
+    return Math.min(
+      this.page,
+      Math.max(1, Math.ceil(this.filtered.length / this.pageSize)),
+    );
+  }
+  get paginated() {
+    return this.filtered.slice(
+      (this.currentPage - 1) * this.pageSize,
+      this.currentPage * this.pageSize,
+    );
+  }
+  get visibleIds() {
+    return this.paginated.filter((p) => !p.isCore).map((p) => p.id);
+  }
+  chooseBulk(action: string) {
+    if (this.busy || !this.isAdmin || !this.selection.ids.size) return;
+    if (action === "uninstall") this.bulkUninstallConfirm = true;
+    else void this.runBulk(action);
+  }
+  async runBulk(action: string) {
+    if (
+      this.busy ||
+      !this.isAdmin ||
+      !["install", "activate", "deactivate", "uninstall"].includes(action)
+    )
+      return;
+    const items = this.api
+      .state()!
+      .plugins.filter((p) => !p.isCore && this.selection.ids.has(p.id));
+    if (!items.length) return;
+    this.busy = true;
+    this.bulkProgress = 0;
+    this.bulkTotal = items.length;
+    this.bulkMessage = "";
+    const failures: string[] = [];
+    let completed = 0;
+    try {
+      for (const p of items) {
+        try {
+          if (p.uploaded && action === "activate")
+            throw new Error(
+              "Uploaded plugin activation is disabled pending approval.",
+            );
+          if (
+            (action === "install" && p.installed) ||
+            (action !== "install" && !p.installed)
+          )
+            throw new Error(
+              "Choose an action matching the plugin's installation status.",
+            );
+          await this.api.request(
+            p.uploaded
+              ? "/plugins/" + encodeURIComponent(p.id) + "/" + action
+              : "/admin/plugins",
+            "POST",
+            { id: p.id, action },
+          );
+          this.selection.ids.delete(p.id);
+          completed++;
+        } catch (error) {
+          failures.push(p.name + ": " + (error as Error).message);
+        }
+        this.bulkProgress++;
+        this.bulkCdr.markForCheck();
+      }
+      this.bulkMessage =
+        completed +
+        " of " +
+        items.length +
+        " plugins updated." +
+        (failures.length
+          ? " Failed plugins remain selected. " + failures.join(" ")
+          : "");
+      await this.api.load();
+    } catch (error) {
+      this.bulkMessage += " " + (error as Error).message;
+    } finally {
+      this.busy = false;
+      this.bulkUninstallConfirm = false;
+      this.bulkCdr.markForCheck();
+    }
+  }
   viewState = inject(PluginViewState);
   api = inject(ApiService);
   tab = "Installed";
@@ -480,7 +690,7 @@ export class PluginsComponent {
     return this.api.state()!.plugins.filter((p) => p.isCore).length;
   }
   get filtered() {
-    return this.api
+    const items = this.api
       .state()!
       .plugins.filter(
         (p) =>
@@ -490,6 +700,9 @@ export class PluginsComponent {
             .toLowerCase()
             .includes(this.search.toLowerCase()),
       );
+    return this.sortKey === "name"
+      ? items.sort((a, b) => a.name.localeCompare(b.name) * this.sortDirection)
+      : items;
   }
   async change(p: Plugin, action: string) {
     this.busy = true;
@@ -503,6 +716,7 @@ export class PluginsComponent {
         { id: p.id, action },
         p.name + " updated.",
       );
+      this.selection.ids.delete(p.id);
       this.removing = null;
     } catch (e) {
       this.error = (e as Error).message;

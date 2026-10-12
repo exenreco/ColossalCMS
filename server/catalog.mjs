@@ -6,7 +6,7 @@ export const defaultSettings = {
   title: "Colossal Journal",
   tagline: "A space for ideas worth sharing.",
   accent: "#246b50",
-  logo: "",
+  adminColorMode: "system",
   announcement: "Welcome to our corner of the internet.",
 };
 export const sampleContent = [

@@ -1,3 +1,4 @@
+import { setAdminMode } from "./helpers/admin-mode.mjs";
 Cypress.Commands.addQuery(
   "htmlCanvasSource",
   function (frame = ".theme-live-preview") {
@@ -31,6 +32,12 @@ describe("Formatted HTML canvas editor", () => {
       url: "/api/admin/editor/preferences",
       headers,
       body: { colorMode: "dark", walkthroughVersion: 1 },
+    });
+    cy.request({
+      method: "POST",
+      url: "/api/admin/settings",
+      headers,
+      body: { adminColorMode: "dark" },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -158,7 +165,7 @@ describe("Formatted HTML canvas editor", () => {
           .backgroundColor,
       ).eq("rgb(36, 37, 40)");
     });
-    control("Switch to light mode").click();
+    setAdminMode("light");
     cy.get(".theme-live-preview").should((frames) => {
       const doc = frames[0].contentDocument;
       expect(

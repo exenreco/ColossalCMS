@@ -55,8 +55,11 @@ import { themeLoadingCss } from "../../../shared/theme-loading";
         }
         <header class="public-header">
           <a class="public-brand" href="/">
-            @if (site.settings.logo) {
-              <img [src]="site.settings.logo" [alt]="site.settings.title" />
+            @if (site.settings.siteIconId) {
+              <img
+                [src]="'/api/media/' + site.settings.siteIconId + '/file'"
+                [alt]="site.settings.title"
+              />
             } @else {
               <span class="public-mark">C</span>{{ site.settings.title }}
             }

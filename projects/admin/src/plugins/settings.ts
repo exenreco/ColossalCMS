@@ -13,6 +13,16 @@ import {
   selector: "cl-settings",
   standalone: true,
   imports: [DialogFocusDirective, FormsModule, IconComponent, DatePipe],
+  styles: `
+    .reading-panels {
+      display: grid;
+      gap: 24px;
+    }
+    .admin-appearance-section {
+      border-top: 0;
+      padding-top: 0;
+    }
+  `,
   template: `
     <div class="page-heading">
       <div>
@@ -30,7 +40,13 @@ import {
       <div class="settings-layout">
         <nav class="settings-nav" aria-label="Settings sections">
           @for (
-            t of ["General", "Appearance", "Team & roles", "API keys"];
+            t of [
+              "General",
+              "Reading",
+              "Appearance",
+              "Team & roles",
+              "API keys",
+            ];
             track t
           ) {
             <button [class.active]="tab === t" (click)="tab = t; error = ''">
@@ -44,7 +60,9 @@ import {
               <div class="panel-heading">
                 <div>
                   <h2>
-                    {{ tab === "General" ? "Site identity" : "Look & feel" }}
+                    {{
+                      tab === "General" ? "Site identity" : "Admin appearance"
+                    }}
                   </h2>
                   <p>
                     {{
@@ -75,49 +93,9 @@ import {
                     ></label
                   >
                   <div class="settings-section">
-                    <h3>Page titles</h3>
-                    <label
-                      >Title format<select
-                        name="titleFormat"
-                        [(ngModel)]="settings.titleFormat"
-                      >
-                        <option value="page-site">
-                          Page title | Site title
-                        </option>
-                        <option value="site-page">
-                          Site title | Page title
-                        </option>
-                        <option value="page-only">Page title only</option>
-                        <option value="site-only">Site title only</option>
-                      </select></label
-                    >
-                    <label
-                      >Title separator<select
-                        name="titleSeparator"
-                        [(ngModel)]="settings.titleSeparator"
-                        [disabled]="
-                          settings.titleFormat === 'page-only' ||
-                          settings.titleFormat === 'site-only'
-                        "
-                      >
-                        @for (separator of titleSeparators; track separator) {
-                          <option [value]="separator">{{ separator }}</option>
-                        }
-                      </select></label
-                    >
-                    <p class="field-note">
-                      Applies to browser tabs, search previews and default
-                      social titles. A page’s meta title supplies the page-title
-                      portion.
-                    </p>
-                    <p class="field-note">
-                      Preview: <strong>{{ titlePreview }}</strong>
-                    </p>
-                  </div>
-                  <div class="settings-section">
                     <h3>Site icon</h3>
                     <p class="field-note">
-                      Choose an image from your media library for browser tabs
+                      Choose an image for Site Identity blocks, browser tabs,
                       and bookmarks.
                     </p>
                     <div class="site-icon-control">
@@ -147,116 +125,23 @@ import {
                       }
                     </div>
                   </div>
-                  <div class="settings-section">
-                    <h3>Pages &amp; Routing</h3>
-                    <p class="field-note">
-                      Only published pages are selectable. Draft and scheduled
-                      pages are excluded.
-                    </p>
-                    <label
-                      >Home page<select
-                        name="homePageId"
-                        [(ngModel)]="settings.homePageId"
-                        (ngModelChange)="routingChanged('homePageId')"
-                      >
-                        <option value="">Latest posts</option>
-                        @for (page of publishedPages; track page.id) {
-                          <option [value]="page.id">{{ page.title }}</option>
-                        }
-                      </select></label
-                    >
-                    <label
-                      >Posts page<select
-                        name="postsPageId"
-                        [(ngModel)]="settings.postsPageId"
-                        [disabled]="!settings.homePageId"
-                        (ngModelChange)="routingChanged('postsPageId')"
-                      >
-                        <option value="">None</option>
-                        @for (page of publishedPages; track page.id) {
-                          @if (page.id !== settings.homePageId) {
-                            <option [value]="page.id">{{ page.title }}</option>
-                          }
-                        }
-                      </select></label
-                    >
-                    <label
-                      >404 page<select
-                        name="notFoundPageId"
-                        [(ngModel)]="settings.notFoundPageId"
-                        (ngModelChange)="routingChanged('notFoundPageId')"
-                      >
-                        <option value="">Theme 404 template</option>
-                        @for (page of publishedPages; track page.id) {
-                          <option [value]="page.id">{{ page.title }}</option>
-                        }
-                      </select></label
-                    >
-                    <p class="field-note">
-                      The selected page appears on unmatched URLs through the
-                      theme's 404 template. It is excluded from site navigation.
-                    </p>
-                  </div>
                 } @else {
-                  <label
-                    >Accent color
-                    <div class="color-control">
-                      <input
-                        type="color"
-                        name="colorPicker"
-                        [(ngModel)]="settings.accent"
-                        aria-label="Choose accent color"
-                      /><input
-                        name="accent"
-                        [(ngModel)]="settings.accent"
-                        pattern="#[0-9a-fA-F]{6}"
-                        required
-                      /></div
-                  ></label>
-                  <div class="swatches">
-                    @for (
-                      color of [
-                        "#246b50",
-                        "#254f83",
-                        "#753c59",
-                        "#9a542b",
-                        "#242a2d",
-                      ];
-                      track color
-                    ) {
-                      <button
-                        type="button"
-                        [style.background]="color"
-                        [attr.aria-label]="'Use ' + color"
-                        (click)="settings.accent = color"
+                  <div class="settings-section admin-appearance-section">
+                    <h3>Admin appearance</h3>
+                    <p class="field-note">
+                      Choose the color mode for the dashboard and all editors.
+                      System follows your device settings.
+                    </p>
+                    <label
+                      >Color mode<select
+                        name="adminColorMode"
+                        [(ngModel)]="settings.adminColorMode"
                       >
-                        @if (settings.accent === color) {
-                          <cl-icon name="check" />
-                        }
-                      </button>
-                    }
-                  </div>
-                  <label
-                    >Logo URL<input
-                      type="url"
-                      name="logo"
-                      [(ngModel)]="settings.logo"
-                      placeholder="https://example.com/logo.svg"
-                    /><small
-                      >Use an HTTPS image URL. When blank, Site Identity uses
-                      your site icon, or your site name if no image is
-                      set.</small
-                    ></label
-                  >
-                  <div
-                    class="brand-preview"
-                    [style.border-color]="settings.accent"
-                  >
-                    <span class="eyebrow">LIVE PREVIEW</span>
-                    <h3 [style.color]="settings.accent">
-                      {{ settings.title }}
-                    </h3>
-                    <p>{{ settings.tagline }}</p>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System</option>
+                      </select></label
+                    >
                   </div>
                 }
                 @if (error) {
@@ -264,13 +149,133 @@ import {
                 }
               </div>
               <div class="modal-footer">
-                <span class="muted">Changes apply to your public site.</span
+                <span class="muted">{{
+                  tab === "Appearance"
+                    ? "Applies to the admin and all editors after saving."
+                    : "Changes apply to your public site."
+                }}</span
                 ><button class="button primary" [disabled]="busy">
                   {{ busy ? "Saving…" : "Save changes"
                   }}<cl-icon name="check" />
                 </button>
               </div>
             </form>
+          }
+          @if (tab === "Reading") {
+            <div class="reading-panels">
+              <form
+                class="panel settings-panel"
+                (ngSubmit)="saveReading('routing')"
+              >
+                <div class="panel-heading"><h2>Pages &amp; Routing</h2></div>
+                <div class="form-content">
+                  <p class="field-note">
+                    Only published pages are selectable. Draft and scheduled
+                    pages are excluded.
+                  </p>
+                  <label
+                    >Home page<select
+                      name="homePageId"
+                      [(ngModel)]="settings.homePageId"
+                      (ngModelChange)="routingChanged('homePageId')"
+                    >
+                      <option value="">Latest posts</option>
+                      @for (page of publishedPages; track page.id) {
+                        <option [value]="page.id">{{ page.title }}</option>
+                      }
+                    </select></label
+                  >
+                  <label
+                    >Posts page<select
+                      name="postsPageId"
+                      [(ngModel)]="settings.postsPageId"
+                      [disabled]="!settings.homePageId"
+                      (ngModelChange)="routingChanged('postsPageId')"
+                    >
+                      <option value="">None</option>
+                      @for (page of publishedPages; track page.id) {
+                        @if (page.id !== settings.homePageId) {
+                          <option [value]="page.id">{{ page.title }}</option>
+                        }
+                      }
+                    </select></label
+                  >
+                  <label
+                    >404 page<select
+                      name="notFoundPageId"
+                      [(ngModel)]="settings.notFoundPageId"
+                      (ngModelChange)="routingChanged('notFoundPageId')"
+                    >
+                      <option value="">Theme 404 template</option>
+                      @for (page of publishedPages; track page.id) {
+                        <option [value]="page.id">{{ page.title }}</option>
+                      }
+                    </select></label
+                  >
+                  <p class="field-note">
+                    The selected page appears on unmatched URLs through the
+                    theme's 404 template. It is excluded from site navigation.
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <span class="muted">Changes apply to your public site.</span
+                  ><button class="button primary" [disabled]="busy">
+                    {{ busy ? "Saving…" : "Save changes"
+                    }}<cl-icon name="check" />
+                  </button>
+                </div>
+              </form>
+              <form
+                class="panel settings-panel"
+                (ngSubmit)="saveReading('titles')"
+              >
+                <div class="panel-heading"><h2>Page titles</h2></div>
+                <div class="form-content">
+                  <label
+                    >Title format<select
+                      name="titleFormat"
+                      [(ngModel)]="settings.titleFormat"
+                    >
+                      <option value="page-site">Page title | Site title</option>
+                      <option value="site-page">Site title | Page title</option>
+                      <option value="page-only">Page title only</option>
+                      <option value="site-only">Site title only</option>
+                    </select></label
+                  >
+                  <label
+                    >Title separator<select
+                      name="titleSeparator"
+                      [(ngModel)]="settings.titleSeparator"
+                      [disabled]="
+                        settings.titleFormat === 'page-only' ||
+                        settings.titleFormat === 'site-only'
+                      "
+                    >
+                      @for (separator of titleSeparators; track separator) {
+                        <option [value]="separator">{{ separator }}</option>
+                      }
+                    </select></label
+                  >
+                  <p class="field-note">
+                    Applies to browser tabs, search previews and default social
+                    titles. A page’s meta title supplies the page-title portion.
+                  </p>
+                  <p class="field-note">
+                    Preview: <strong>{{ titlePreview }}</strong>
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <span class="muted">Changes apply to your public site.</span
+                  ><button class="button primary" [disabled]="busy">
+                    {{ busy ? "Saving…" : "Save changes"
+                    }}<cl-icon name="check" />
+                  </button>
+                </div>
+              </form>
+            </div>
+            @if (error) {
+              <p class="error" role="alert">{{ error }}</p>
+            }
           }
           @if (tab === "Team & roles") {
             <section class="panel settings-panel">
@@ -482,6 +487,7 @@ export class SettingsComponent {
     titleFormat: "page-site" as
       "page-site" | "site-page" | "page-only" | "site-only",
     titleSeparator: "·",
+    adminColorMode: "system" as "light" | "dark" | "system",
     siteIconId: "",
     postRouting: "home" as "home" | "page",
     postsPageId: "",
@@ -534,6 +540,26 @@ export class SettingsComponent {
     } finally {
       this.busy = false;
     }
+  }
+  async saveReading(section: "titles" | "routing") {
+    const keys =
+      section === "titles"
+        ? (["titleFormat", "titleSeparator"] as const)
+        : ([
+            "postRouting",
+            "postsPageId",
+            "homePageId",
+            "notFoundPageId",
+            "routingVersion",
+          ] as const);
+    await this.act(
+      "/admin/settings",
+      "POST",
+      Object.fromEntries(keys.map((key) => [key, this.settings[key]])),
+      section === "titles"
+        ? "Page title settings saved."
+        : "Page routing settings saved.",
+    );
   }
   async save() {
     await this.act(

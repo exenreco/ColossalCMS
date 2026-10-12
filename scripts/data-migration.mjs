@@ -211,7 +211,7 @@ function referencedFiles(snapshot) {
       if (asset.key) keys.add(asset.key);
   };
   for (const media of snapshot.media) {
-    keys.add(media.storage_key);
+    if (media.storage_key) keys.add(media.storage_key);
     const metadata = JSON.parse(media.metadata);
     if (metadata.posterStorageKey) keys.add(metadata.posterStorageKey);
   }

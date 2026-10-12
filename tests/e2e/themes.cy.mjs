@@ -77,13 +77,14 @@ describe("V2.0.4 theme workflows", () => {
     cy.contains(".theme-card", "Meadow")
       .should("be.visible")
       .within(() => {
-        cy.contains("button", "Activate").click();
+        cy.get('[aria-label="Activate Meadow"]').focus().click();
       });
     cy.contains(".theme-card", "Meadow")
       .should("contain", "Active theme")
       .within(() => {
-        cy.contains("a", "Edit theme").click();
+        cy.get('[aria-label="Theme details for Meadow"]').click();
       });
+    cy.get(".theme-details-actions").contains("a", "Edit theme").click();
     cy.get(".theme-editor").should("be.visible");
     chooseTemplate("post-archive");
     control("Outline").click();
@@ -147,7 +148,7 @@ describe("V2.0.4 theme workflows", () => {
       expect(text).to.contain("About us");
       return true;
     });
-    cy.contains(".theme-card", "Meadow").contains("button", "Activate").click();
+    cy.get('[aria-label="Activate Meadow"]').focus().click();
     cy.request("/api/themes/render?path=/about")
       .its("body.templateId")
       .should("eq", "default-2");

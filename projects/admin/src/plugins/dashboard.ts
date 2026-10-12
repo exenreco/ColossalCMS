@@ -1,3 +1,5 @@
+import { SeoOverviewComponent } from "../../../../shared/seo-overview.component";
+import { ViewsChartComponent } from "../../../../shared/views-chart.component";
 import { Component, inject } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { RouterLink } from "@angular/router";
@@ -7,7 +9,13 @@ import { Content } from "../../../../shared/models";
 @Component({
   selector: "cl-dashboard",
   standalone: true,
-  imports: [RouterLink, IconComponent, DatePipe],
+  imports: [
+    RouterLink,
+    IconComponent,
+    DatePipe,
+    SeoOverviewComponent,
+    ViewsChartComponent,
+  ],
   template: `
     @for (notice of api.state()!.notices || []; track notice.id) {
       <div class="dashboard-notice" role="status">
@@ -45,6 +53,44 @@ import { Content } from "../../../../shared/models";
         ></a>
       }
     </section>
+    @if (api.state()?.viewAnalytics; as views) {
+      <section
+        class="panel analytics-panel views-overview"
+        aria-label="Page and post views"
+      >
+        <div class="panel-heading">
+          <div>
+            <h2>Page and post views</h2>
+            <p>Last 30 days compared with the preceding 30 days.</p>
+          </div>
+          <span class="subtle-label">Daily views · UTC</span>
+        </div>
+        <div class="views-chart-grid">
+          <cl-views-chart
+            label="Page views"
+            [series]="views.page"
+            [labels]="views.labels"
+            [previousLabels]="views.previousLabels"
+          />
+          <cl-views-chart
+            label="Post views"
+            [series]="views.post"
+            [labels]="views.labels"
+            [previousLabels]="views.previousLabels"
+          />
+        </div>
+        <p class="analytics-note">
+          Current: {{ views.start | date: "MMM d, y" : "UTC" }}–{{
+            views.end | date: "MMM d, y" : "UTC"
+          }}
+          · Previous: {{ views.previousStart | date: "MMM d, y" : "UTC" }}–{{
+            views.start | date: "MMM d, y" : "UTC"
+          }}. Daily buckets use UTC; boundary days are partial. Repeat page
+          loads count.
+        </p>
+      </section>
+    }
+    <cl-seo-overview />
     <div class="dashboard-columns">
       <div class="dashboard-main">
         <section class="panel">

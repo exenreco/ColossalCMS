@@ -11,6 +11,32 @@ components:
       type: http
       scheme: bearer
   schemas:
+    ViewSeries:
+      type: object
+      properties:
+        current: { type: integer, minimum: 0 }
+        previous: { type: integer, minimum: 0 }
+        currentSeries:
+          type: array
+          items: { type: integer, minimum: 0 }
+        previousSeries:
+          type: array
+          items: { type: integer, minimum: 0 }
+    ViewAnalytics:
+      type: object
+      description: Last 30 days compared with the preceding 30 days. Daily UTC buckets include partial boundary days; no visitor identifiers are collected. History is retained for 60 days.
+      properties:
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        previousStart: { type: string, format: date-time }
+        labels:
+          type: array
+          items: { type: string, format: date }
+        previousLabels:
+          type: array
+          items: { type: string, format: date }
+        page: { $ref: "#/components/schemas/ViewSeries" }
+        post: { $ref: "#/components/schemas/ViewSeries" }
     Content:
       type: object
       required: [kind, title, slug, body, excerpt, status]
@@ -29,6 +55,11 @@ components:
         excerpt: { type: string, maxLength: 500 }
         status: { type: string, enum: [draft, pending, published, scheduled] }
         publishAt: { type: string, format: date-time }
+        views30Days:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: Public document loads in the rolling last 30 days; returned in admin state only.
         expectedUpdatedAt:
           { type: string, description: Optimistic concurrency token }
         autosave:
@@ -51,12 +82,23 @@ components:
               { type: object, description: Namespaced custom panel values }
     Settings:
       type: object
-      required: [title, tagline, accent, logo, announcement]
+      required: [title, tagline, announcement]
       properties:
         title: { type: string, maxLength: 80 }
         tagline: { type: string, maxLength: 200 }
-        accent: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
-        logo: { type: string, description: Empty string or an HTTPS image URL }
+        accent:
+          {
+            type: string,
+            pattern: "^#[0-9a-fA-F]{6}$",
+            description: Legacy fallback frontend color; public themes own their appearance,
+          }
+        adminColorMode:
+          {
+            type: string,
+            enum: [light, dark, system],
+            default: system,
+            description: Workspace-wide appearance for the dashboard and every editor,
+          }
         announcement: { type: string, maxLength: 240 }
         siteIconId: { type: string }
         postRouting: { type: string, enum: [home, page] }
@@ -170,7 +212,7 @@ paths:
       summary: Read the authenticated member's editor preferences
       responses:
         "200":
-          description: User-scoped color mode and walkthrough completion
+          description: User-scoped walkthrough completion; legacy colorMode is retained for compatibility and does not override Settings Appearance
           content:
             application/json:
               schema:
@@ -229,7 +271,13 @@ paths:
       summary: Load member-authorized workspace state
       responses:
         "200":
-          description: "Content, settings, plugins, media, notices and activity; members and key metadata for admins only"
+          description: "Content with views30Days, viewAnalytics, settings, plugins, media, notices and activity; members and key metadata for admins only"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  viewAnalytics: { $ref: "#/components/schemas/ViewAnalytics" }
         "401": { $ref: "#/components/responses/Error" }
   /admin/content:
     post:
@@ -333,7 +381,7 @@ paths:
         "200": { description: Media items with stable URLs and metadata }
         "401": { $ref: "#/components/responses/Error" }
     post:
-      summary: Upload a validated image, audio or video file
+      summary: Upload a validated image, PDF, audio, video or 3D model file
       requestBody:
         required: true
         content:

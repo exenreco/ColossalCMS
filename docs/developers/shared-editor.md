@@ -1,6 +1,6 @@
 # Shared editor workspace
 
-Theme, maintenance, post, and page editors use `EditorShellComponent`. The shell supplies the vertical tool rail, a left block sidebar, an independent right Inspector, breadcrumbs, template chooser, preview tools, viewport menu, light/dark mode, draft save, settings, and onboarding. The owning editor retains its document, undo journal, rendering, validation, and publish workflow.
+Theme, maintenance, post, and page editors use `EditorShellComponent`. The shell supplies the vertical tool rail, a left block sidebar, an independent right Inspector, breadcrumbs, template chooser, preview tools, viewport menu, inherited admin appearance, draft save, settings, and onboarding. The owning editor retains its document, undo journal, rendering, validation, and publish workflow.
 
 ## Panels and canvas
 
@@ -31,7 +31,7 @@ The toolbar's Viewport, Theme preview, and Settings popovers enable `[arrow]="tr
 
 Menu-opening controls have a visible caret and an expanded state. Block-toolbar selects also use an explicit caret instead of relying on a browser arrow. Blocks categories show a count, a rotating caret, and a highlighted expanded heading. Inspector sections use a right-pointing caret when collapsed and a downward caret when expanded, while picker triggers open a popover. Canvas documents receive the same scrollbar styling as the sidebar: a 5px track in Chromium/WebKit, thin scrollbars elsewhere, editor-colored tracks/thumbs, and no native arrow buttons. Chromium's standard scrollbar properties are set to `auto` so its custom scrollbar styles can take effect. Scrollbar colors follow light/dark mode without changing theme appearance.
 
-`PickerPopoverComponent`, the List/Outline context menu, and the media chooser use the same surface. The media chooser follows the active editor mode and defaults to light mode elsewhere in the admin. Features should reuse this component rather than implement another positioning/focus controller.
+`PickerPopoverComponent`, the List/Outline context menu, and the media chooser use the same surface. The media chooser follows Settings > Appearance in both the admin and editors. Features should reuse this component rather than implement another positioning/focus controller.
 
 ## Drafts and previews
 
@@ -90,3 +90,9 @@ $env:CMS_E2E_SPEC='tests/e2e/shared-editor.cy.mjs'
 pnpm e2e
 Remove-Item Env:CMS_E2E_SPEC
 ```
+
+## Admin appearance and site identity
+
+`AdminAppearanceService` resolves `settings.adminColorMode` (`light`, `dark`, or `system`) for the dashboard and every shared editor. System follows `prefers-color-scheme` and reacts to changes. `EditorPreferencesService.colorMode` exposes that resolved signal; member-specific walkthrough completion remains separate. Legacy editor color preferences are accepted for API compatibility but do not override workspace appearance. No editor mode toggle is rendered. UI surfaces and media dialogs inherit the same mode; the canvas content retains its own theme appearance.
+
+General > Site icon is the single image setting for Site Identity, favicon, and SEO preview. During workspace initialization, an old Logo URL becomes an external image library record when no Site Icon exists. The migration preserves existing Site Icons, removes the old setting, and runs once. External image records redirect to the original HTTPS image instead of fetching it on the server; they can be replaced with uploads. Production file migration skips external records without a storage key.

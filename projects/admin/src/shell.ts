@@ -1,4 +1,6 @@
+import { ScreenOptionsComponent } from "./screen-options.component";
 import { MediaPickerComponent } from "../../../shared/media-picker.component";
+import { AdminAppearanceService } from "../../../shared/admin-appearance.service";
 import {
   Component,
   inject,
@@ -24,6 +26,7 @@ import { MaintenanceState } from "./maintenance-state";
   standalone: true,
   imports: [
     MediaPickerComponent,
+    ScreenOptionsComponent,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -78,90 +81,116 @@ import { MaintenanceState } from "./maintenance-state";
   `,
   template: `
     @if (api.state()) {
-      <div class="app-shell">
+      <div class="app-shell" [class.nav-expanded]="navigationExpanded">
         <aside class="sidebar" [class.mobile-open]="menuOpen">
-          <a class="brand" routerLink="/dashboard"
-            ><span class="brand-mark">C</span
-            ><span>colossal<span class="brand-cms">CMS</span></span></a
-          >
-          <div class="workspace">
-            <span class="workspace-avatar">{{
-              api.state()!.settings.title.charAt(0)
-            }}</span>
-            <div>
-              <strong>{{ api.state()!.settings.title }}</strong
-              ><small>Your workspace</small>
-            </div>
-            <cl-icon name="chevron" />
-          </div>
-          <span class="nav-label">WORKSPACE</span>
-          <nav aria-label="Main navigation">
-            @for (p of mainNavigation; track p.id) {
-              <a
-                [routerLink]="route(p.admin.menu.path)"
-                routerLinkActive="active"
-                (click)="menuOpen = false"
-                ><cl-icon [name]="p.icon" /><span>{{
-                  p.admin.menu.label
-                }}</span>
-                @if (p.id.endsWith("posts")) {
-                  <span class="nav-count">{{ postCount }}</span>
-                }
-              </a>
-            }
-          </nav>
-          @if (systemNavigation.length) {
-            <span class="nav-label extension-label">SYSTEM</span>
-            <nav aria-label="System navigation">
-              @for (p of systemNavigation; track p.id) {
+          <div class="admin-navigation-panel">
+            <a
+              class="brand"
+              routerLink="/dashboard"
+              aria-label="Colossal CMS dashboard"
+              title="Colossal CMS"
+              ><span class="brand-mark">C</span
+              ><span>colossal<span class="brand-cms">CMS</span></span></a
+            >
+            <a
+              class="workspace"
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View your website (opens in a new tab)"
+            >
+              <span class="workspace-avatar">{{
+                api.state()!.settings.title.charAt(0)
+              }}</span>
+              <div>
+                <strong>{{ api.state()!.settings.title }}</strong
+                ><small>Your workspace</small>
+              </div>
+              <cl-icon name="chevron" />
+            </a>
+            <span class="nav-label">WORKSPACE</span>
+            <nav class="navigation-tree" aria-label="Main navigation">
+              @for (p of mainNavigation; track p.id) {
                 <a
                   [routerLink]="route(p.admin.menu.path)"
                   routerLinkActive="active"
+                  ariaCurrentWhenActive="page"
+                  [attr.aria-label]="p.admin.menu.label"
+                  [attr.title]="p.admin.menu.label"
                   (click)="menuOpen = false"
                   ><cl-icon [name]="p.icon" /><span>{{
                     p.admin.menu.label
-                  }}</span></a
-                >
+                  }}</span>
+                  @if (p.id.endsWith("posts")) {
+                    <span class="nav-count">{{ postCount }}</span>
+                  } @else if (p.id.endsWith("pages")) {
+                    <span class="nav-count">{{ pageCount }}</span>
+                  }
+                </a>
               }
             </nav>
-          }
-          <div class="sidebar-bottom">
-            <div class="workspace-note">
-              <span class="tiny-label">MADE TO MAKE IT YOURS</span>
-              <p>A little structure.<br />Room for big ideas.</p>
-              <a routerLink="/plugins"
-                >Explore plugins <cl-icon name="arrow"
-              /></a>
-            </div>
-            <a class="help-link" href="/docs/guide.html" target="_blank"
-              ><cl-icon name="book" /> Workspace guide <cl-icon name="external"
-            /></a>
-            <div class="profile">
-              <span class="avatar">{{ initials }}</span>
-              <div>
-                <strong>{{ displayName }}</strong
-                ><small>{{
-                  isLocal
-                    ? "Local developer"
-                    : api.state()!.user.role === "admin"
-                      ? "Administrator"
-                      : "Editor"
-                }}</small>
-              </div>
-              @if (passwordAuth) {
-                <button
-                  type="button"
-                  class="icon-button"
-                  aria-label="Sign out"
-                  (click)="signOut()"
-                >
-                  <cl-icon name="logout" />
-                </button>
-              } @else if (!isLocal) {
-                <a href="/signout-with-chatgpt?return_to=/" title="Sign out"
-                  ><cl-icon name="logout"
+            @if (systemNavigation.length) {
+              <span class="nav-label extension-label">SYSTEM</span>
+              <nav class="navigation-tree" aria-label="System navigation">
+                @for (p of systemNavigation; track p.id) {
+                  <a
+                    [routerLink]="route(p.admin.menu.path)"
+                    routerLinkActive="active"
+                    ariaCurrentWhenActive="page"
+                    [attr.aria-label]="p.admin.menu.label"
+                    [attr.title]="p.admin.menu.label"
+                    (click)="menuOpen = false"
+                    ><cl-icon [name]="p.icon" /><span>{{
+                      p.admin.menu.label
+                    }}</span></a
+                  >
+                }
+              </nav>
+            }
+            <div class="sidebar-bottom">
+              <div class="workspace-note">
+                <span class="tiny-label">MADE TO MAKE IT YOURS</span>
+                <p>A little structure.<br />Room for big ideas.</p>
+                <a routerLink="/plugins"
+                  >Explore plugins <cl-icon name="arrow"
                 /></a>
-              }
+              </div>
+              <a
+                class="help-link"
+                href="/docs/guide.html"
+                target="_blank"
+                aria-label="Workspace guide"
+                title="Workspace guide"
+                ><cl-icon name="book" /><span>Workspace guide</span>
+                <cl-icon name="external"
+              /></a>
+              <div class="profile">
+                <span class="avatar">{{ initials }}</span>
+                <div>
+                  <strong>{{ displayName }}</strong
+                  ><small>{{
+                    isLocal
+                      ? "Local developer"
+                      : api.state()!.user.role === "admin"
+                        ? "Administrator"
+                        : "Editor"
+                  }}</small>
+                </div>
+                @if (passwordAuth) {
+                  <button
+                    type="button"
+                    class="icon-button"
+                    aria-label="Sign out"
+                    (click)="signOut()"
+                  >
+                    <cl-icon name="logout" />
+                  </button>
+                } @else if (!isLocal) {
+                  <a href="/signout-with-chatgpt?return_to=/" title="Sign out"
+                    ><cl-icon name="logout"
+                  /></a>
+                }
+              </div>
             </div>
           </div>
         </aside>
@@ -175,6 +204,19 @@ import { MaintenanceState } from "./maintenance-state";
         <div class="main-shell">
           <header class="topbar">
             <div class="breadcrumbs">
+              <button
+                type="button"
+                class="navigation-toggle"
+                [attr.aria-label]="
+                  navigationExpanded
+                    ? 'Collapse navigation'
+                    : 'Expand navigation'
+                "
+                [attr.aria-expanded]="navigationExpanded"
+                (click)="toggleNavigation()"
+              >
+                <cl-icon name="menu" />
+              </button>
               <button
                 class="icon-button mobile-menu"
                 aria-label="Open navigation"
@@ -230,6 +272,9 @@ import { MaintenanceState } from "./maintenance-state";
                     aria-hidden="true"
                   ></span>
                 </button>
+              }
+              @if (contentScreenKind; as kind) {
+                <cl-screen-options [kind]="kind" [seoEnabled]="seoEnabled" />
               }
               <a class="button subtle" href="/" target="_blank"
                 >View site <cl-icon name="external"
@@ -374,11 +419,16 @@ export class AdminComponent implements OnInit, OnDestroy {
   maintenance = inject(MaintenanceState);
   pluginView = inject(PluginViewState);
   api = inject(ApiService);
+  appearance = inject(AdminAppearanceService);
   router = inject(Router);
   setup = false;
   passwordAuth = false;
   busy = false;
   error = "";
+  navigationExpanded = window.matchMedia("(min-width: 761px)").matches;
+  toggleNavigation() {
+    this.navigationExpanded = !this.navigationExpanded;
+  }
   menuOpen = false;
   section = "Dashboard";
   showWorkspaceProgress = signal(false);
@@ -415,7 +465,8 @@ export class AdminComponent implements OnInit, OnDestroy {
         const path = location.pathname.replace(/^\/admin/, "");
         this.router.navigateByUrl(
           (!path || path === "/" ? "/dashboard" : path) +
-            location.search + location.hash,
+            location.search +
+            location.hash,
         );
       }
     } catch (e) {
@@ -471,6 +522,15 @@ export class AdminComponent implements OnInit, OnDestroy {
       )
       .sort((a, b) => (a.admin.menu.order || 0) - (b.admin.menu.order || 0));
   }
+  get contentScreenKind(): "page" | "post" | null {
+    const path = this.router.url.split(/[?#]/)[0];
+    return path === "/pages" ? "page" : path === "/posts" ? "post" : null;
+  }
+  get seoEnabled() {
+    return !!this.api
+      .state()
+      ?.plugins.some((p) => p.id === "com.colossal.seo" && p.active);
+  }
   get mainNavigation() {
     return this.navigation("main");
   }
@@ -479,6 +539,9 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
   get postCount() {
     return this.api.state()!.content.filter((c) => c.kind === "post").length;
+  }
+  get pageCount() {
+    return this.api.state()!.content.filter((c) => c.kind === "page").length;
   }
   get displayName() {
     return this.api.state()!.user.email.split("@")[0].replace(/[._]/g, " ");

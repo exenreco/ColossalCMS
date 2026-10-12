@@ -22,6 +22,10 @@ test("Midnight upgrades existing published layouts and drafts once while retaini
     const doc = midnight.published;
     doc.css = doc.css.split("/* Midnight geometry v1 */")[0];
     doc.templates.home.children.shift();
+    const header = doc.templates.home.children.pop();
+    const oldIdentity = header.children[0].children[0].children[0];
+    oldIdentity.settings = { display: "name", level: "span", linkHome: false };
+    doc.templates.home.children[0].children[0].children.unshift(oldIdentity);
     doc.blocks = doc.blocks.filter(
       (block) => block.type !== "maintenance/geometry",
     );
@@ -45,6 +49,34 @@ test("Midnight upgrades existing published layouts and drafts once while retaini
       );
       assert.ok(JSON.stringify(document).includes(id));
       assert.ok(JSON.stringify(document).includes("Our edited announcement"));
+      const header = document.templates.home.children.find(
+        (block) => block.settings.classes === "midnight-header",
+      );
+      assert.equal(header.children[1].settings.href, "/login");
+      assert.equal(header.settings.position, "fixed");
+      assert.equal(header.settings.zIndex, 4);
+      assert.equal(header.children[1].settings.iconName, "login");
+      assert.equal(header.children[0].type, "core/columns");
+      assert.equal(
+        header.children[0].children[0].children[0].id,
+        oldIdentity.id,
+      );
+      assert.equal(
+        header.children[0].children[0].children[0].settings.display,
+        "logo",
+      );
+      assert.equal(
+        header.children[0].children[1].children[1].children[0].type,
+        "core/tagline",
+      );
+      assert.doesNotMatch(document.css, /linear-gradient\(45deg/);
+      const ids = [];
+      const collect = (node) => {
+        ids.push(node.id);
+        node.children?.forEach(collect);
+      };
+      collect(document.templates.home);
+      assert.equal(new Set(ids).size, ids.length);
       assert.equal(upgradeMidnight(document), false);
     }
     const first = (
@@ -69,8 +101,52 @@ test("Midnight upgrades existing published layouts and drafts once while retaini
     ).data;
     assert.match(rendered.html, /data-geometry-count="72"/);
     assert.match(rendered.html, /theme-site-brand/);
+    assert.match(rendered.html, /href="\/login"/);
+    assert.match(rendered.html, /<path d="M15 3h6v18h-6M3 12h12M10 7l5 5-5 5"/);
     assert.match(rendered.css, /rgba\(3,14,48,.88\)/);
     assert.doesNotMatch(rendered.html, /<script|<iframe/);
+  } finally {
+    DB.close();
+  }
+});
+
+test("Midnight corrects v3 saved headers and normalized diagonal backgrounds in published layouts and drafts", async () => {
+  const { DB, call } = await fixture();
+  try {
+    await call("/api/maintenance");
+    const data = JSON.parse(
+      (
+        await DB.prepare(
+          "SELECT value FROM config WHERE id='maintenance'",
+        ).first()
+      ).value,
+    );
+    const layout = data.layouts.find((item) => item.name === "Midnight");
+    const doc = layout.published;
+    doc.css = doc.css.split("/* Midnight header layout v4 */")[0];
+    doc.css +=
+      "\n.theme-root .maintenance-geometry { background-image: radial-gradient(circle, transparent, #000), linear-gradient(45deg, transparent 49%, #abcdef 50%, transparent 51%); background-size: 100px 100px, 220px 220px; }";
+    const header = doc.templates.home.children.find(
+      (node) => node.settings.classes === "midnight-header",
+    );
+    header.children.reverse();
+    const ids = header.children.map((node) => node.id).sort();
+    layout.draft = structuredClone(doc);
+    await DB.prepare("UPDATE config SET value=? WHERE id='maintenance'")
+      .bind(JSON.stringify(data))
+      .run();
+    const result = (await call("/api/maintenance/" + layout.id)).data;
+    for (const document of [result.published, result.draft]) {
+      const migrated = document.templates.home.children.find(
+        (node) => node.settings.classes === "midnight-header",
+      );
+      assert.equal(migrated.children[0].settings.classes, "midnight-brand");
+      assert.equal(migrated.children.at(-1).settings.classes, "midnight-login");
+      assert.deepEqual(migrated.children.map((node) => node.id).sort(), ids);
+      assert.doesNotMatch(document.css, /linear-gradient\(45deg/);
+      assert.match(document.css, /margin-left:0;margin-right:auto/);
+      assert.equal(upgradeMidnight(document), false);
+    }
   } finally {
     DB.close();
   }

@@ -1,16 +1,46 @@
-import { Component, inject, OnInit } from "@angular/core";
+import { ContentTableState } from "../content-table-state";
+import { ChangeDetectorRef, Component, inject, OnInit } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router, RouterOutlet } from "@angular/router";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { DialogFocusDirective } from "../../../../shared/dialog-focus.directive";
+import { AdminModalComponent } from "../../../../shared/admin-modal.component";
+import { BulkActionsComponent } from "../../../../shared/bulk-actions.component";
+import { TablePaginationComponent } from "../../../../shared/table-pagination.component";
+import { TableSelection } from "../../../../shared/table-selection";
 import { Content } from "../../../../shared/models";
 import { analyzeSeo } from "../../../../shared/seo";
 @Component({
   selector: "cl-content",
   standalone: true,
   styles: `
+    .quick-edit-dialog {
+      display: grid;
+      gap: 18px;
+    }
+    .quick-edit-dialog h2,
+    .quick-edit-dialog p {
+      margin: 0;
+    }
+    .quick-edit-dialog .standalone-field {
+      gap: 8px;
+      margin: 0;
+    }
+    .quick-edit-dialog select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dce3d5;
+      border-radius: 6px;
+    }
+    .quick-edit-dialog small {
+      line-height: 1.5;
+      color: var(--muted, #78816e);
+    }
+    .quick-edit-dialog .dialog-actions {
+      padding-top: 6px;
+    }
     .seo-score-badge {
       display: inline-flex;
       align-items: center;
@@ -77,7 +107,7 @@ import { analyzeSeo } from "../../../../shared/seo";
       background: none;
       border: 0;
       padding: 2px 0;
-      color: var(--accent, #246b50);
+      color: #56df95;
       font: inherit;
       font-size: 12px;
       cursor: pointer;
@@ -107,6 +137,9 @@ import { analyzeSeo } from "../../../../shared/seo";
     }
   `,
   imports: [
+    AdminModalComponent,
+    BulkActionsComponent,
+    TablePaginationComponent,
     DatePipe,
     FormsModule,
     IconComponent,
@@ -136,27 +169,14 @@ import { analyzeSeo } from "../../../../shared/seo";
         <cl-icon name="plus" />Create {{ kind }}
       </button>
     </div>
-    <section class="panel">
-      <div class="content-toolbar">
-        @if (kind === "page") {
-          <select aria-label="Filter by role" [(ngModel)]="roleFilter">
-            @for (
-              role of ["All", "Home", "Posts", "404", "Unassigned"];
-              track role
-            ) {
-              <option>{{ role }}</option>
-            }
-          </select>
-          <select aria-label="Filter by author" [(ngModel)]="authorFilter">
-            <option value="">All authors</option>
-            @for (author of authors; track author) {
-              <option [value]="author">{{ author }}</option>
-            }
-          </select>
-        }
+    <section class="panel content-filter-panel" aria-label="Content filters">
+      <div class="content-toolbar content-filter-columns">
         <div class="tabs" aria-label="Content status">
           @for (tab of filters; track tab) {
-            <button [class.selected]="filter === tab" (click)="filter = tab">
+            <button
+              [class.selected]="filter === tab"
+              (click)="filter = tab; page = 1"
+            >
               {{ tab }} <span>{{ count(tab) }}</span>
             </button>
           }
@@ -164,35 +184,176 @@ import { analyzeSeo } from "../../../../shared/seo";
         <label class="search-field"
           ><cl-icon name="search" /><input
             [(ngModel)]="search"
+            (ngModelChange)="page = 1"
             placeholder="Search content…"
             aria-label="Search content"
         /></label>
       </div>
+    </section>
+    <div class="content-actions-row">
+      <cl-bulk-actions
+        [showCount]="false"
+        [clearBelow]="true"
+        [count]="selection.ids.size"
+        [actions]="bulkActions"
+        [busy]="busy"
+        [progress]="bulkProgress"
+        [progressTotal]="bulkTotal"
+        (applied)="chooseBulk($event)"
+        (cleared)="selection.clear()"
+      />
+      <div class="content-scope-filters">
+        @if (kind === "page") {
+          <select
+            aria-label="Filter by role"
+            [(ngModel)]="roleFilter"
+            (ngModelChange)="page = 1"
+          >
+            @for (
+              role of ["All", "Home", "Posts", "404", "Unassigned"];
+              track role
+            ) {
+              <option>{{ role }}</option>
+            }
+          </select>
+          <select
+            aria-label="Filter by author"
+            [(ngModel)]="authorFilter"
+            (ngModelChange)="page = 1"
+          >
+            <option value="">All authors</option>
+            @for (author of authors; track author) {
+              <option [value]="author">{{ author }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+    @if (bulkMessage) {
+      <p class="admin-bulk-result" role="status">{{ bulkMessage }}</p>
+    }
+    <section class="panel">
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>Title</th>
+              <th class="selection-cell">
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible entries"
+                  [checked]="selection.all(visibleIds)"
+                  [indeterminate]="selection.some(visibleIds)"
+                  [disabled]="busy || !visibleIds.length"
+                  (change)="
+                    selection.toggleAll(visibleIds, $any($event.target).checked)
+                  "
+                />
+              </th>
+              <th
+                [attr.aria-sort]="
+                  sortKey === 'title'
+                    ? sortDirection === 1
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                "
+              >
+                <button class="table-sort" (click)="sort('title')">
+                  Title<cl-icon name="chevron" />
+                </button>
+              </th>
               @if (kind === "page") {
-                <th>Slug</th>
-                <th>Template</th>
-                <th>Author</th>
+                <th
+                  data-column="slug"
+                  [hidden]="!tableColumns.visible(kind, 'slug')"
+                >
+                  Slug
+                </th>
+                <th
+                  data-column="template"
+                  [hidden]="!tableColumns.visible(kind, 'template')"
+                >
+                  Template
+                </th>
+                <th
+                  data-column="author"
+                  [hidden]="!tableColumns.visible(kind, 'author')"
+                >
+                  Author
+                </th>
               }
-              <th>Status</th>
-              <th>Updated</th>
+              <th
+                data-column="status"
+                [hidden]="!tableColumns.visible(kind, 'status')"
+                [attr.aria-sort]="
+                  sortKey === 'status'
+                    ? sortDirection === 1
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                "
+              >
+                <button class="table-sort" (click)="sort('status')">
+                  Status<cl-icon name="chevron" />
+                </button>
+              </th>
+              <th
+                data-column="updatedAt"
+                [hidden]="!tableColumns.visible(kind, 'updatedAt')"
+                [attr.aria-sort]="
+                  sortKey === 'updatedAt'
+                    ? sortDirection === 1
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                "
+              >
+                <button class="table-sort" (click)="sort('updatedAt')">
+                  Updated<cl-icon name="chevron" />
+                </button>
+              </th>
               @if (seoEnabled) {
-                <th>SEO</th>
+                <th
+                  data-column="seo"
+                  [hidden]="!tableColumns.visible(kind, 'seo')"
+                >
+                  SEO
+                </th>
               }
-              <th>View</th>
+              <th
+                data-column="views30Days"
+                [hidden]="!tableColumns.visible(kind, 'views30Days')"
+                title="Public page loads in the last 30 days"
+              >
+                Views (30 days)
+              </th>
+              <th
+                data-column="view"
+                [hidden]="!tableColumns.visible(kind, 'view')"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            @for (c of filtered; track c.id) {
-              <tr>
-                <td>
+            @for (c of paginated; track c.id) {
+              <tr [class.row-selected]="selection.ids.has(c.id)">
+                <td class="selection-cell">
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'Select ' + c.title"
+                    [checked]="selection.ids.has(c.id)"
+                    [disabled]="busy"
+                    (change)="
+                      selection.toggle(c.id, $any($event.target).checked)
+                    "
+                  />
+                </td>
+                <td data-column="title">
                   <div class="content-title-cell">
                     <button
                       class="content-title title-button"
+                      [disabled]="busy"
                       (click)="open(c)"
                     >
                       <span class="content-icon"
@@ -215,22 +376,31 @@ import { analyzeSeo } from "../../../../shared/seo";
                       <button
                         type="button"
                         [attr.aria-label]="'Edit ' + c.title"
+                        [disabled]="busy"
                         (click)="open(c)"
                       >
                         Edit
                       </button>
-                      <button type="button" (click)="quickEdit(c)">
+                      <span class="action-separator" aria-hidden="true">|</span>
+                      <button
+                        type="button"
+                        [disabled]="busy"
+                        (click)="quickEdit(c)"
+                      >
                         Quick Edit
                       </button>
+                      <span class="action-separator" aria-hidden="true">|</span>
                       <button
                         type="button"
                         class="danger-text"
                         [attr.aria-label]="'Delete ' + c.title"
+                        [disabled]="busy"
                         (click)="deleting = c; error = ''"
                       >
                         Delete
                       </button>
                       @if (seoEnabled) {
+                        <span class="action-separator" aria-hidden="true">|</span>
                         <button
                           type="button"
                           (click)="instantIndex(c)"
@@ -259,13 +429,29 @@ import { analyzeSeo } from "../../../../shared/seo";
                   </div>
                 </td>
                 @if (kind === "page") {
-                  <td>
+                  <td
+                    data-column="slug"
+                    [hidden]="!tableColumns.visible(kind, 'slug')"
+                  >
                     <a [href]="publicPath(c)" target="_blank">/{{ c.slug }}</a>
                   </td>
-                  <td>{{ templateName(c) }}</td>
-                  <td>{{ c.author }}</td>
+                  <td
+                    data-column="template"
+                    [hidden]="!tableColumns.visible(kind, 'template')"
+                  >
+                    {{ templateName(c) }}
+                  </td>
+                  <td
+                    data-column="author"
+                    [hidden]="!tableColumns.visible(kind, 'author')"
+                  >
+                    {{ c.author }}
+                  </td>
                 }
-                <td>
+                <td
+                  data-column="status"
+                  [hidden]="!tableColumns.visible(kind, 'status')"
+                >
                   <span [class]="'badge ' + status(c)"
                     ><span></span
                     >{{
@@ -278,9 +464,18 @@ import { analyzeSeo } from "../../../../shared/seo";
                     }}</small>
                   }
                 </td>
-                <td class="date-cell">{{ c.updatedAt | date: "MMM d, y" }}</td>
+                <td
+                  class="date-cell"
+                  data-column="updatedAt"
+                  [hidden]="!tableColumns.visible(kind, 'updatedAt')"
+                >
+                  {{ c.updatedAt | date: "MMM d, y" }}
+                </td>
                 @if (seoEnabled) {
-                  <td>
+                  <td
+                    data-column="seo"
+                    [hidden]="!tableColumns.visible(kind, 'seo')"
+                  >
                     <div class="seo-score-cell">
                       <button
                         [class]="'seo-score-badge ' + seo(c).level"
@@ -312,8 +507,27 @@ import { analyzeSeo } from "../../../../shared/seo";
                     </div>
                   </td>
                 }
-                <td>
+                <td
+                  data-column="views30Days"
+                  [hidden]="!tableColumns.visible(kind, 'views30Days')"
+                >
+                  {{ c.views30Days || 0 }}
+                </td>
+                <td
+                  data-column="view"
+                  [hidden]="!tableColumns.visible(kind, 'view')"
+                >
                   <div class="row-actions">
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [disabled]="busy"
+                      [attr.aria-label]="'Edit ' + c.title"
+                      title="Edit"
+                      (click)="open(c)"
+                    >
+                      <cl-icon name="edit-square" />
+                    </button>
                     @if (status(c) === "published") {
                       <a
                         class="icon-button"
@@ -329,9 +543,7 @@ import { analyzeSeo } from "../../../../shared/seo";
             } @empty {
               <tr>
                 <td
-                  [attr.colspan]="
-                    (kind === 'page' ? 7 : 4) + (seoEnabled ? 1 : 0)
-                  "
+                  [attr.colspan]="tableColumns.count(kind, seoEnabled)"
                   class="empty-cell"
                 >
                   <h3>No {{ kind }}s found</h3>
@@ -351,26 +563,28 @@ import { analyzeSeo } from "../../../../shared/seo";
           </tbody>
         </table>
       </div>
-      <div class="table-footer">
-        {{ filtered.length }} {{ filtered.length === 1 ? kind : kind + "s"
-        }}<span>All changes are saved to your workspace.</span>
-      </div>
+      <cl-table-pagination
+        [total]="filtered.length"
+        [page]="currentPage"
+        [pageSize]="pageSize"
+        (pageChanged)="page = $event"
+        (pageSizeChanged)="pageSize = $event; page = 1"
+      />
     </section>
     <router-outlet />
     @if (quick) {
-      <div class="modal-overlay">
-        <form
-          class="confirm-dialog"
-          clDialogFocus
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="quick-title"
-          (ngSubmit)="saveQuick()"
-        >
-          <h2 id="quick-title">Quick Edit {{ kind }}</h2>
+      <cl-admin-modal
+        [title]="'Quick Edit ' + kind"
+        [description]="quick.title"
+        [icon]="kind === 'page' ? 'pages' : 'posts'"
+        [busy]="busy"
+        (dismissed)="quick = null"
+      >
+        <form class="quick-edit-dialog" (ngSubmit)="saveQuick()">
           <label class="standalone-field"
             >Title<input
               name="title"
+              autofocus
               [(ngModel)]="quick.title"
               required
               maxlength="200"
@@ -401,19 +615,69 @@ import { analyzeSeo } from "../../../../shared/seo";
           @if (role(quick)) {
             <p class="field-note">
               This page serves the {{ role(quick) }} route. Clear or reassign
-              that role in General Settings before changing its status.
+              that role in Reading Settings before changing its status.
             </p>
+          }
+          @if (kind === "page") {
+            <label class="standalone-field"
+              >Order
+              <input
+                type="number"
+                name="order"
+                step="1"
+                [(ngModel)]="quickOrder"
+                required
+              />
+              <small
+                >Lower numbers appear first in the Pages table. Default:
+                0.</small
+              >
+            </label>
           }
           @if (error) {
             <p class="error">{{ error }}</p>
           }
           <div class="dialog-actions">
-            <button type="button" class="button" (click)="quick = null">
+            <button
+              type="button"
+              class="button"
+              [disabled]="busy"
+              (click)="quick = null"
+            >
               Cancel</button
             ><button class="button primary" [disabled]="busy">Save</button>
           </div>
         </form>
-      </div>
+      </cl-admin-modal>
+    }
+    @if (bulkDeleteConfirm) {
+      <cl-admin-modal
+        title="Delete selected entries?"
+        icon="trash"
+        [busy]="busy"
+        (dismissed)="bulkDeleteConfirm = false"
+      >
+        <p>
+          {{ selection.ids.size }} {{ kind }}s and their revision history will
+          be permanently removed. Assigned page routes will fall back to their
+          defaults.
+        </p>
+        <div class="dialog-actions">
+          <button
+            class="button"
+            [disabled]="busy"
+            (click)="bulkDeleteConfirm = false"
+          >
+            Cancel</button
+          ><button
+            class="button danger"
+            [disabled]="busy"
+            (click)="runBulk('delete')"
+          >
+            Delete selected
+          </button>
+        </div>
+      </cl-admin-modal>
     }
     @if (deleting) {
       <div class="modal-overlay">
@@ -452,6 +716,105 @@ import { analyzeSeo } from "../../../../shared/seo";
   `,
 })
 export class ContentComponent implements OnInit {
+  private bulkCdr = inject(ChangeDetectorRef);
+  selection = new TableSelection();
+  page = 1;
+  pageSize = 10;
+  sortKey = "";
+  sortDirection = 1;
+  bulkProgress = 0;
+  bulkTotal = 0;
+  bulkMessage = "";
+  bulkDeleteConfirm = false;
+  bulkActions = [
+    { value: "published", label: "Publish" },
+    { value: "draft", label: "Move to draft" },
+    { value: "pending", label: "Submit for review" },
+    { value: "delete", label: "Delete" },
+  ];
+  get currentPage() {
+    return Math.min(
+      this.page,
+      Math.max(1, Math.ceil(this.filtered.length / this.pageSize)),
+    );
+  }
+  get paginated() {
+    return this.filtered.slice(
+      (this.currentPage - 1) * this.pageSize,
+      this.currentPage * this.pageSize,
+    );
+  }
+  get visibleIds() {
+    return this.paginated.map((c) => c.id);
+  }
+  sort(key: string) {
+    this.sortDirection = this.sortKey === key ? -this.sortDirection : 1;
+    this.sortKey = key;
+    this.page = 1;
+  }
+  chooseBulk(action: string) {
+    if (this.busy || !this.selection.ids.size) return;
+    if (action === "delete") this.bulkDeleteConfirm = true;
+    else void this.runBulk(action);
+  }
+  async runBulk(action: string) {
+    if (
+      this.busy ||
+      !["published", "draft", "pending", "delete"].includes(action)
+    )
+      return;
+    const items = this.all.filter((c) => this.selection.ids.has(c.id));
+    if (!items.length) return;
+    this.busy = true;
+    this.bulkProgress = 0;
+    this.bulkTotal = items.length;
+    this.bulkMessage = "";
+    const failures: string[] = [];
+    let completed = 0;
+    try {
+      for (const c of items) {
+        try {
+          await this.api.request(
+            action === "delete"
+              ? "/admin/content/" + encodeURIComponent(c.id)
+              : "/admin/content",
+            action === "delete" ? "DELETE" : "POST",
+            action === "delete"
+              ? {}
+              : {
+                  ...c,
+                  status: action,
+                  ...(action === "published"
+                    ? { publishAt: new Date().toISOString() }
+                    : {}),
+                  expectedUpdatedAt: c.updatedAt,
+                },
+          );
+          this.selection.ids.delete(c.id);
+          completed++;
+        } catch (error) {
+          failures.push(c.title + ": " + (error as Error).message);
+        }
+        this.bulkProgress++;
+        this.bulkCdr.markForCheck();
+      }
+      this.bulkMessage =
+        completed +
+        " of " +
+        items.length +
+        " entries updated." +
+        (failures.length
+          ? " Failed entries remain selected. " + failures.join(" ")
+          : "");
+      await this.api.load();
+    } catch (error) {
+      this.bulkMessage += " " + (error as Error).message;
+    } finally {
+      this.busy = false;
+      this.bulkDeleteConfirm = false;
+      this.bulkCdr.markForCheck();
+    }
+  }
   indexingId = "";
   async instantIndex(c: Content) {
     if (this.indexingId) return;
@@ -475,6 +838,7 @@ export class ContentComponent implements OnInit {
       .state()
       ?.plugins.some((p) => p.id === "com.colossal.seo" && p.active);
   }
+  tableColumns = inject(ContentTableState);
   api = inject(ApiService);
   route = inject(ActivatedRoute);
   router = inject(Router);
@@ -484,6 +848,7 @@ export class ContentComponent implements OnInit {
   roleFilter = "All";
   authorFilter = "";
   quick: Content | null = null;
+  quickOrder = 0;
   get authors() {
     return [...new Set(this.all.map((c) => c.author).filter(Boolean))].sort();
   }
@@ -532,7 +897,7 @@ export class ContentComponent implements OnInit {
     ).length;
   }
   get filtered() {
-    return this.all.filter(
+    const items = this.all.filter(
       (c) =>
         (this.roleFilter === "All" ||
           (this.role(c) || "Unassigned") === this.roleFilter) &&
@@ -543,19 +908,32 @@ export class ContentComponent implements OnInit {
           .toLowerCase()
           .includes(this.search.toLowerCase()),
     );
+    if (this.sortKey)
+      return items.sort(
+        (a, b) =>
+          String(a[this.sortKey as keyof Content] ?? "").localeCompare(
+            String(b[this.sortKey as keyof Content] ?? ""),
+          ) * this.sortDirection,
+      );
+    return this.kind === "page"
+      ? items.sort((a, b) => (a.details?.order ?? 0) - (b.details?.order ?? 0))
+      : items;
   }
   open(c?: Content) {
+    if (this.busy) return;
     this.router.navigate([c ? "edit" : "new", ...(c ? [c.id] : [])], {
       relativeTo: this.route,
       queryParams: {},
     });
   }
   quickEdit(c: Content) {
+    if (this.busy) return;
     this.quick = structuredClone(c);
+    this.quickOrder = c.details?.order ?? 0;
     this.error = "";
   }
   async saveQuick() {
-    if (!this.quick) return;
+    if (!this.quick || this.busy) return;
     this.busy = true;
     this.error = "";
     try {
@@ -564,6 +942,9 @@ export class ContentComponent implements OnInit {
         "POST",
         {
           ...this.quick,
+          ...(this.kind === "page"
+            ? { details: { ...this.quick.details, order: this.quickOrder } }
+            : {}),
           expectedUpdatedAt: this.quick.updatedAt,
         },
         this.kind === "post" ? "Post updated." : "Page updated.",

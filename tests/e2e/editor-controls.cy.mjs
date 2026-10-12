@@ -1,3 +1,4 @@
+import { setAdminMode } from "./helpers/admin-mode.mjs";
 describe("Shared editor controls and surfaces", () => {
   const headers = { Origin: "http://127.0.0.1:4201" };
   let themeId;
@@ -11,7 +12,11 @@ describe("Shared editor controls and surfaces", () => {
       .get(selector)
       .should((frames) =>
         expect(
-          frames[0].contentDocument.querySelector("#cl-editor-scrollbars"),
+          frames[0].contentDocument.querySelector(
+            selector === ".content-live-preview"
+              ? "#cl-content-canvas-styles"
+              : "#cl-editor-scrollbars",
+          ),
         ).not.eq(null),
       )
       .then((frames) => {
@@ -42,6 +47,12 @@ describe("Shared editor controls and surfaces", () => {
       url: "/api/admin/editor/preferences",
       headers,
       body: { colorMode: "dark", walkthroughVersion: 1 },
+    });
+    cy.request({
+      method: "POST",
+      url: "/api/admin/settings",
+      headers,
+      body: { adminColorMode: "dark" },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -171,7 +182,7 @@ describe("Shared editor controls and surfaces", () => {
         expect(sidebar.scrollHeight).gt(sidebar.clientHeight);
       });
     expectScrollbars();
-    control("Switch to light mode").click();
+    setAdminMode("light");
     expectScrollbars();
     for (const name of [
       "Theme preview",
@@ -236,7 +247,7 @@ describe("Shared editor controls and surfaces", () => {
       ["Editor settings", "Editor settings"],
     ];
     for (const mode of ["dark", "light"]) {
-      if (mode === "light") control("Switch to light mode").click();
+      if (mode === "light") setAdminMode("light");
       for (const [width, height] of [
         [1280, 800],
         [390, 380],
@@ -312,18 +323,14 @@ describe("Shared editor controls and surfaces", () => {
     cy.get("@category").click().should("have.attr", "aria-expanded", "true");
     control("List view").click();
     cy.get(".outline-document-settings").click();
-    cy.get("cl-dimensions-picker details")
-      .as("size")
-      .should("not.have.attr", "open");
-    cy.get("@size")
-      .find("summary")
-      .should((summary) => {
-        expect(getComputedStyle(summary[0], "::after").content).eq('""');
-        expect(getComputedStyle(summary[0]).paddingLeft).eq("10px");
-      });
-    cy.get("@size").find("summary").click();
-    cy.get("@size").should("have.attr", "open");
-    cy.get("@size").find(".cl-picker-body").should("be.visible");
+    cy.get("cl-dimensions-picker .cl-picker-trigger")
+      .should("have.attr", "aria-expanded", "false")
+      .click()
+      .should("have.attr", "aria-expanded", "true");
+    cy.get(".cl-picker-popover:popover-open").should("be.visible");
+    cy.get(".cl-picker-popover:popover-open").trigger("keydown", {
+      key: "Escape",
+    });
     cy.get(".theme-inspector cl-appearance-picker-panel cl-color-picker")
       .first()
       .find(".cl-picker-trigger")
@@ -336,14 +343,18 @@ describe("Shared editor controls and surfaces", () => {
     cy.get(".cl-picker-popover:popover-open").trigger("keydown", {
       key: "Escape",
     });
-    cy.get("@size").should("have.attr", "open");
+    cy.get("cl-dimensions-picker .cl-picker-trigger").should(
+      "have.attr",
+      "aria-expanded",
+      "false",
+    );
   });
 
   it("uses themed prompts with focus and Escape behavior, and blocks workspace shortcuts while a modal is open", () => {
     visit();
     control("Outline").click();
     for (const mode of ["dark", "light"]) {
-      if (mode === "light") control("Switch to light mode").click();
+      if (mode === "light") setAdminMode("light");
       control("Editor settings").click();
       cy.get('[aria-label="Editor settings"]:popover-open')
         .contains("button", "Save as new theme")
@@ -374,7 +385,7 @@ describe("Shared editor controls and surfaces", () => {
     }
   });
 
-  it("confirms last-column removal from List, Outline, and Inspector with cancel and undo", () => {
+  it("confirms last-column removal from List, Outline, and block toolbar with cancel and undo", () => {
     visit();
     cy.window().then((win) =>
       expect(win.colossalThemeEditor.canRun("remove", "controls-column")).eq(
@@ -412,13 +423,13 @@ describe("Shared editor controls and surfaces", () => {
     cy.get('[aria-label="Toggle Inspector"]').then((button) => {
       if (button.attr("aria-pressed") !== "true") cy.wrap(button).click();
     });
-    cy.get(".theme-inspector .theme-actions")
-      .contains("button", /^\s*Delete\s*$/)
-      .click();
+    cy.get(
+      '.contextual-block-toolbar button[aria-label="Delete block"]',
+    ).click();
     modal().contains("button", "Cancel").click();
-    cy.get(".theme-inspector .theme-actions")
-      .contains("button", /^\s*Delete\s*$/)
-      .click();
+    cy.get(
+      '.contextual-block-toolbar button[aria-label="Delete block"]',
+    ).click();
     modal().contains("button", "Remove Columns").click();
     control("Undo").click();
     cy.get(".shared-editor").trigger("keydown", shortcut);

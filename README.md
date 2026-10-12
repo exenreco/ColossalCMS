@@ -479,6 +479,22 @@ Create at `/admin/posts/new` or `/admin/pages/new`. Edit at `/admin/posts/edit/:
 
 Dirty content autosaves every 60 seconds. Manual updates use `expectedUpdatedAt` to reject stale changes. Leaving with unsaved work prompts for confirmation. Deleting content removes its revisions and repairs assigned page roles.
 
+### Admin tables and bulk actions
+
+**Screen options** in the Posts and Pages top toolbar controls table column visibility. Changes apply immediately and persist in browser storage per signed-in member, separately for each screen. **Views (30 days)** counts successful public document GET loads over a rolling 30-day window. Repeat loads count; this is not a unique-visitor metric. Tracking starts with this update, stores no IP addresses or visitor identifiers, and excludes previews, maintenance, 404, HEAD, speculative requests, and render API calls. View records are retained for 60 days so Dashboard charts can compare the latest 30 days with the preceding 30 days. Older records are removed when admin totals are read; deleting content clears its view records. **Actions** provides edit and public-page shortcuts. SEO is available when its plugin is active; Title and row selection always remain visible.
+
+Posts and Pages support sortable Title, Status, and Updated columns, search/filter controls, and pagination with 10, 25, 50, or 100 rows per page. Check a row to select it; the header checkbox selects only the rows on the current page. Selections remain when changing pages or filters until cleared or successfully processed.
+
+- Content bulk actions: Publish, Move to draft, Submit for review, and Delete. Publishing sets the publication time to now. Deletion requires confirmation and removes revision history.
+- Plugin bulk actions in list view: Install, Activate, Deactivate, and Uninstall. Core plugins are excluded, only administrators can apply actions, and uploaded plugin activation remains disabled. Uninstall requires confirmation.
+- Bulk actions use the existing content/plugin APIs, one entry at a time. They are not an atomic transaction: successful entries are retained and deselected; failed entries remain selected with an error summary. Content updates retain optimistic concurrency checks and existing routing restrictions.
+
+Dashboard includes a separate **Page and post views** panel with daily UTC line charts, current and previous totals, and percentage changes. Hover, touch, or use arrow keys to inspect daily values; expand **View daily data** for an accessible table. The rolling windows do not overlap, and their boundary dates contain partial days. Tracking begins when the feature is deployed; unavailable historical data is not backfilled.
+
+A shared **SEO overview** chart panel appears on Dashboard when Advanced SEO is installed and active, and above Site Identity on the SEO plugin page. It shows the score distribution, average score, Pages/Posts breakdowns, and pillar-content coverage using the same analysis as the editor and content tables. These are content-readiness scores, not search rankings or search-engine traffic.
+
+Quick Edit opens in the reusable `AdminModalComponent` details drawer. It supports the admin color mode, a blurred backdrop, scrolling content, keyboard focus trapping, Escape/backdrop dismissal, and focus restoration. Dismissal is disabled while saving. `BulkActionsComponent`, `TablePaginationComponent`, and `TableSelection` share selection and table controls across content and plugin administration.
+
 ### Routing
 
 <table>
@@ -499,15 +515,15 @@ Dirty content autosaves every 60 seconds. Manual updates use `expectedUpdatedAt`
     </tbody>
 </table>
 
-In **Settings → General → Page titles**, choose Page title + Site title, Site title + Page title, Page title only, or Site title only, and select a separator (`|`, `·`, `-`, `—`, or `:`). Browser titles and SEO previews use this format, including each entry’s meta-title override. Existing sites retain Page title · Site title until changed.
+In **Settings → Reading → Page titles**, choose Page title + Site title, Site title + Page title, Page title only, or Site title only, and select a separator (`|`, `·`, `-`, `—`, or `:`). Browser titles and SEO previews use this format, including each entry’s meta-title override. Existing sites retain Page title · Site title until changed.
 
-In **Settings → General → Pages & Routing**, choose published Home, Posts, and 404 pages. A page can have one role. The 404 page is excluded from normal navigation and ordinary page routing. Unpublishing/deleting assigned pages clears the role and creates a notice.
+In **Settings → Reading → Pages & Routing**, choose published Home, Posts, and 404 pages. A page can have one role. The 404 page is excluded from normal navigation and ordinary page routing. Unpublishing/deleting assigned pages clears the role and creates a notice.
 
 ## Block editors
 
 Theme, maintenance, page, and post editors share a vertical tool rail, a left sidebar for Blocks/List/Outline and an independent right Inspector sidebar, a full canvas, responsive viewports, contextual block tools, and a compact top toolbar. Outline stays on the left while Inspector opens on the right using the toggle between Save and Editor settings. Both sidebars can stay open on desktop; the canvas fills their remaining space. The centered template chooser opens with Ctrl/Cmd+K. Save keeps a draft; publishing and additional actions are in Editor settings. Theme preview opens an editable metadata popover, and template preview displays the selected template or shared part.
 
-The workspace supports persistent per-user light/dark mode and a one-time interactive walkthrough that can be skipped or replayed. See [Shared editor workspace](docs/developers/shared-editor.md) for components, menus, preferences, preview behavior, shortcuts, and integration details.
+The workspace inherits Light, Dark, or System mode from Settings > Appearance and supports a one-time per-user interactive walkthrough that can be skipped or replayed. See [Shared editor workspace](docs/developers/shared-editor.md) for components, menus, preferences, preview behavior, shortcuts, and integration details.
 
 <table>
     <caption>Block Editors</caption>
@@ -616,6 +632,10 @@ Safe source is retained on that block. Scripts, styles, frames, embeds, forms, u
 </table>
 
 Panel and viewport menus support arrow-key navigation. Editor shortcuts defer to typing where applicable. Sidebar and menu transitions respect reduced-motion preferences.
+
+**Settings > Appearance** controls the dashboard and every shared editor with **Light**, **Dark**, or **System** mode. System follows the device color scheme and updates live. This workspace setting persists in the database; the editor has no separate mode toggle. Public theme colors remain controlled by the Theme Editor.
+
+**Settings > General > Site icon** supplies the image for Site Identity blocks, browser tabs, and SEO previews. The separate Logo URL field has been removed. Existing Logo URLs become external image entries in the media library when no Site Icon was selected; an existing Site Icon takes precedence. Migrated URLs remain externally hosted until replaced with a library upload, and do not require downloading files during startup.
 
 ## Themes and templates
 
@@ -754,6 +774,10 @@ Search/filter the shared library, switch grid/list, upload/select media, edit me
             <td>MP3, WAV, OGG</td>
         </tr>
         <tr>
+            <td>Document</td>
+            <td>PDF (validated header and end marker)</td>
+        </tr>
+        <tr>
             <td>Video</td>
             <td>MP4, WebM</td>
         </tr>
@@ -764,7 +788,7 @@ Search/filter the shared library, switch grid/list, upload/select media, edit me
     </tbody>
 </table>
 
-Images/audio/video must be **25 MB or smaller**. Model validation supports **100 MB**, but both Node adapters currently cap the whole HTTP request at **51 MiB**, including multipart overhead. Keep Node model uploads below that ceiling. Worker hosts may add limits. `MAX_MEDIA_UPLOAD_BYTES`, when supplied as an API binding, can lower the media limit but cannot raise the Node request ceiling.
+Images/PDFs/audio/video must be **25 MB or smaller**. Model validation supports **100 MB**, but both Node adapters currently cap the whole HTTP request at **51 MiB**, including multipart overhead. Keep Node model uploads below that ceiling. Worker hosts may add limits. `MAX_MEDIA_UPLOAD_BYTES`, when supplied as an API binding, can lower the media limit but cannot raise the Node request ceiling.
 
 Images require alt text. Models receive generated schematic posters; opening one loads its interactive preview. Uploaded models cannot reference remote resources. Direct model URLs must use HTTPS and permit browser CORS access.
 
@@ -1232,7 +1256,7 @@ All paths are relative to the site's origin. IDs identify persisted records. `/a
         <tr>
             <td>GET / PUT</td>
             <td>`/api/admin/editor/preferences`</td>
-            <td>Current member’s light/dark mode and one-time walkthrough state</td>
+            <td>Current member’s one-time walkthrough state; legacy color mode is retained for API compatibility but does not override Settings > Appearance</td>
         </tr>
         <tr>
             <td>POST</td>

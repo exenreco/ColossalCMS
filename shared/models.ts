@@ -6,6 +6,7 @@ export interface RichNode {
   content?: RichNode[];
 }
 export interface ContentDetails {
+  order?: number;
   seo?: import("./seo").SeoOptions;
   contentMain?: Record<string, unknown>;
   richText?: RichNode;
@@ -30,6 +31,7 @@ export interface Content {
   author: string;
   details?: ContentDetails;
   templateId?: string;
+  views30Days?: number;
 }
 export interface Plugin {
   id: string;
@@ -71,12 +73,14 @@ export interface Plugin {
   pending?: boolean;
 }
 export interface Settings {
+  adminColorMode?: "light" | "dark" | "system";
   titleFormat?: "page-site" | "site-page" | "page-only" | "site-only";
   titleSeparator?: string;
   title: string;
   tagline: string;
   accent: string;
-  logo: string;
+  /** Legacy input retained for compatibility; Site Icon supplies identity images. */
+  logo?: string;
   announcement: string;
   siteIconId?: string;
   postRouting?: "home" | "page";
@@ -97,7 +101,7 @@ export interface Activity {
 }
 export interface MediaItem {
   id: string;
-  type: "image" | "audio" | "video" | "model";
+  type: "image" | "audio" | "video" | "model" | "pdf";
   name: string;
   altText: string;
   caption: string;
@@ -122,6 +126,7 @@ export interface MediaItem {
   updatedAt: string;
 }
 export interface State {
+  viewAnalytics?: import("./content-analytics").ViewAnalytics;
   user: Member;
   content: Content[];
   activeTheme?: { manifest: import("./theme-models").ThemeManifest };

@@ -236,6 +236,7 @@ export async function validateDetails(db, details = {}) {
   if (typeof details !== "object" || Array.isArray(details) || details === null)
     fail("Invalid editor options.");
   const clean = {
+    order: details.order ?? 0,
     ...(details.seo !== undefined ? { seo: validateSeo(details.seo) } : {}),
     featuredImageId: details.featuredImageId || "",
     categories: details.categories || [],
@@ -244,6 +245,8 @@ export async function validateDetails(db, details = {}) {
     metaDescription: details.metaDescription || "",
     panelData: details.panelData || {},
   };
+  if (!Number.isSafeInteger(clean.order))
+    fail("Page order must be a whole number.");
   for (const key of ["categories", "tags"])
     if (
       !Array.isArray(clean[key]) ||

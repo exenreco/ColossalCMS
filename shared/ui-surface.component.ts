@@ -5,11 +5,13 @@ import {
   EventEmitter,
   HostListener,
   Input,
+  inject,
   OnChanges,
   OnDestroy,
   Output,
   ViewChild,
 } from "@angular/core";
+import { AdminAppearanceService } from "./admin-appearance.service";
 
 /** Shared top-layer surface: anchored menus/popovers or a native modal dialog. */
 @Component({
@@ -29,7 +31,7 @@ import {
     [attr.popover]="kind === 'modal' ? null : 'manual'"
     [attr.role]="kind === 'menu' ? 'menu' : 'dialog'"
     [attr.aria-label]="label"
-    [attr.data-color-mode]="colorMode"
+    [attr.data-color-mode]="colorMode || appearance.colorMode()"
     [style.width.px]="width"
     [style.left.px]="kind === 'modal' ? null : left"
     [style.top.px]="kind === 'modal' ? null : top"
@@ -52,6 +54,7 @@ import {
   </dialog>`,
 })
 export class UiSurfaceComponent implements AfterViewInit, OnChanges, OnDestroy {
+  appearance = inject(AdminAppearanceService);
   @Input() open = false;
   @Input() kind: "menu" | "popover" | "modal" = "popover";
   @Input() anchor?: HTMLElement;

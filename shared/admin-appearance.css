@@ -1,0 +1,540 @@
+/* Dashboard colors are independent of public theme and canvas content colors. */
+:root[data-admin-mode="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e0e;
+  --surface: #0a0a0a;
+  --ink: #e8ece9;
+  --muted: #afd5bd;
+  --green: #56df95;
+  --border: #1f2020;
+  --rail: #000000;
+  --cl-skeleton-base: #1f2020;
+  --cl-skeleton-glare: #ffffff12;
+}
+:root[data-admin-mode="light"] {
+  color-scheme: light;
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(
+    .topbar,
+    .panel,
+    .stat-card,
+    .plugin-card,
+    .theme-card,
+    .settings-panel,
+    .modal,
+    .modal-footer,
+    .confirm-dialog,
+    .auth-card,
+    .media-card,
+    .table-scroll
+  ):not(.shared-editor *) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(input, select, textarea):not(.shared-editor *):not(.search-field *):not(
+    [type="checkbox"]
+  ):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+    [type="color"]
+  ) {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(input, select, textarea):not(.shared-editor *):not(.search-field *):not(
+    [type="checkbox"]
+  ):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+    [type="color"]
+  ):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--green) 55%, transparent);
+  outline-offset: 2px;
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(input, textarea):not(.shared-editor *)::placeholder {
+  color: var(--muted);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(input, select, textarea, .button, .content-icon, .info-note):not(
+    .shared-editor *
+  ):not(.primary):not(.danger):not([type="checkbox"]):not([type="radio"]) {
+  background: var(--bg);
+  color: var(--ink);
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(th, .table-footer, .modal-heading):not(.shared-editor *) {
+  background: var(--surface);
+  color: var(--muted);
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(td, .settings-section, .panel-heading):not(.shared-editor *) {
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"] cl-admin tbody tr:nth-child(odd) {
+  background: #ffffff03;
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(
+    .content-title strong,
+    .breadcrumbs strong,
+    .form-content label,
+    .form-content p,
+    .form-content small,
+    .field-note,
+    .confirm-dialog p,
+    .stat-value
+  ):not(.shared-editor *) {
+  color: var(--ink);
+}
+html[data-admin-mode="dark"] cl-admin .sidebar {
+  background: var(--rail);
+}
+html[data-admin-mode="dark"] cl-admin .plugin-view-toggle {
+  background: var(--surface);
+}
+html[data-admin-mode="dark"] cl-admin .plugin-view-toggle button {
+  color: var(--muted);
+}
+html[data-admin-mode="dark"] cl-admin .plugin-view-toggle button.selected {
+  background: #56df951a;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .plugin-table tbody tr:nth-child(odd) {
+  background: #ffffff04;
+}
+html[data-admin-mode="dark"] cl-admin .plugin-table tbody tr:nth-child(even) {
+  background: var(--surface);
+}
+
+/* One navigation list: expanding reveals labels beside the same icons. */
+cl-admin .sidebar {
+  width: 64px;
+  padding: 0;
+  border-right: 1px solid #ffffff12;
+  overflow: hidden;
+  transition: width 0.18s ease;
+}
+cl-admin .admin-navigation-panel {
+  height: 100%;
+  padding: 14px 8px 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #1f2020 transparent;
+}
+cl-admin .navigation-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 8px;
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  background: #ffffff0a;
+  margin-bottom: 0;
+}
+cl-admin .navigation-toggle cl-icon {
+  width: 18px;
+  height: 18px;
+}
+cl-admin .sidebar .brand {
+  padding: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ffffff12;
+  font-size: 20px;
+  gap: 10px;
+}
+cl-admin .sidebar .brand-mark {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  font-size: 24px;
+}
+cl-admin .sidebar .brand-cms {
+  font-size: 10px;
+  top: 4px;
+}
+cl-admin .sidebar .brand > span:last-child,
+cl-admin .sidebar .workspace,
+cl-admin .sidebar .nav-label,
+cl-admin .sidebar nav a > span,
+cl-admin .sidebar .profile > div,
+cl-admin .sidebar .help-link > span,
+cl-admin .sidebar .help-link cl-icon:last-child {
+  display: none;
+}
+cl-admin .sidebar nav {
+  position: relative;
+  gap: 4px;
+  margin-top: 16px;
+}
+cl-admin .sidebar nav a {
+  min-height: 36px;
+  padding: 9px;
+  border-radius: 7px;
+  gap: 12px;
+  font-size: 13px;
+  white-space: nowrap;
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+cl-admin .sidebar nav cl-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+cl-admin .sidebar nav a.active {
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+  font-weight: 400;
+}
+cl-admin .sidebar nav[aria-label="System navigation"] {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #ffffff12;
+}
+cl-admin .sidebar .workspace-note {
+  display: none;
+}
+cl-admin .sidebar-bottom {
+  padding-top: 24px;
+}
+cl-admin .sidebar .help-link {
+  padding: 12px 9px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+cl-admin .sidebar .profile {
+  padding: 10px 0;
+  flex-direction: column;
+  gap: 10px;
+}
+cl-admin .main-shell {
+  margin-left: 64px;
+  transition: margin-left 0.18s ease;
+}
+cl-admin .topbar {
+  height: 64px;
+}
+cl-admin .nav-expanded .sidebar {
+  width: 240px;
+}
+cl-admin .nav-expanded .main-shell {
+  margin-left: 240px;
+}
+cl-admin .nav-expanded .sidebar .brand > span:last-child,
+cl-admin .nav-expanded .sidebar .nav-label,
+cl-admin .nav-expanded .sidebar nav a > span,
+cl-admin .nav-expanded .sidebar .profile > div,
+cl-admin .nav-expanded .sidebar .help-link > span {
+  display: block;
+}
+cl-admin .nav-expanded .sidebar .workspace {
+  display: flex;
+  margin: 24px 0;
+  padding: 10px;
+}
+cl-admin .sidebar .workspace::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -13px;
+  border-bottom: 1px solid #ffffff12;
+  pointer-events: none;
+}
+cl-admin .sidebar .workspace {
+  position: relative;
+}
+html[data-admin-mode="dark"] cl-admin .sidebar .workspace::after {
+  border-bottom-color: var(--border);
+}
+cl-admin .nav-expanded .sidebar .nav-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 0;
+}
+cl-admin .nav-expanded .sidebar .extension-label {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #ffffff12;
+}
+html[data-admin-mode="dark"] cl-admin .sidebar .extension-label {
+  border-top-color: var(--border);
+}
+cl-admin .nav-expanded .sidebar nav {
+  margin-top: 8px;
+  margin-left: 12px;
+}
+cl-admin .sidebar nav a {
+  position: relative;
+}
+cl-admin .sidebar .navigation-tree a::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: calc(-50% - 4px);
+  height: calc(100% + 4px);
+  width: 8px;
+  border-left: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0 0 0 7px;
+  color: #afd5bd;
+  opacity: 0.3;
+  pointer-events: none;
+  display: none;
+  transition:
+    color 0.16s ease,
+    opacity 0.16s ease;
+}
+cl-admin .sidebar .navigation-tree a:first-child::before {
+  top: 0;
+  height: 50%;
+}
+cl-admin .nav-expanded .sidebar .navigation-tree a::before {
+  display: block;
+}
+cl-admin .sidebar .navigation-tree a.active::before,
+cl-admin .sidebar .navigation-tree a:hover::before,
+cl-admin .sidebar .navigation-tree a:focus-visible::before {
+  color: var(--green);
+  opacity: 1;
+}
+cl-admin .sidebar nav a:hover,
+cl-admin .sidebar nav a:focus-visible {
+  background: #ffffff08;
+  color: white;
+}
+cl-admin .nav-expanded .sidebar nav[aria-label="System navigation"] {
+  border-top: 0;
+  padding-top: 0;
+}
+cl-admin .nav-expanded .sidebar .profile {
+  flex-direction: row;
+}
+cl-admin .sidebar nav a:focus-visible,
+cl-admin .navigation-toggle:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+html[data-admin-mode="dark"] cl-admin .sidebar {
+  background: var(--rail);
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"] cl-admin .sidebar .brand {
+  border-bottom-color: var(--border);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(
+    .sidebar nav a,
+    .nav-label,
+    .workspace small,
+    .profile small,
+    .help-link,
+    .navigation-toggle,
+    .breadcrumbs,
+    .breadcrumbs cl-icon
+  ) {
+  color: var(--muted);
+}
+html[data-admin-mode="dark"] cl-admin .sidebar nav a.active {
+  background: transparent;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .sidebar nav a:hover,
+html[data-admin-mode="dark"] cl-admin .sidebar nav a:focus-visible {
+  background: #56df9514;
+  color: var(--green);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  .sidebar
+  nav[aria-label="System navigation"] {
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"] cl-admin .button.primary:not(.shared-editor *) {
+  background: var(--green);
+  color: #07150d;
+  border-color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .maintenance-switch {
+  color: var(--ink);
+}
+html[data-admin-mode="dark"] cl-admin .settings-nav button.active {
+  background: #56df9514;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin :is(.avatar, .workspace-avatar) {
+  background: #56df951a;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .search-field {
+  background: var(--bg);
+}
+html[data-admin-mode="dark"] cl-admin .tabs button {
+  color: var(--muted);
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.tabs button.selected, .core-visibility-toggle.selected) {
+  background: #56df9514;
+  color: var(--green);
+}
+html[data-admin-mode="dark"] cl-admin .tabs button span {
+  background: #ffffff0a;
+}
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.page-heading p, .panel-heading p):not(.shared-editor *) {
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  cl-admin .sidebar .navigation-tree a::before {
+    display: block;
+  }
+  cl-admin .sidebar {
+    width: 240px;
+  }
+  cl-admin .navigation-toggle {
+    display: none;
+  }
+  cl-admin .sidebar .brand > span:last-child,
+  cl-admin .sidebar .nav-label,
+  cl-admin .sidebar nav a > span,
+  cl-admin .sidebar .profile > div,
+  cl-admin .sidebar .help-link > span {
+    display: block;
+  }
+  cl-admin .sidebar .workspace {
+    display: flex;
+    margin: 24px 0;
+    padding: 10px;
+  }
+  cl-admin .sidebar .nav-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-bottom: 0;
+  }
+  cl-admin .sidebar .extension-label {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #ffffff12;
+  }
+  cl-admin .sidebar nav {
+    margin-top: 8px;
+    margin-left: 12px;
+  }
+  cl-admin .sidebar nav[aria-label="System navigation"] {
+    border: 0;
+    padding-top: 0;
+  }
+  cl-admin .sidebar .profile {
+    flex-direction: row;
+  }
+  cl-admin .main-shell,
+  cl-admin .nav-expanded .main-shell {
+    margin-left: 0;
+  }
+  cl-admin .topbar {
+    height: 63px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  cl-admin .sidebar,
+  cl-admin .main-shell,
+  cl-admin .sidebar nav a,
+  cl-admin .sidebar .navigation-tree a::before {
+    transition: none;
+  }
+}
+
+/* Shared plugin form controls use the same field treatment as Settings. */
+cl-admin
+  .admin-plugin-form
+  :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+cl-admin .admin-plugin-form :is(input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--green) 55%, transparent);
+  outline-offset: 2px;
+}
+cl-admin .admin-plugin-form input::placeholder {
+  color: var(--muted);
+}
+html[data-admin-mode="dark"] cl-admin .dashboard-notice {
+  background: color-mix(in srgb, #f3c66c 8%, var(--surface));
+  border-color: color-mix(in srgb, #f3c66c 25%, var(--border));
+  color: var(--ink);
+}
+html[data-admin-mode="dark"] cl-admin .dashboard-notice > cl-icon {
+  color: #f3c66c;
+}
+html[data-admin-mode="dark"] cl-admin .row-actions .icon-button:hover {
+  background: #282828;
+}
+html[data-admin-mode="dark"] cl-admin .plugin-tile.extension {
+  background: #202020;
+  color: #9fc77b;
+}
+html[data-admin-mode="dark"] cl-admin .plugin-card > p {
+  color: #949494;
+}
+html[data-admin-mode="dark"] cl-admin .plugin-banner {
+  background: #1e1e1e;
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"] cl-admin .plugin-banner-icon,
+html[data-admin-mode="dark"] cl-admin .plugin-banner .badge {
+  background: #2c2c2c;
+}
+html[data-admin-mode="dark"] cl-google-ads {
+  --ads-preview-background: #323232;
+}
+html[data-admin-mode="dark"] cl-production-connections {
+  --connection-status-background: #363636;
+}
+html[data-admin-mode="dark"] cl-login-security {
+  --status-success-bg: #173326;
+  --status-success-text: #56df95;
+  --status-warning-bg: #3c2817;
+  --status-warning-text: #fdba74;
+  --status-error-bg: #3b1c20;
+  --status-error-text: #fca5a5;
+  --status-info-bg: #1b2b43;
+  --status-info-text: #93c5fd;
+}
+
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.stat-icon, .plugin-callout-icon, .activity-symbol) {
+  background: #1a1a1a;
+}

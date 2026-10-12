@@ -60,7 +60,7 @@ interface Run {
     }
     .connection-status span {
       padding: 8px 12px;
-      background: #e9f0e6;
+      background: var(--connection-status-background, #e9f0e6);
       border-radius: 8px;
       font-size: 13px;
     }

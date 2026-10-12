@@ -13,7 +13,7 @@ const [image] = await this.media.open({
 if (image) this.imageId = image.id;
 ```
 
-The result is `Promise<MediaItem[]>`; cancellation resolves to an empty array. Accepted types are image, audio and video. Omit accept for all types. Persist the stable ID, never a storage filename. The shared grid supports filters, search, metadata editing and uploads.
+The result is `Promise<MediaItem[]>`; cancellation resolves to an empty array. Accepted types are image, audio, video, model and pdf. Omit accept for all types. Persist the stable ID, never a storage filename. The shared grid supports a media-type dropdown, search, metadata editing and uploads. PDFs have document thumbnails and an Open PDF action in their details panel.
 
 Files live in the local storage adapter during development. Production needs an R2-compatible `STORAGE` binding supporting put, get (body and arrayBuffer), and delete. File URLs are `/api/media/:id/file`. Only media used in published content or as the site icon is anonymously readable. Range requests support native audio/video players. SVGs must be static with no scripting, external references, animation, or embedded active elements.
 

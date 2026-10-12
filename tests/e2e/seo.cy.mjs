@@ -17,13 +17,18 @@ describe("Advanced SEO plugin", () => {
   });
   it("configures site-wide schema and shows the content overview", () => {
     cy.visit("/admin/settings");
+    cy.contains("button", "Reading").click();
     cy.get('select[name="titleFormat"]').select("site-page");
     cy.get('select[name="titleSeparator"]').select("|");
     cy.contains("strong", "Colossal Journal | About us").should("be.visible");
     cy.intercept("POST", "/api/admin/settings").as("titleSettings");
-    cy.contains("button", "Save changes").click();
+    cy.get('select[name="titleFormat"]')
+      .closest("form")
+      .contains("button", "Save changes")
+      .click();
     cy.wait("@titleSettings").its("response.statusCode").should("eq", 200);
     cy.reload();
+    cy.contains("button", "Reading").click();
     cy.get('select[name="titleFormat"]').should("have.value", "site-page");
     cy.visit("/admin/seo");
     cy.contains("h1", "Make your content easier to discover.").should(

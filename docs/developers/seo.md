@@ -4,7 +4,7 @@ Advanced SEO (`com.colossal.seo`) extends the existing meta title and descriptio
 
 ## Workflow
 
-**Settings → General → Page titles** controls the shared title layout: Page title + Site title, Site title + Page title, Page title only, or Site title only. Choose `|`, `·`, `-`, `—`, or `:` as the separator. Existing sites retain Page title · Site title until changed. An entry's meta title supplies the page-title portion; explicit social-title overrides remain independent. Search previews, title-length scoring, browser titles and default social titles use the same format.
+**Settings → Reading → Page titles** controls the shared title layout: Page title + Site title, Site title + Page title, Page title only, or Site title only. Choose `|`, `·`, `-`, `—`, or `:` as the separator. Existing sites retain Page title · Site title until changed. An entry's meta title supplies the page-title portion; explicit social-title overrides remain independent. Search previews, title-length scoring, browser titles and default social titles use the same format.
 
 1. Open **SEO** in the admin navigation and set the production site URL, publisher identity and default page/post schemas.
 2. Open a page or post, show the right Inspector and expand **SEO**.

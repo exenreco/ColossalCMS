@@ -1,10 +1,12 @@
+import { SeoOverviewComponent } from "../../../../shared/seo-overview.component";
 import { Component, OnInit, inject, ChangeDetectorRef } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ApiService } from "../../../../shared/api.service";
-import { SCHEMA_TYPES, analyzeSeo } from "../../../../shared/seo";
+import { SCHEMA_TYPES } from "../../../../shared/seo";
 @Component({
   standalone: true,
-  imports: [FormsModule],
+  host: { class: "admin-plugin-form" },
+  imports: [FormsModule, SeoOverviewComponent],
   styles: `
     .seo-settings {
       display: grid;
@@ -45,6 +47,7 @@ import { SCHEMA_TYPES, analyzeSeo } from "../../../../shared/seo";
     @if (error) {
       <p role="alert">{{ error }}</p>
     }
+    <cl-seo-overview />
     @if (settings) {
       <section class="panel">
         <div class="seo-settings">
@@ -162,19 +165,7 @@ import { SCHEMA_TYPES, analyzeSeo } from "../../../../shared/seo";
           </button>
         </div>
       </section>
-    }
-    <section class="panel audit">
-      <h2>Content SEO overview</h2>
-      <p>
-        {{ summary.total }} entries · {{ summary.good }} good ·
-        {{ summary.fair }} need improvement · {{ summary.poor }} low scores ·
-        {{ summary.pillar }} pillar entries
-      </p>
-      <p>
-        Pages and Posts tables display live scores. Open an entry to see the
-        checklist, desktop/mobile preview, schema, social and indexing controls.
-      </p>
-    </section>`,
+    } `,
 })
 export class SeoComponent implements OnInit {
   generateIndexKey() {
@@ -186,20 +177,6 @@ export class SeoComponent implements OnInit {
   error = "";
   busy = false;
   types = SCHEMA_TYPES.filter((t) => t !== "Automatic" && t !== "FAQPage");
-  get summary() {
-    const entries = this.api.state()?.content || [];
-    const scores = entries.map((entry) =>
-      analyzeSeo(entry, this.api.state()?.settings),
-    );
-    return {
-      pillar: entries.filter((entry) => entry.details?.seo?.pillarContent)
-        .length,
-      total: entries.length,
-      good: scores.filter((s) => s.level === "good").length,
-      fair: scores.filter((s) => s.level === "fair").length,
-      poor: scores.filter((s) => s.level === "poor").length,
-    };
-  }
   async ngOnInit() {
     try {
       this.settings = await this.api.request("/admin/seo");

@@ -2,6 +2,9 @@
 @import "./theme-outline.css";
 @import "./pickers/pickers.css";
 @import "./editor-shell.css";
+@import "./admin-appearance.css";
+@import "./admin-tables.css";
+@import "./admin-analytics.css";
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
   --bg: #f7f9f8;
@@ -2628,6 +2631,45 @@ body {
   gap: 16px;
   flex-wrap: wrap;
 }
+.media-type-filter {
+  min-width: 150px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.document-chip {
+  display: inline-flex;
+  color: var(--muted);
+}
+.document-chip cl-icon {
+  width: 48px;
+  height: 48px;
+}
+.media-document-preview {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.media-drawer,
+.media-detail-preview,
+.upload-dropzone {
+  color: var(--ink);
+}
+.media-drawer :is(input, textarea) {
+  background: var(--bg);
+  color: var(--ink);
+  border-color: var(--border);
+}
+html[data-admin-mode="dark"] .media-card-info .icon-button:hover,
+html[data-admin-mode="dark"] .media-drawer .icon-button:hover,
+html[data-admin-mode="dark"] .media-tools .icon-button:hover {
+  background: #282828;
+}
 .media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -2635,10 +2677,10 @@ body {
   padding: 24px;
 }
 .media-card {
-  border: 1px solid #e1e6dc;
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: white;
+  background: var(--surface);
   min-width: 0;
 }
 .media-card.chosen {
@@ -2652,7 +2694,7 @@ body {
   justify-content: center;
   width: 100%;
   height: 165px;
-  background: #edf0e8;
+  background: var(--bg);
   border: 0;
   cursor: pointer;
   overflow: hidden;
@@ -2676,7 +2718,7 @@ body {
   letter-spacing: 1px;
 }
 .audio-chip {
-  color: #6b855b;
+  color: var(--green);
   font-size: 28px;
   letter-spacing: 4px;
 }
@@ -2710,7 +2752,7 @@ body {
 .media-card-info small {
   display: block;
   margin-top: 6px;
-  color: #72806c;
+  color: var(--muted);
   font-size: 12px;
   text-transform: capitalize;
 }
@@ -2737,10 +2779,10 @@ body {
 }
 .media-empty > cl-icon {
   display: inline-block;
-  background: #eef1e7;
+  background: var(--bg);
   padding: 16px;
   border-radius: 50%;
-  color: #668458;
+  color: var(--green);
   margin-bottom: 8px;
 }
 .media-picker-layer {
@@ -2758,7 +2800,7 @@ body {
   z-index: 150;
 }
 .media-picker-dialog {
-  background: #fafbf6;
+  background: var(--surface);
   border-radius: 16px;
   width: min(1120px, 94vw);
   max-height: 90dvh;
@@ -2768,7 +2810,7 @@ body {
 }
 .media-picker-dialog .modal-heading {
   padding: 24px 28px;
-  border-bottom: 1px solid #e1e6dc;
+  border-bottom: 1px solid var(--border);
 }
 .media-picker-dialog h2 {
   margin: 4px 0 0;
@@ -2788,13 +2830,13 @@ body {
   justify-content: flex-end;
   gap: 10px;
   padding: 18px 28px;
-  border-top: 1px solid #e1e6dc;
+  border-top: 1px solid var(--border);
 }
 .modal-footer .muted {
   margin-right: auto;
 }
 .media-drawer {
-  background: #fff;
+  background: var(--surface);
   width: min(490px, 100vw);
   height: 100dvh;
   overflow-y: auto;
@@ -2804,15 +2846,15 @@ body {
   padding: 24px;
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--surface);
   z-index: 1;
-  border-bottom: 1px solid #e1e6dc;
+  border-bottom: 1px solid var(--border);
 }
 .media-detail-preview {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f2eb;
+  background: var(--bg);
   min-height: 190px;
   padding: 24px;
 }
@@ -2838,14 +2880,14 @@ body {
   overflow-wrap: anywhere;
 }
 .media-metadata dt {
-  color: #6c7c66;
+  color: var(--muted);
 }
 .media-metadata dd {
   margin: 0;
 }
 .in-use-note {
   padding: 14px;
-  background: #faf4e5;
+  background: color-mix(in srgb, var(--green) 8%, var(--surface));
   border-radius: 8px;
   font-size: 13px;
 }
@@ -2866,9 +2908,9 @@ body {
   padding: 0 0 20px;
 }
 .upload-dropzone {
-  border: 1.5px dashed #9aa98f;
+  border: 1.5px dashed var(--muted);
   border-radius: 12px;
-  background: #f7f9f2;
+  background: var(--bg);
   padding: 30px 20px;
   display: flex !important;
   text-align: center;
@@ -2885,7 +2927,7 @@ body {
 }
 .upload-dropzone span {
   font-size: 12px;
-  color: #6b7c63;
+  color: var(--muted);
 }
 progress {
   accent-color: #547845;

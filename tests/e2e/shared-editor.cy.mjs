@@ -1,3 +1,4 @@
+import { setAdminMode } from "./helpers/admin-mode.mjs";
 describe("Shared editor workspace", () => {
   const headers = { Origin: "http://127.0.0.1:4201" };
   let themeId;
@@ -28,6 +29,12 @@ describe("Shared editor workspace", () => {
       url: "/api/admin/editor/preferences",
       headers,
       body: { colorMode: "dark", walkthroughVersion: 1 },
+    });
+    cy.request({
+      method: "POST",
+      url: "/api/admin/settings",
+      headers,
+      body: { adminColorMode: "dark" },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -177,7 +184,7 @@ describe("Shared editor workspace", () => {
     viewport("Mobile");
     cy.get(".theme-live-preview").should("have.css", "width", "390px");
     expectBackground("rgba(35, 69, 103, 0.502)");
-    control("Switch to light mode").click();
+    setAdminMode("light");
     expectBackground("rgba(35, 69, 103, 0.502)");
     cy.get(".theme-inspector cl-gradient-picker .cl-picker-trigger").click();
     cy.get(".theme-inspector cl-gradient-picker")
@@ -285,7 +292,7 @@ describe("Shared editor workspace", () => {
     viewport("Tablet");
     cy.get(".theme-live-preview").should("have.css", "width", "768px");
     viewport("Fit canvas");
-    control("Switch to light mode").click();
+    setAdminMode("light");
     cy.get(".shared-editor").should("have.attr", "data-color-mode", "light");
     control("Theme preview").click();
     cy.get('[aria-label="Theme details"]:popover-open')

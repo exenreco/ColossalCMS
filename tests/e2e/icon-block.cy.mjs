@@ -1,3 +1,4 @@
+import { setAdminMode } from "./helpers/admin-mode.mjs";
 Cypress.Commands.addQuery(
   "iconCanvas",
   function (selector, frame = ".theme-live-preview") {
@@ -22,7 +23,9 @@ describe("Icon block and shared picker", () => {
   };
   const modal = () => cy.get('dialog[aria-label="Choose an icon"][open]');
   const pick = (name) => {
-    cy.get("cl-icon-picker").contains("button", "Choose icon").click();
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
+      .contains("button", "Choose icon")
+      .click();
     modal().find('input[aria-label="Search icons"]').clear().type(name);
     modal().find(`[data-icon-name="${name}"]`).click();
     modal().should("not.exist");
@@ -41,6 +44,12 @@ describe("Icon block and shared picker", () => {
       url: "/api/admin/editor/preferences",
       headers,
       body: { walkthroughVersion: 1, colorMode: "dark" },
+    });
+    cy.request({
+      method: "POST",
+      url: "/api/admin/settings",
+      headers,
+      body: { adminColorMode: "dark" },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -61,13 +70,16 @@ describe("Icon block and shared picker", () => {
     control("Blocks").click();
     cy.get('[data-library-block="core/icon"]').click();
     inspector();
-    cy.get(".icon-picker-current")
-      .should("contain", "Star")
-      .find("svg path")
-      .should("exist");
-    cy.iconCanvas("svg.theme-icon").should("have.attr", "width", "32");
+    cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+      "contain",
+      "No icon selected",
+    );
+    cy.iconCanvas('[aria-label="Icon placeholder"]').should("exist");
     pick("shield");
-    cy.get(".icon-picker-current").should("contain", "Shield");
+    cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+      "contain",
+      "Shield",
+    );
     cy.get(".theme-inspector")
       .contains("label", "Icon size (px)")
       .find("input")
@@ -81,45 +93,60 @@ describe("Icon block and shared picker", () => {
       .contains("label", "Accessible label")
       .find("input")
       .type("Protected content");
-    cy.iconCanvas("svg.theme-icon")
+    cy.iconCanvas('svg.theme-icon[aria-label="Protected content"]')
       .should("have.attr", "width", "64")
       .and("have.attr", "role", "img")
       .and("have.attr", "aria-label", "Protected content");
     control("Save draft").click();
     cy.wait("@draft");
     cy.reload();
-    cy.iconCanvas("svg.theme-icon")
+    cy.iconCanvas('svg.theme-icon[aria-label="Protected content"]')
       .should("have.attr", "aria-label", "Protected content")
       .and("have.attr", "width", "64");
   });
   it("supports empty search, cancel, keyboard selection, Escape, focus return and undo", () => {
     cy.visit("/admin/themes/edit/" + themeId);
-    cy.iconCanvas("svg.theme-icon").click();
-    cy.get("cl-icon-picker").contains("button", "Choose icon").click();
+    cy.iconCanvas('svg.theme-icon[aria-label="Protected content"]').click();
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
+      .contains("button", "Choose icon")
+      .click();
     modal()
       .find('input[aria-label="Search icons"]')
       .should("be.focused")
       .type("no-such-icon");
     modal().should("contain", "No icons match");
     modal().contains("button", "Cancel").click();
-    cy.get(".icon-picker-current").should("contain", "Shield");
-    cy.get("cl-icon-picker")
+    cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+      "contain",
+      "Shield",
+    );
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
       .contains("button", "Choose icon")
       .should("be.focused")
       .click();
     modal().find('input[aria-label="Search icons"]').type("star");
     modal().find('[data-icon-name="star"]').focus().type("{enter}");
-    cy.get(".icon-picker-current").should("contain", "Star");
+    cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+      "contain",
+      "Star",
+    );
     control("Undo").click();
-    cy.get(".icon-picker-current").should("contain", "Shield");
-    cy.get("cl-icon-picker").contains("button", "Choose icon").click();
+    cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+      "contain",
+      "Shield",
+    );
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
+      .contains("button", "Choose icon")
+      .click();
     modal().find('input[aria-label="Search icons"]').type("{esc}");
     modal().should("not.exist");
-    cy.get("cl-icon-picker")
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
       .contains("button", "Choose icon")
       .should("be.focused");
-    control("Switch to light mode").click();
-    cy.get("cl-icon-picker").contains("button", "Choose icon").click();
+    setAdminMode("light");
+    cy.get(".editor-inspector-sidebar cl-icon-picker")
+      .contains("button", "Choose icon")
+      .click();
     modal().should((panel) => {
       const color = panel[0].ownerDocument.defaultView.getComputedStyle(
         panel[0],
@@ -136,7 +163,10 @@ describe("Icon block and shared picker", () => {
       cy.get('[data-library-block="core/icon"]').click();
       inspector();
       pick("moon");
-      cy.get(".icon-picker-current").should("contain", "Moon");
+      cy.get(".editor-inspector-sidebar .icon-picker-current").should(
+        "contain",
+        "Moon",
+      );
       cy.iconCanvas("svg.theme-icon", ".content-live-preview").should(
         "have.attr",
         "width",

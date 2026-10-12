@@ -111,14 +111,39 @@ export function parseSql(sql, args = []) {
   let result;
   if (kind === "SELECT") {
     const columns = [];
+    const dateFields = {};
+    let countAlias;
     do {
       if (peek() === ",") take();
-      columns.push(peek() === "*" ? take() : field());
+      if (peek() === "COUNT") {
+        if (countAlias) throw new Error("Unsupported database aggregation.");
+        take();
+        eat("(");
+        eat("*");
+        eat(")");
+        eat("AS");
+        countAlias = name();
+        columns.push(countAlias);
+      } else if (peek() === "DATE") {
+        take();
+        eat("(");
+        const source = name();
+        eat(")");
+        eat("AS");
+        const column = name();
+        if (columns.includes(column))
+          throw new Error("Unsupported database aggregation.");
+        dateFields[column] = source;
+        columns.push(column);
+      } else columns.push(peek() === "*" ? take() : field());
     } while (peek() === ",");
     eat("FROM");
     const table = name();
     let alias;
-    if (peek() && !["WHERE", "ORDER", "LIMIT", "JOIN"].includes(peek()))
+    if (
+      peek() &&
+      !["WHERE", "ORDER", "LIMIT", "JOIN", "GROUP"].includes(peek())
+    )
       alias = name();
     let join;
     if (peek() === "JOIN") {
@@ -132,6 +157,29 @@ export function parseSql(sql, args = []) {
       join = { table: joined, alias: joinAlias, left, right };
     }
     const filter = where();
+    let group;
+    if (peek() === "GROUP") {
+      take();
+      eat("BY");
+      group = [name()];
+      while (peek() === ",") {
+        take();
+        group.push(name());
+      }
+    }
+    if (
+      (countAlias || group || Object.keys(dateFields).length) &&
+      (!countAlias ||
+        !group ||
+        join ||
+        alias ||
+        columns.length !== group.length + 1 ||
+        new Set(columns).size !== columns.length ||
+        !group.every(
+          (field) => columns.includes(field) && field !== countAlias,
+        ))
+    )
+      throw new Error("Unsupported database aggregation.");
     const sort = {};
     if (peek() === "ORDER") {
       take();
@@ -151,6 +199,7 @@ export function parseSql(sql, args = []) {
         throw new Error("Invalid query limit.");
     }
     result = { kind, table, columns, filter, sort, limit, alias, join };
+    if (countAlias) result.aggregate = { group, countAlias, dateFields };
   } else if (kind === "INSERT") {
     let ignore = false;
     if (peek() === "OR") {
@@ -251,6 +300,35 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
       options = session ? { session } : {};
     if (q.kind === "SELECT") {
       let rows;
+      if (q.aggregate) {
+        const { group, countAlias, dateFields } = q.aggregate;
+        const expression = (field) =>
+          dateFields[field]
+            ? { $substrBytes: ["$" + dateFields[field], 0, 10] }
+            : "$" + field;
+        const single = group.length === 1;
+        const id = single
+          ? expression(group[0])
+          : Object.fromEntries(group.map((f) => [f, expression(f)]));
+        const pipeline = [
+          { $match: q.filter },
+          { $group: { _id: id, [countAlias]: { $sum: 1 } } },
+          {
+            $project: {
+              _id: 0,
+              ...Object.fromEntries(
+                group.map((f) => [f, single ? "$_id" : "$_id." + f]),
+              ),
+              [countAlias]: 1,
+            },
+          },
+        ];
+        if (Object.keys(q.sort).length) pipeline.push({ $sort: q.sort });
+        if (q.limit) pipeline.push({ $limit: q.limit });
+        return {
+          results: await collection.aggregate(pipeline, options).toArray(),
+        };
+      }
       if (q.join) {
         if (!schema[q.join.table])
           throw new Error("Unknown joined collection.");

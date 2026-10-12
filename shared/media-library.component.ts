@@ -24,7 +24,8 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
           <p class="eyebrow">YOUR CREATIVE LIBRARY</p>
           <h1>A home for every asset.</h1>
           <p>
-            Images, sounds, and stories in motion. Ready when you need them.
+            Images, documents, sounds, and stories in motion. Ready when you
+            need them.
           </p>
         </div>
         <button class="button primary" (click)="uploadOpen = true">
@@ -34,22 +35,23 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
     }
     <section class="panel media-library">
       <div class="content-toolbar">
-        <div class="tabs" aria-label="Media type">
+        <select
+          class="media-type-filter"
+          aria-label="Media type"
+          [(ngModel)]="filter"
+        >
           @for (type of types; track type.value) {
             @if (
               !accept.length ||
               type.value === "all" ||
               accept.includes($any(type.value))
             ) {
-              <button
-                [class.selected]="filter === type.value"
-                (click)="filter = type.value"
-              >
+              <option [value]="type.value">
                 {{ type.label }}
-              </button>
+              </option>
             }
           }
-        </div>
+        </select>
         <div class="media-tools">
           <label class="search-field"
             ><cl-icon name="search" /><input
@@ -112,6 +114,9 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
                   <span class="audio-chip" aria-hidden="true">◇</span>
                 }
                 <span class="media-type-overlay">3D model</span>
+              } @else if (item.type === "pdf") {
+                <span class="document-chip"><cl-icon name="document" /></span>
+                <span class="media-type-overlay">PDF</span>
               } @else if (item.type === "video") {
                 <video
                   [src]="item.url + '#t=0.1'"
@@ -141,7 +146,7 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
                 [attr.aria-label]="'Details for ' + item.name"
                 (click)="openDetails(item)"
               >
-                <cl-icon name="settings" />
+                <cl-icon name="details" />
               </button>
             </div>
           </article>
@@ -155,7 +160,7 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
               {{
                 search
                   ? "Try a different search or filter."
-                  : "Upload an image, audio clip, or video to get started."
+                  : "Upload an image, PDF, audio clip, video, or 3D model to get started."
               }}
             </p>
             <button class="button" (click)="uploadOpen = true">
@@ -201,11 +206,13 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
               ><cl-icon name="media" /><strong>{{
                 file?.name || "Drop a file here or browse"
               }}</strong
-              ><span>Images, audio, or video · up to 25 MB</span
+              ><span
+                >Images, PDFs, audio, or video · up to 25 MB; 3D models · up to
+                100 MB</span
               ><input
                 type="file"
                 aria-label="Choose media file"
-                accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.mp3,.wav,.ogg,.mp4,.webm,.glb,.gltf,.zip"
+                accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.mp3,.wav,.ogg,.mp4,.webm,.glb,.gltf,.zip"
                 (change)="picked($event)"
             /></label>
             @if (fileIsImage) {
@@ -280,6 +287,19 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
                 [url]="detail.url"
                 [alt]="detail.altText || detail.name"
               />
+            } @else if (detail.type === "pdf") {
+              <div class="media-document-preview">
+                <span class="document-chip"><cl-icon name="document" /></span>
+                <strong>{{ detail.name }}</strong>
+                <a
+                  class="button"
+                  [href]="detail.url"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <cl-icon name="external" />Open PDF
+                </a>
+              </div>
             } @else if (detail.type === "audio") {
               <audio [src]="detail.url" controls></audio>
             } @else {
@@ -417,13 +437,14 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
 export class MediaLibraryComponent {
   api = inject(ApiService);
   @Input() picker = false;
-  @Input() accept: ("image" | "audio" | "video" | "model")[] = [];
+  @Input() accept: MediaItem["type"][] = [];
   @Input() multiple = false;
   @Input() selectedIds: string[] = [];
   @Output() selectionChange = new EventEmitter<MediaItem[]>();
   types = [
     { value: "all", label: "All" },
     { value: "image", label: "Images" },
+    { value: "pdf", label: "PDFs" },
     { value: "audio", label: "Audio" },
     { value: "video", label: "Video" },
     { value: "model", label: "3D models" },

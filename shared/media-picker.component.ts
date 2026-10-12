@@ -5,6 +5,7 @@ import { UiSurfaceComponent } from "./ui-surface.component";
 import { IconComponent } from "./icon.component";
 import { MediaItem } from "./models";
 import { ApiService } from "./api.service";
+import { AdminAppearanceService } from "./admin-appearance.service";
 @Component({
   selector: "cl-media-picker",
   standalone: true,
@@ -58,12 +59,9 @@ import { ApiService } from "./api.service";
 export class MediaPickerComponent {
   selection = inject(MediaSelectionService);
   api = inject(ApiService);
+  appearance = inject(AdminAppearanceService);
   get colorMode(): "light" | "dark" {
-    return document
-      .querySelector(".shared-editor")
-      ?.getAttribute("data-color-mode") === "dark"
-      ? "dark"
-      : "light";
+    return this.appearance.colorMode();
   }
   items: MediaItem[] = [];
   initialIds: string[] = [];

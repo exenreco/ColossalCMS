@@ -301,7 +301,7 @@ export async function ensureThemes(db) {
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
-      "glossy-brand-layout-v1",
+      "glossy-brand-layout-v3",
       (document) => {
         if (isGlasseyTheme(document.manifest?.id))
           migrateGlasseyDocument(document);
@@ -657,6 +657,7 @@ export async function publicThemeRenderData(request, env) {
     ? ctx.content.details?.metaTitle || ctx.content.title
     : "";
   const metadata = {
+    viewContentId: !token && ctx.kind !== "404" ? ctx.content?.id || "" : "",
     ...(await seoMetadata(env.DB, ctx, u.origin, !!token)),
     title: formatPageTitle(entryTitle, ctx.settings),
     description:

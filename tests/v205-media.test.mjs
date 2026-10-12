@@ -2,6 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import worker from "../server/worker.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
+import { inspectMedia } from "../server/media.mjs";
 
 const DB = localDatabase(),
   blobs = new Map();
@@ -55,6 +56,59 @@ const form = (filename, text, mime) => {
   data.append("altText", "A simple cube model");
   return data;
 };
+
+test("PDF upload, metadata editing, serving, replacement and deletion preserve type", async () => {
+  const pdf =
+    "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n";
+  const uploaded = await send(
+    "/media",
+    "POST",
+    form("resume.pdf", pdf, "application/pdf"),
+  );
+  assert.equal(uploaded.status, 201, await uploaded.clone().text());
+  const item = await uploaded.json();
+  assert.equal(item.type, "pdf");
+  assert.equal(item.mime, "application/pdf");
+  assert.equal(item.metadata.size, Buffer.byteLength(pdf));
+  const file = await send(`/media/${item.id}/file`);
+  assert.equal(file.status, 200);
+  assert.equal(file.headers.get("content-type"), "application/pdf");
+  assert.equal(await file.text(), pdf);
+  const edited = await send(
+    `/media/${item.id}`,
+    "PATCH",
+    JSON.stringify({
+      name: "My resume",
+      altText: "",
+      caption: "Resume",
+      description: "Experience",
+      tags: ["resume"],
+    }),
+  );
+  assert.equal(edited.status, 200);
+  assert.equal((await edited.json()).name, "My resume");
+  const replacement = await send(
+    `/media/${item.id}/replace`,
+    "POST",
+    form("new.pdf", pdf.replace("1.4", "1.7"), "application/pdf"),
+  );
+  assert.equal(replacement.status, 200);
+  assert.equal((await replacement.json()).id, item.id);
+  assert.equal((await send(`/media/${item.id}`, "DELETE", "{}")).status, 200);
+  assert.equal((await send(`/media/${item.id}/file`)).status, 404);
+});
+
+test("PDF validation rejects disguised files, incomplete documents and mismatched MIME types", () => {
+  for (const [text, mime] of [
+    ["<html>not a PDF</html>", "application/pdf"],
+    ["%PDF-1.7\ntruncated", "application/pdf"],
+    ["%PDF-1.7\n%%EOF\n", "image/png"],
+  ]) {
+    assert.throws(() =>
+      inspectMedia(new TextEncoder().encode(text), "file.pdf", mime),
+    );
+  }
+});
 
 test("model upload stores metadata and a safe poster; remote references are rejected", async () => {
   const model = JSON.stringify({

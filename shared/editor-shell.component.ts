@@ -222,22 +222,6 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
             />
           </button>
           <button
-            class="editor-tool editor-mode-toggle"
-            [attr.aria-label]="
-              preferences.colorMode() === 'dark'
-                ? 'Switch to light mode'
-                : 'Switch to dark mode'
-            "
-            [title]="
-              preferences.colorMode() === 'dark' ? 'Light mode' : 'Dark mode'
-            "
-            (click)="toggleColorMode()"
-          >
-            <cl-editor-icon
-              [name]="preferences.colorMode() === 'dark' ? 'sun' : 'moon'"
-            />
-          </button>
-          <button
             class="editor-save"
             data-tour="save"
             aria-label="Save draft"
@@ -686,11 +670,6 @@ export class EditorShellComponent implements OnInit {
   }
   closeOverlay() {
     this.overlay = "";
-  }
-  toggleColorMode() {
-    void this.preferences.update({
-      colorMode: this.preferences.colorMode() === "dark" ? "light" : "dark",
-    });
   }
   @HostListener("document:keydown", ["$event"])
   shortcut(event: KeyboardEvent) {

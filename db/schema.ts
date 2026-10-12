@@ -2,6 +2,7 @@ import {
   sqliteTable,
   text,
   integer,
+  index,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 export const content = sqliteTable(
@@ -26,6 +27,18 @@ export const config = sqliteTable("config", {
   id: text("id").primaryKey(),
   value: text("value").notNull(),
 });
+export const contentViews = sqliteTable(
+  "content_views",
+  {
+    id: text("id").primaryKey(),
+    contentId: text("content_id").notNull(),
+    viewedAt: text("viewed_at").notNull(),
+  },
+  (t) => [
+    index("idx_content_views_time").on(t.viewedAt),
+    index("idx_content_views_content").on(t.contentId),
+  ],
+);
 export const authCredentials = sqliteTable("auth_credentials", {
   id: text("id").primaryKey(),
   passwordHash: text("password_hash").notNull(),

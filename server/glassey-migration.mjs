@@ -35,6 +35,7 @@ export function migrateGlasseyDocument(document) {
   upgradeGlasseyNativeBlocks(document);
   upgradeGlossyHeader(document);
   upgradeGlossyBrandLayout(document);
+  upgradeGlossyBrandSize(document);
   return document;
 }
 
@@ -212,6 +213,31 @@ ${marker}
 .theme-root .c27-brand .theme-site-name{margin:0}
 .theme-root .c27-brand .theme-site-tagline{margin:0;font-size:8px;font-weight:400;color:#9297a0;letter-spacing:1.3px;line-height:1.5}
 @media(max-width:600px){.theme-root .c27-brand .theme-site-name{font-size:10px;letter-spacing:.6px}.theme-root .c27-brand .theme-site-tagline{font-size:7px;letter-spacing:.6px}}
+`;
+  delete document.compiled;
+}
+
+function upgradeGlossyBrandSize(document) {
+  const marker = "/* Glossy balanced header branding */";
+  if ((document.css || "").includes(marker)) return;
+  const visit = (node) => {
+    if (!node) return;
+    if (
+      node.type === "core/site-brand" &&
+      (node.settings?.classes || "").split(/\s+/).includes("c27-brand-logo") &&
+      (node.settings.logoHeight == null ||
+        [38, 56].includes(node.settings.logoHeight))
+    )
+      node.settings.logoHeight = 46;
+    node.children?.forEach(visit);
+  };
+  visit(document.parts?.header);
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-brand .theme-site-tagline{font-size:12px;letter-spacing:.8px}
+@media(max-width:600px){.theme-root .c27-brand .theme-site-tagline{font-size:10px;letter-spacing:.4px}}
 `;
   delete document.compiled;
 }

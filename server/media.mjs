@@ -25,6 +25,7 @@ const MIME = {
   ogg: "audio/ogg",
   mp4: "video/mp4",
   webm: "video/webm",
+  pdf: "application/pdf",
 };
 export function inspectMedia(bytes, filename, mime) {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -33,7 +34,7 @@ export function inspectMedia(bytes, filename, mime) {
   const expected = MIME[ext];
   if (!expected)
     fail(
-      "Supported files: PNG, JPG, GIF, WebP, SVG, MP3, WAV, OGG, MP4, and WebM.",
+      "Supported files: PNG, JPG, GIF, WebP, SVG, PDF, MP3, WAV, OGG, MP4, WebM, GLB, glTF, and model ZIP packages.",
     );
   if (
     mime &&
@@ -50,6 +51,10 @@ export function inspectMedia(bytes, filename, mime) {
     new TextDecoder().decode(bytes.slice(start, end));
   const head = ascii(0, 16);
   let valid = false;
+  if (ext === "pdf")
+    valid =
+      /^%PDF-\d\.\d/.test(head) &&
+      /%%EOF\s*$/.test(ascii(Math.max(0, bytes.length - 1024), bytes.length));
   if (ext === "png")
     valid =
       bytes[0] === 137 &&
@@ -138,7 +143,7 @@ export function inspectMedia(bytes, filename, mime) {
     valid = true;
   }
   if (!valid) fail("The file signature does not match its media type.");
-  const type = expected.split("/")[0];
+  const type = ext === "pdf" ? "pdf" : expected.split("/")[0];
   let metadata = { size: bytes.length };
   if (type === "image") {
     try {
@@ -193,7 +198,7 @@ export async function handleMedia(request, env, user, path) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const info = inspectMedia(bytes, file.name, file.type);
     if (info.type !== "model" && file.size > 25 * 1024 * 1024)
-      fail("Images, audio and video must be 25 MB or smaller.", 413);
+      fail("Images, PDFs, audio and video must be 25 MB or smaller.", 413);
     if (current && current.type !== info.type)
       fail("Replacement must keep the same media type.");
     const alt = String(form.get("altText") ?? current?.alt_text ?? "").trim();
@@ -264,7 +269,7 @@ export async function handleMedia(request, env, user, path) {
       if (posterKey) await storage.delete(posterKey);
       throw e;
     }
-    if (current) await storage.delete(current.storage_key);
+    if (current?.storage_key) await storage.delete(current.storage_key);
     if (current?.type === "model" && parse(current.metadata).posterStorageKey)
       await storage.delete(parse(current.metadata).posterStorageKey);
     return json(
@@ -324,7 +329,7 @@ export async function handleMedia(request, env, user, path) {
         { references: refs },
       );
     // Delete metadata only after blob deletion succeeds, so failure remains recoverable.
-    await storage.delete(current.storage_key);
+    if (current.storage_key) await storage.delete(current.storage_key);
     if (current.type === "model" && parse(current.metadata).posterStorageKey)
       await storage.delete(parse(current.metadata).posterStorageKey);
     await db.prepare("DELETE FROM media WHERE id=?").bind(id).run();
@@ -340,6 +345,16 @@ export async function serveMedia(request, env, id, identity, poster = false) {
   if (poster && record.type !== "model") fail("Model poster not found.", 404);
   const refs = await references(env.DB, id);
   if (!refs.some((r) => r.published)) await identity(request, env.DB);
+  const externalUrl = parse(record.metadata).externalUrl;
+  if (!poster && externalUrl && !record.storage_key) {
+    const target = new URL(externalUrl);
+    if (target.protocol !== "https:" || target.username || target.password)
+      fail("This external image URL is invalid.");
+    return new Response(null, {
+      status: 302,
+      headers: { Location: target.href, "Cache-Control": "no-cache" },
+    });
+  }
   const file = await env.STORAGE?.get(
     poster && record.type === "model"
       ? parse(record.metadata).posterStorageKey

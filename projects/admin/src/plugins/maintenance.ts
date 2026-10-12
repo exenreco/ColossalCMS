@@ -3,6 +3,8 @@ import { FormsModule } from "@angular/forms";
 import { Router, RouterLink, RouterOutlet } from "@angular/router";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { ApiService } from "../../../../shared/api.service";
+import { IconComponent } from "../../../../shared/icon.component";
+import { AdminModalComponent } from "../../../../shared/admin-modal.component";
 import { ThemeSummary } from "../../../../shared/theme-models";
 import { ThemesListSkeletonComponent } from "../../../../shared/skeleton-compositions";
 import { themeBodyAttributes } from "../../../../shared/theme-body";
@@ -11,7 +13,14 @@ import { MaintenanceState } from "../maintenance-state";
 @Component({
   selector: "cl-maintenance",
   standalone: true,
-  imports: [FormsModule, RouterLink, RouterOutlet, ThemesListSkeletonComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    RouterOutlet,
+    ThemesListSkeletonComponent,
+    IconComponent,
+    AdminModalComponent,
+  ],
   styles: `
     .maintenance-settings {
       padding: 24px;
@@ -136,41 +145,49 @@ import { MaintenanceState } from "../maintenance-state";
               ><span class="theme-card-badge">{{
                 l.active ? "Selected layout" : "Maintenance layout"
               }}</span>
+              <div class="theme-preview-overlay">
+                <button
+                  type="button"
+                  class="theme-details-trigger"
+                  [attr.aria-label]="'Layout details for ' + l.name"
+                  (click)="detailId = l.id"
+                >
+                  <span>Layout details</span>
+                </button>
+                <div class="theme-preview-actions">
+                  @if (!l.active) {
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [disabled]="busy"
+                      [attr.aria-label]="'Use ' + l.name + ' layout'"
+                      title="Use layout"
+                      (click)="use(l)"
+                    >
+                      <cl-icon name="check" /><span>Use layout</span>
+                    </button>
+                  }
+                  <a
+                    class="icon-button"
+                    [href]="'/api/maintenance/' + l.id + '/preview'"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.aria-label]="'Preview ' + l.name"
+                    title="Preview layout"
+                    ><cl-icon name="eye" /><span>Preview</span></a
+                  >
+                </div>
+              </div>
             </div>
             <div class="theme-card-body">
               <div class="theme-card-title">
                 <h2>{{ l.name }}</h2>
                 <span>{{ l.templates.length }} templates</span>
               </div>
-              <p>{{ l.description }}</p>
               <small
                 >{{ l.hasDraft ? "Draft saved · " : "" }}Edit with the full
                 block editor and Inspector.</small
               >
-              <div class="theme-card-actions">
-                <a class="button primary" [routerLink]="['edit', l.id]"
-                  >Edit layout</a
-                >
-                <button class="button" [disabled]="busy" (click)="use(l)">
-                  Use layout
-                </button>
-                <a
-                  class="button"
-                  [href]="'/api/maintenance/' + l.id + '/preview'"
-                  target="_blank"
-                  rel="noopener"
-                  >Preview</a
-                >
-                @if (!l.active) {
-                  <button
-                    class="button danger"
-                    [disabled]="busy"
-                    (click)="remove(l)"
-                  >
-                    Delete
-                  </button>
-                }
-              </div>
             </div>
           </article>
         }
@@ -180,6 +197,79 @@ import { MaintenanceState } from "../maintenance-state";
         templates in the editor, or save an edited layout as a copy.
       </p>
     </section>
+    @if (detail; as l) {
+      <cl-admin-modal
+        [title]="l.name"
+        icon="themes"
+        description="Maintenance layout details"
+        [busy]="busy"
+        [width]="640"
+        (dismissed)="detailId = ''"
+      >
+        <div class="theme-details-content">
+          <div class="theme-thumbnail theme-details-preview">
+            <iframe
+              [title]="l.name + ' layout preview'"
+              sandbox=""
+              tabindex="-1"
+              [srcdoc]="thumbnails[l.id] || ''"
+            ></iframe>
+          </div>
+          <p class="theme-details-description">{{ l.description }}</p>
+          <dl class="theme-details-meta">
+            <dt>Version</dt>
+            <dd>{{ l.version }}</dd>
+            <dt>Author</dt>
+            <dd>{{ l.author }}</dd>
+            <dt>Templates</dt>
+            <dd>{{ l.templates.length }}</dd>
+            <dt>Status</dt>
+            <dd>
+              {{ l.active ? "Selected layout" : "Available layout"
+              }}{{ l.hasDraft ? " · Draft saved" : "" }}
+            </dd>
+          </dl>
+          @if (error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
+          <div class="theme-card-actions theme-details-actions">
+            <a
+              class="button primary"
+              [routerLink]="['edit', l.id]"
+              (click)="detailId = ''"
+              ><cl-icon name="edit-square" />Edit layout</a
+            >
+            @if (!l.active) {
+              <button
+                type="button"
+                class="button"
+                [disabled]="busy"
+                (click)="use(l)"
+              >
+                <cl-icon name="check" />Use layout
+              </button>
+            }
+            <a
+              class="button"
+              [href]="'/api/maintenance/' + l.id + '/preview'"
+              target="_blank"
+              rel="noopener"
+              ><cl-icon name="eye" />Preview</a
+            >
+            @if (!l.active) {
+              <button
+                type="button"
+                class="button danger"
+                [disabled]="busy"
+                (click)="remove(l)"
+              >
+                <cl-icon name="trash" />Delete
+              </button>
+            }
+          </div>
+        </div>
+      </cl-admin-modal>
+    }
     <router-outlet (deactivate)="load()" />
   `,
 })
@@ -200,6 +290,10 @@ export class MaintenanceComponent implements OnInit {
   revision = 0;
   loading = true;
   busy = false;
+  detailId = "";
+  get detail() {
+    return this.layouts.find((l) => l.id === this.detailId);
+  }
   error = "";
   get selectedLayout() {
     return this.layouts.find((l) => l.id === this.settings.layoutId);
