@@ -1,0 +1,29 @@
+{
+  "id": "com.colossal.seo",
+  "name": "Advanced SEO",
+  "version": "0.0.3",
+  "description": "Search previews, content scores, indexing controls, social metadata and structured data.",
+  "author": "Colossal Core Team",
+  "license": "MIT",
+  "isCore": false,
+  "icon": "search",
+  "requires": {
+    "colossal": ">=0.0.3",
+    "plugins": ["com.colossal.pages", "com.colossal.posts"]
+  },
+  "admin": {
+    "entryComponent": "SeoComponent",
+    "menu": {
+      "label": "SEO",
+      "icon": "search",
+      "path": "/admin/seo",
+      "order": 80,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": {
+    "routes": [],
+    "skeleton": { "component": "PageSkeletonComponent", "variant": "detail" }
+  }
+}

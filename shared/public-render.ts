@@ -1,6 +1,16 @@
 import type { ThemeLoading } from "./theme-loading";
 
 export interface PublicRender {
+  seo?: {
+    canonical: string;
+    robots: string;
+    socialTitle: string;
+    socialDescription: string;
+    image: string;
+    type: string;
+    siteName: string;
+    graph: unknown[];
+  };
   html: string;
   css: string;
   body: {

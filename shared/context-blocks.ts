@@ -216,6 +216,7 @@ export function normalizeContextDocument(
   let declared = false;
   for (const [type, icon] of [
     ["core/title", "fas fa-text-height"],
+    ["core/tagline", "fas fa-comment"],
     ["core/excerpt", "fas fa-align-justify"],
     ["core/site-brand", "fas fa-globe"],
     ["core/featured-image", "fas fa-portrait"],

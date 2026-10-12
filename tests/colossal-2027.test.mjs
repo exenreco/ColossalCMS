@@ -55,7 +55,7 @@ test("Glossy migrates installed branding and navigation once, retaining IDs and 
   migrateGlasseyDocument(document);
   assert.equal(document.manifest.name, "Glossy");
   assert.equal(identity.id, id);
-  assert.equal(identity.type, "core/site-brand");
+  assert.equal(identity.type, "core/columns");
   assert.equal(identity.settings.editorLabel, "My identity");
   assert.equal(menu.settings.mobileMode, "collapsed");
   assert.equal(menu.settings.mobileIcon, "bars");
@@ -82,7 +82,7 @@ test("Glossy uses native blocks for ordinary content and uses Site Identity and 
   assert.equal(html.length, 0);
   assert.equal(document.manifest.name, "Glossy");
   const identity = nodes.find((node) => node.type === "core/site-brand");
-  assert.equal(identity.settings.display, "logo-and-name");
+  assert.equal(identity.settings.display, "logo");
   const menu = nodes.find((node) => node.type === "core/menu");
   assert.equal(menu.settings.mobileIcon, "bars");
   assert.equal(menu.settings.mobileMode, "collapsed");
@@ -92,6 +92,7 @@ test("Glossy uses native blocks for ordinary content and uses Site Identity and 
     "core/image",
     "core/menu",
     "core/menu-item",
+    "core/tagline",
   ])
     assert.ok(
       nodes.some((node) => node.type === type),
@@ -108,6 +109,51 @@ test("Glossy uses native blocks for ordinary content and uses Site Identity and 
   });
   assert.match(rendered.html, /src="\/themes\/colossal-2027\/project-cms.svg"/);
   assert.match(rendered.html, /theme-menu-link/);
+});
+
+test("Glossy header has logo and stacked live site name/tagline in two editable columns", () => {
+  const document = colossal2027Theme();
+  const branding = document.parts.header.children[0];
+  assert.equal(branding.type, "core/columns");
+  assert.equal(branding.settings.stackOnMobile, false);
+  assert.equal(branding.children.length, 2);
+  const [logoColumn, copyColumn] = branding.children;
+  assert.equal(logoColumn.type, "core/column");
+  assert.equal(logoColumn.children[0].type, "core/site-brand");
+  assert.equal(logoColumn.children[0].settings.display, "logo");
+  assert.equal(copyColumn.type, "core/column");
+  const [nameRow, taglineRow] = copyColumn.children;
+  assert.equal(nameRow.type, "core/row");
+  assert.equal(nameRow.children[0].settings.display, "name");
+  assert.equal(taglineRow.type, "core/row");
+  assert.equal(taglineRow.children[0].type, "core/tagline");
+  const render = (settings) =>
+    renderTheme(document, {
+      kind: "home",
+      settings,
+      allContent: [],
+      media: [],
+    }).html;
+  const html = render({
+    title: "Live portfolio",
+    tagline: "Ideas into experiences",
+    logo: "/logo.svg",
+  });
+  assert.match(html, /class="theme-site-logo" src="\/logo.svg"/);
+  assert.match(html, /class="theme-site-name"[^>]*>Live portfolio<\/span>/);
+  assert.match(
+    html,
+    /class="theme-site-tagline"[^>]*>Ideas into experiences<\/p>/,
+  );
+  assert.doesNotMatch(
+    render({ title: "New name", tagline: "" }),
+    /theme-site-tagline/,
+  );
+  nameRow.children[0].settings.fontSize = 20;
+  const before = JSON.stringify(document);
+  migrateGlasseyDocument(document);
+  assert.equal(JSON.stringify(document), before);
+  validateDocument(document);
 });
 
 test("Glossy conversion preserves edited content, existing IDs and settings and leaves unsupported HTML intact", () => {

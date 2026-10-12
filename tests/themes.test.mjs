@@ -190,7 +190,7 @@ test("grouped navigation includes the locked Themes plugin in system", async () 
   const main = state.plugins
     .filter((p) => p.isCore && p.admin.menu.group === "main")
     .map((p) => p.admin.menu.label);
-  assert.deepEqual(main, ["Dashboard", "Media", "Posts", "Pages", "Settings"]);
+  assert.deepEqual(main, ["Dashboard", "Pages", "Posts", "Media", "Settings"]);
   assert.deepEqual(
     state.plugins
       .filter((p) => p.isCore && p.admin.menu.group === "system")

@@ -4,6 +4,7 @@ import {
   inject,
   signal,
   OnInit,
+  OnDestroy,
   ChangeDetectorRef,
 } from "@angular/core";
 import { WORKSPACE_STEPS } from "../../../shared/workspace-progress";
@@ -244,7 +245,7 @@ import { MaintenanceState } from "./maintenance-state";
           </footer>
         </div>
       </div>
-    } @else if (!setup && !error) {
+    } @else if (!setup && !error && showWorkspaceProgress()) {
       <div class="auth-page">
         <section
           class="auth-card workspace-progress-card"
@@ -315,7 +316,7 @@ import { MaintenanceState } from "./maintenance-state";
           </p>
         </section>
       </div>
-    } @else {
+    } @else if (setup || error) {
       <div class="auth-page">
         <div class="auth-card">
           <span class="brand-mark">C</span>
@@ -367,7 +368,7 @@ import { MaintenanceState } from "./maintenance-state";
     }
   `,
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, OnDestroy {
   cdr = inject(ChangeDetectorRef);
   workspaceSteps = WORKSPACE_STEPS;
   maintenance = inject(MaintenanceState);
@@ -380,6 +381,11 @@ export class AdminComponent implements OnInit {
   error = "";
   menuOpen = false;
   section = "Dashboard";
+  showWorkspaceProgress = signal(false);
+  private workspaceProgressTimer?: ReturnType<typeof setTimeout>;
+  ngOnDestroy() {
+    clearTimeout(this.workspaceProgressTimer);
+  }
   ngOnInit() {
     this.initialize();
     this.router.events.subscribe((e) => {
@@ -396,6 +402,11 @@ export class AdminComponent implements OnInit {
   }
   async initialize() {
     this.error = "";
+    this.showWorkspaceProgress.set(false);
+    clearTimeout(this.workspaceProgressTimer);
+    this.workspaceProgressTimer = setTimeout(() => {
+      this.showWorkspaceProgress.set(true);
+    }, 400);
     try {
       const session = await this.api.openWorkspace();
       this.passwordAuth = session.passwordAuth === true;
@@ -410,6 +421,8 @@ export class AdminComponent implements OnInit {
     } catch (e) {
       this.error = (e as Error).message;
     } finally {
+      clearTimeout(this.workspaceProgressTimer);
+      this.showWorkspaceProgress.set(false);
       this.cdr.markForCheck();
     }
   }

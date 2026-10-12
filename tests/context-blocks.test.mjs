@@ -65,6 +65,57 @@ const themeWith = (children) => {
   delete document.compiled;
   return document;
 };
+test("Tagline reads live site settings, escapes markup, ignores content overrides and renders in page/post canvases", async () => {
+  const definition = definitions.find((item) => item.type === "core/tagline");
+  assert.equal(definition.category, "Dynamic");
+  assert.ok(
+    !definition.fields.some((field) =>
+      ["html", "text", "content", "tagline"].includes(field.key),
+    ),
+  );
+  const tagline = block("site_tagline_native", "core/tagline", {
+    text: "Forged text",
+    html: "<b>Forged HTML</b>",
+    fontSize: 24,
+  });
+  const document = themeWith([tagline]);
+  const ctx = context();
+  ctx.settings.tagline = "A <clear> & thoughtful tagline";
+  const publicRender = renderTheme(document, ctx);
+  assert.match(publicRender.html, /class="theme-site-tagline"/);
+  assert.match(publicRender.html, /A &lt;clear&gt; &amp; thoughtful tagline/);
+  assert.ok(!publicRender.html.includes("Forged"));
+  ctx.settings.tagline = "Updated in Admin Settings";
+  assert.match(renderTheme(document, ctx).html, /Updated in Admin Settings/);
+  for (const kind of ["page", "post"]) {
+    ctx.content = {
+      ...entry("tagline"),
+      kind,
+      details: { contentBlocks: [tagline] },
+    };
+    ctx.kind = kind;
+    assert.match(
+      renderContentCanvas(document, ctx, "blk_tagline_main").html,
+      /Updated in Admin Settings/,
+    );
+  }
+  ctx.settings.tagline = "";
+  assert.ok(
+    !renderTheme(document, { ...ctx, kind: "post-index" }).html.includes(
+      "theme-site-tagline",
+    ),
+  );
+  const db = localDatabase();
+  try {
+    assert.equal(
+      (await validateDetails(db, { contentBlocks: [tagline] })).contentBlocks[0]
+        .type,
+      "core/tagline",
+    );
+  } finally {
+    db.close();
+  }
+});
 const nestedList = () =>
   block(
     "result_list",
@@ -195,6 +246,53 @@ test("Site identity displays the admin logo, name, both, or the automatic fallba
   assert.match(
     renderTheme(document, ctx, "post-archive").html,
     /theme-site-name/,
+  );
+});
+
+test("Site Identity falls back to the admin site icon in public and content canvases, while honoring logo and name modes", () => {
+  const identity = block("site_icon_identity", "core/site-brand", {
+    display: "logo",
+  });
+  const document = themeWith([identity]);
+  const ctx = context();
+  ctx.settings.logo = "";
+  ctx.settings.siteIconId = "icon with spaces";
+  ctx.content.details.contentBlocks = [identity];
+  for (const html of [
+    renderTheme(document, ctx, "post-archive").html,
+    renderContentCanvas(defaultTheme(), ctx).html,
+  ]) {
+    assert.match(
+      html,
+      /class="theme-site-logo" src="\/api\/media\/icon%20with%20spaces\/file"/,
+    );
+    assert.doesNotMatch(html, /theme-site-name/);
+  }
+  ctx.settings.logo = "https://example.test/preferred.svg";
+  assert.match(
+    renderTheme(document, ctx, "post-archive").html,
+    /src="https:\/\/example.test\/preferred.svg"/,
+  );
+  ctx.settings.logo = "";
+  identity.settings.display = "name";
+  assert.doesNotMatch(
+    renderTheme(document, ctx, "post-archive").html,
+    /theme-site-logo/,
+  );
+  identity.settings.display = "auto";
+  assert.match(
+    renderTheme(document, ctx, "post-archive").html,
+    /theme-site-logo/,
+  );
+  ctx.settings.siteIconId = "";
+  assert.match(
+    renderTheme(document, ctx, "post-archive").html,
+    /theme-site-name/,
+  );
+  identity.settings.display = "logo";
+  assert.doesNotMatch(
+    renderTheme(document, ctx, "post-archive").html,
+    /theme-site-logo|cl-editor-block-placeholder/,
   );
 });
 

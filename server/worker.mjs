@@ -11,6 +11,14 @@ import {
 import { renderContentCanvas } from "./theme-engine.mjs";
 import { publicHtml, unavailablePublicRender } from "./public-html.mjs";
 import { WORKSPACE_STEPS } from "../shared/workspace-progress.ts";
+import { TITLE_FORMATS, TITLE_SEPARATORS } from "../shared/page-title.ts";
+import {
+  readSeoSettings,
+  validateSeoSettings,
+  seoDiscovery,
+  indexNowKeyFile,
+  submitIndexNow,
+} from "./seo.mjs";
 import { editorPreferences } from "./editor-preferences.mjs";
 import {
   readAdSettings,
@@ -39,7 +47,12 @@ import {
   validateDetails,
   repairRouting,
 } from "./v2-utils.mjs";
-import { catalog, defaultSettings, sampleContent } from "./catalog.mjs";
+import {
+  catalog,
+  defaultSettings,
+  sampleContent,
+  migrateSampleContent,
+} from "./catalog.mjs";
 const json = (data, status = 200) =>
   Response.json(data, {
     status,
@@ -124,8 +137,12 @@ export async function initialize(db, user, report = () => {}) {
         )
         .bind(
           p.id,
-          p.isCore || p.id === LOGIN_SECURITY_ID ? 1 : 0,
-          p.isCore || p.id === LOGIN_SECURITY_ID ? 1 : 0,
+          p.isCore || p.id === LOGIN_SECURITY_ID || p.id === "com.colossal.seo"
+            ? 1
+            : 0,
+          p.isCore || p.id === LOGIN_SECURITY_ID || p.id === "com.colossal.seo"
+            ? 1
+            : 0,
         ),
     ),
   );
@@ -143,6 +160,7 @@ export async function initialize(db, user, report = () => {}) {
   );
   report(2);
   if (await db.prepare("SELECT id FROM config WHERE id='site'").first()) {
+    await migrateSampleContent(db);
     report(3);
     return;
   }
@@ -168,7 +186,7 @@ export async function initialize(db, user, report = () => {}) {
     statements.push(
       db
         .prepare(
-          "INSERT OR IGNORE INTO content (id,kind,title,slug,excerpt,body,status,publish_at,updated_at,author) VALUES (?,?,?,?,?,?,?,?,?,?)",
+          "INSERT OR IGNORE INTO content (id,kind,title,slug,excerpt,body,status,publish_at,updated_at,author,details) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         )
         .bind(
           c.id,
@@ -181,6 +199,7 @@ export async function initialize(db, user, report = () => {}) {
           time,
           time,
           user.email,
+          JSON.stringify(c.details),
         ),
     );
   statements.push(
@@ -290,6 +309,16 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     try {
+      if (
+        /^\/[a-zA-Z0-9-]{8,128}\.txt$/.test(path) &&
+        ["GET", "HEAD"].includes(request.method)
+      ) {
+        const key = await indexNowKeyFile(database(env), path);
+        if (key)
+          return new Response(request.method === "HEAD" ? null : key.body, {
+            headers: key.headers,
+          });
+      }
       if (path === "/ads.txt" && ["GET", "HEAD"].includes(request.method)) {
         const { adsTxt } = await adVerification(database(env));
         return new Response(
@@ -308,6 +337,17 @@ export default {
         );
       }
       if (!path.startsWith("/api/")) {
+        if (
+          ["/robots.txt", "/sitemap.xml"].includes(path) &&
+          ["GET", "HEAD"].includes(request.method)
+        ) {
+          const discovery = await seoDiscovery(database(env), request);
+          if (discovery)
+            return new Response(
+              request.method === "HEAD" ? null : discovery.body,
+              { status: discovery.status, headers: discovery.headers },
+            );
+        }
         if (path === "/admin")
           return Response.redirect(url.origin + "/admin/", 302);
         const isAdmin = path.startsWith("/admin/");
@@ -395,6 +435,8 @@ export default {
               `<meta name="google-adsense-account" content="${publisher}"></head>`,
             );
           if (rendered.preview) headers.set("X-Robots-Tag", "noindex");
+          else if (rendered.seo?.robots)
+            headers.set("X-Robots-Tag", rendered.seo.robots);
           return new Response(html, {
             status: rendered.status || 200,
             headers,
@@ -558,6 +600,10 @@ export default {
         requireAdmin(user);
         return json(await readAdSettings(db));
       }
+      if (path === "/api/admin/seo" && request.method === "GET") {
+        requireAdmin(user);
+        return json(await readSeoSettings(db));
+      }
       if (path.startsWith("/api/themes"))
         return await handleThemes(request, env, user, path);
       if (path.startsWith("/api/media"))
@@ -612,6 +658,14 @@ export default {
         } catch {
           fail("Invalid JSON.");
         }
+      }
+      if (path === "/api/admin/seo/index" && request.method === "POST") {
+        const result = await submitIndexNow(db, request, body.contentId);
+        await log(
+          db,
+          `IndexNow submitted ${result.url} (HTTP ${result.status})`,
+        );
+        return json(result);
       }
       if (path === "/api/admin/content/render" && request.method === "POST") {
         const draft = body.content || {};
@@ -882,6 +936,17 @@ export default {
         return json({ ok: true });
       }
       requireAdmin(user);
+      if (path === "/api/admin/seo" && request.method === "POST") {
+        const settings = validateSeoSettings(body);
+        await db
+          .prepare(
+            "INSERT INTO config (id,value) VALUES ('seo',?) ON CONFLICT(id) DO UPDATE SET value=excluded.value",
+          )
+          .bind(JSON.stringify(settings))
+          .run();
+        await log(db, "Updated SEO settings");
+        return json({ ok: true });
+      }
       if (path === "/api/admin/google-ads" && request.method === "POST") {
         const settings = validateAdSettings(body);
         await db
@@ -925,6 +990,12 @@ export default {
         );
         const merged = { ...prior, ...body };
         const { title, tagline, accent, logo, announcement } = merged;
+        const { titleFormat = "page-site", titleSeparator = "·" } = merged;
+        if (
+          !TITLE_FORMATS.includes(titleFormat) ||
+          !TITLE_SEPARATORS.includes(titleSeparator)
+        )
+          fail("Choose a valid page title format and separator.");
         const {
           siteIconId = "",
           postRouting = "home",
@@ -1004,6 +1075,8 @@ export default {
           .bind(
             JSON.stringify({
               title: title.trim(),
+              titleFormat,
+              titleSeparator,
               tagline,
               accent,
               logo,

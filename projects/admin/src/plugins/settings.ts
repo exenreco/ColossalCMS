@@ -5,6 +5,10 @@ import { FormsModule } from "@angular/forms";
 import { DatePipe } from "@angular/common";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
+import {
+  formatPageTitle,
+  TITLE_SEPARATORS,
+} from "../../../../shared/page-title";
 @Component({
   selector: "cl-settings",
   standalone: true,
@@ -70,6 +74,46 @@ import { IconComponent } from "../../../../shared/icon.component";
                       >A short introduction shown on your public site.</small
                     ></label
                   >
+                  <div class="settings-section">
+                    <h3>Page titles</h3>
+                    <label
+                      >Title format<select
+                        name="titleFormat"
+                        [(ngModel)]="settings.titleFormat"
+                      >
+                        <option value="page-site">
+                          Page title | Site title
+                        </option>
+                        <option value="site-page">
+                          Site title | Page title
+                        </option>
+                        <option value="page-only">Page title only</option>
+                        <option value="site-only">Site title only</option>
+                      </select></label
+                    >
+                    <label
+                      >Title separator<select
+                        name="titleSeparator"
+                        [(ngModel)]="settings.titleSeparator"
+                        [disabled]="
+                          settings.titleFormat === 'page-only' ||
+                          settings.titleFormat === 'site-only'
+                        "
+                      >
+                        @for (separator of titleSeparators; track separator) {
+                          <option [value]="separator">{{ separator }}</option>
+                        }
+                      </select></label
+                    >
+                    <p class="field-note">
+                      Applies to browser tabs, search previews and default
+                      social titles. A page’s meta title supplies the page-title
+                      portion.
+                    </p>
+                    <p class="field-note">
+                      Preview: <strong>{{ titlePreview }}</strong>
+                    </p>
+                  </div>
                   <div class="settings-section">
                     <h3>Site icon</h3>
                     <p class="field-note">
@@ -199,8 +243,9 @@ import { IconComponent } from "../../../../shared/icon.component";
                       [(ngModel)]="settings.logo"
                       placeholder="https://example.com/logo.svg"
                     /><small
-                      >Use an HTTPS image URL, or leave blank for your site
-                      name.</small
+                      >Use an HTTPS image URL. When blank, Site Identity uses
+                      your site icon, or your site name if no image is
+                      set.</small
                     ></label
                   >
                   <div
@@ -434,6 +479,9 @@ export class SettingsComponent {
     this.settings.routingVersion = 2;
   }
   settings = {
+    titleFormat: "page-site" as
+      "page-site" | "site-page" | "page-only" | "site-only",
+    titleSeparator: "·",
     siteIconId: "",
     postRouting: "home" as "home" | "page",
     postsPageId: "",
@@ -442,6 +490,10 @@ export class SettingsComponent {
     homePageId: "",
     ...this.api.state()!.settings,
   };
+  titleSeparators = TITLE_SEPARATORS;
+  get titlePreview() {
+    return formatPageTitle("About us", this.settings);
+  }
   busy = false;
   error = "";
   email = "";

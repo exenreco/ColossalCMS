@@ -3,6 +3,16 @@ import { canvasBlockId } from "./context-blocks";
 import { renderIcon, validIcon } from "./icon-catalog";
 
 const placeholders: Record<string, [string, string, string]> = {
+  "core/site-brand": [
+    "Site image",
+    "image",
+    "Set a logo or site icon in Admin Settings",
+  ],
+  "core/tagline": [
+    "Tagline",
+    "comment",
+    "Set your site tagline in Admin Settings",
+  ],
   "core/row": ["Row", "columns", "Drop blocks into this row"],
   "core/container": ["Container", "square", "Drop blocks into this container"],
   "core/columns": ["Columns", "columns", "Add columns to build your layout"],
@@ -73,6 +83,8 @@ export function installEditorBlockPlaceholders(
       .cl-editor-empty-slider>.cl-swiper{position:relative}
       .cl-editor-empty-slider>.cl-swiper>.cl-editor-block-placeholder{position:absolute;inset:0;z-index:2;height:100%;pointer-events:none}
       .cl-editor-placeholder-fallback{display:none!important}
+      .cl-editor-empty-site-brand .cl-editor-block-placeholder{width:auto;min-height:38px;min-width:38px;padding:6px;flex-shrink:0}
+      .cl-editor-empty-site-brand .cl-editor-block-placeholder strong,.cl-editor-empty-site-brand .cl-editor-block-placeholder>span{display:none}
     `;
     doc.head.appendChild(style);
   }
@@ -86,6 +98,13 @@ export function installEditorBlockPlaceholders(
     let empty = false;
     let target = element;
     switch (node.type) {
+      case "core/site-brand":
+        empty =
+          s.display !== "name" &&
+          !element.querySelector("img.theme-site-logo[src]");
+        target =
+          element.querySelector<HTMLElement>(".theme-site-brand") || element;
+        break;
       case "core/menu":
         empty =
           !node.children?.length &&
@@ -162,6 +181,7 @@ export function installEditorBlockPlaceholders(
     const description = doc.createElement("span");
     description.textContent = hint;
     placeholder.append(title, description);
-    target.appendChild(placeholder);
+    if (node.type === "core/site-brand") target.prepend(placeholder);
+    else target.appendChild(placeholder);
   }
 }

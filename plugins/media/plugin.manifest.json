@@ -17,7 +17,7 @@
       "label": "Media",
       "icon": "media",
       "path": "/admin/media",
-      "order": 20,
+      "order": 40,
       "group": "main"
     },
     "skeleton": {

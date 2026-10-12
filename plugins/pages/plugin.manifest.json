@@ -12,7 +12,7 @@
       "label": "Pages",
       "icon": "pages",
       "path": "/admin/pages",
-      "order": 40,
+      "order": 20,
       "group": "main"
     },
     "skeleton": {

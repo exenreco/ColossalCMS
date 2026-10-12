@@ -1,4 +1,5 @@
 import { themeLoadingCss } from "../shared/theme-loading.ts";
+import { seoHead } from "./seo.mjs";
 
 const esc = (value = "") =>
   String(value).replace(
@@ -51,7 +52,7 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
   return html
     .replace(
       /<\/head>/i,
-      `<meta name="description" content="${esc(rendered.description)}">${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
+      `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
     )
     .replace(
       /<body[^>]*>/i,

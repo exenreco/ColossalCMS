@@ -100,6 +100,71 @@ components:
             properties:
               error: { type: string }
 paths:
+  /admin/seo/index:
+    post:
+      summary: Submit a published indexable entry to IndexNow (authenticated member, same origin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentId]
+              properties:
+                contentId: { type: string, maxLength: 160 }
+      responses:
+        "200":
+          description: Provider accepted the submission or is verifying the key; indexing is not guaranteed
+        "400":
+          description: Content is not eligible for indexing
+        "409":
+          description: SEO or IndexNow is not configured, or request is not from the production origin
+        "429":
+          description: Provider rate limit reached
+        "502":
+          description: Provider unreachable or rejected the submission
+  /admin/seo:
+    get:
+      summary: Read Advanced SEO publisher and schema defaults (admin only)
+      responses:
+        "200":
+          description: SEO settings
+        "403":
+          description: Administrator access required
+    post:
+      summary: Validate and save Advanced SEO defaults (admin only, same origin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                siteUrl:
+                  {
+                    type: string,
+                    description: Optional production HTTP(S) origin,
+                  }
+                publisherType: { type: string, enum: [Person, Organization] }
+                publisherName: { type: string, maxLength: 200 }
+                publisherLogo: { type: string }
+                defaultPostSchema: { type: string }
+                defaultPageSchema: { type: string }
+                breadcrumbs: { type: boolean }
+                indexNowEnabled: { type: boolean, default: false }
+                indexNowKey:
+                  {
+                    type: string,
+                    maxLength: 128,
+                    description: Public domain-verification key,
+                  }
+      responses:
+        "200":
+          description: Settings saved
+        "400":
+          description: Invalid SEO configuration
+        "403":
+          description: Administrator access or same-origin request required
   /admin/editor/preferences:
     get:
       summary: Read the authenticated member's editor preferences

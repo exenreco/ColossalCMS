@@ -1,4 +1,6 @@
 import { hydrateMenus } from "../../../shared/menu-host";
+import { syncSeoHead } from "../../../shared/seo-head";
+import { formatPageTitle } from "../../../shared/page-title";
 import { hydrateGeometry } from "../../../shared/geometry-host";
 import { RichContentComponent } from "../../../shared/rich-content.component";
 import {
@@ -289,6 +291,7 @@ class FrontendComponent implements OnInit, OnDestroy {
     }
     styles.textContent = themeLoadingCss(rendered.loading) + rendered.css;
     if (rendered.title) document.title = rendered.title;
+    syncSeoHead(rendered.seo);
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute("content", rendered.description || "");
@@ -359,10 +362,10 @@ class FrontendComponent implements OnInit, OnDestroy {
         favicon.href = site.settings.siteIconId
           ? "/api/media/" + site.settings.siteIconId + "/file"
           : "/favicon.svg";
-      document.title =
-        (this.entry
-          ? (this.entry.details?.metaTitle || this.entry.title) + " · "
-          : "") + site.settings.title;
+      document.title = formatPageTitle(
+        this.entry ? this.entry.details?.metaTitle || this.entry.title : "",
+        site.settings,
+      );
       document
         .querySelector('meta[name="description"]')
         ?.setAttribute(

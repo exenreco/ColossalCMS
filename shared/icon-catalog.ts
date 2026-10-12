@@ -1,5 +1,9 @@
 /** Bundled SVG drawings shared by the editor, icon picker, and public renderer. */
 export const BLOCK_ICON_PATHS: Record<string, string[]> = {
+  comment: [
+    "M21 11a8 8 0 0 1-8 8H7l-4 3v-7a8 8 0 0 1 8-12h2a8 8 0 0 1 8 8z",
+    "M7 9h10M7 13h6",
+  ],
   "project-diagram": [
     "M8 7l8 5M8 17l8-5",
     "M8 5H3v5h5z",
@@ -126,6 +130,7 @@ export const BLOCK_ICON_PATHS: Record<string, string[]> = {
 };
 
 export const APP_ICON_PATHS: Record<string, string> = {
+  pillar: "M5 3h14v3H5z M7 6h10v3H7z M8 9v10 M12 9v10 M16 9v10 M6 19h12v2H6z",
   themes: "M3 3h18v18H3z M3 9h18 M9 9v12 M6 6h.01 M9 6h.01",
   media: "M3 3h18v18H3z M3 16l5-5 4 4 3-3 6 6 M15 7h.01",
   dashboard: "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",

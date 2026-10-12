@@ -25,6 +25,7 @@ test("legacy icon migration preserves core, copied themes, drafts and history an
           "core/slide",
           "core/overlay",
           "core/title",
+          "core/tagline",
           "core/excerpt",
           "core/paragraph",
           "core/icon",

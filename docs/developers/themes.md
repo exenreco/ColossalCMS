@@ -1,5 +1,7 @@
 # Themes in Colossal 0.0.3
 
+The **Tagline** block (`core/tagline`, Dynamic category) displays `settings.tagline` from Admin Settings. It has alignment and shared Typography/Appearance controls, no content input, and no inline canvas editing. HTML/text overrides never replace the site tagline. Empty taglines are omitted publicly and show an editor-only setup placeholder.
+
 Themes are declarative presentation packages. Plugins provide capabilities. Uploaded JavaScript is not executed by the theme system.
 
 ## Package format

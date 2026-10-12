@@ -210,6 +210,24 @@
     ]
   },
   {
+    "type": "core/tagline",
+    "label": "Tagline",
+    "category": "Dynamic",
+    "description": "Display the tagline from Admin Settings. Content is read-only; customize its appearance.",
+    "icon": "fas fa-comment",
+    "container": false,
+    "fields": [
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "left",
+        "options": ["left", "center", "right", "justify"]
+      }
+    ],
+    "toolbar": ["align"]
+  },
+  {
     "type": "core/title",
     "label": "Title",
     "category": "Dynamic",

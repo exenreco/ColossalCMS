@@ -34,6 +34,7 @@ export function migrateGlasseyDocument(document) {
   visit(document.parts?.footer);
   upgradeGlasseyNativeBlocks(document);
   upgradeGlossyHeader(document);
+  upgradeGlossyBrandLayout(document);
   return document;
 }
 
@@ -130,3 +131,87 @@ const GLOSSY_HEADER_CSS = `
 .theme-root .c27-header-inner .theme-menu-items>.theme-button.c27-nav-contact{display:inline-flex}
 }
 `;
+
+/** Split stock branding into editable layout blocks once; preserve subsequent edits. */
+function upgradeGlossyBrandLayout(document) {
+  const marker = "/* Glossy two-column branding */";
+  if ((document.css || "").includes(marker)) return;
+  const block = (type, settings, children) => ({
+    id: "blk_" + crypto.randomUUID(),
+    type,
+    settings,
+    ...(children ? { children } : {}),
+  });
+  const visit = (node) => {
+    if (!node) return;
+    if (
+      node.type === "core/site-brand" &&
+      (node.settings?.classes || "").split(/\s+/).includes("c27-brand")
+    ) {
+      const { display, level, logoHeight, gap, linkHome, ...appearance } =
+        node.settings;
+      const name = block("core/site-brand", {
+        ...appearance,
+        classes: "c27-brand-name",
+        display: "name",
+        level: level || "span",
+        linkHome: linkHome !== false,
+      });
+      node.type = "core/columns";
+      node.settings = {
+        ...appearance,
+        display: "flex",
+        gap: gap ?? 14,
+        verticalAlign: "center",
+        wrap: false,
+        stackOnMobile: false,
+      };
+      node.children = [
+        block(
+          "core/column",
+          { classes: "c27-brand-logo-column", width: "1fr" },
+          [
+            block("core/site-brand", {
+              classes: "c27-brand-logo",
+              display: "logo",
+              logoHeight: logoHeight ?? 38,
+              linkHome: linkHome !== false,
+            }),
+          ],
+        ),
+        block("core/column", { classes: "c27-brand-copy", width: "1fr" }, [
+          block(
+            "core/row",
+            { classes: "c27-brand-name-row", gap: 0, wrap: false },
+            [name],
+          ),
+          block(
+            "core/row",
+            { classes: "c27-brand-tagline-row", gap: 0, wrap: false },
+            [
+              block("core/tagline", {
+                classes: "c27-brand-tagline",
+                align: "left",
+              }),
+            ],
+          ),
+        ]),
+      ];
+      return;
+    }
+    node.children?.forEach(visit);
+  };
+  visit(document.parts?.header);
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-header-inner .c27-brand{display:block;min-width:0}
+.theme-root .c27-brand-logo-column{flex:0 0 auto}
+.theme-root .c27-brand-copy{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.theme-root .c27-brand .theme-site-name{margin:0}
+.theme-root .c27-brand .theme-site-tagline{margin:0;font-size:8px;font-weight:400;color:#9297a0;letter-spacing:1.3px;line-height:1.5}
+@media(max-width:600px){.theme-root .c27-brand .theme-site-name{font-size:10px;letter-spacing:.6px}.theme-root .c27-brand .theme-site-tagline{font-size:7px;letter-spacing:.6px}}
+`;
+  delete document.compiled;
+}

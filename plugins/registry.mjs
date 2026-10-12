@@ -11,6 +11,7 @@ import google_ads from "./google-ads/plugin.manifest.json" with { type: "json" }
 import production_connections from "./production-connections/plugin.manifest.json" with { type: "json" };
 import login_security from "./login-security/plugin.manifest.json" with { type: "json" };
 import maintenance from "./maintenance/plugin.manifest.json" with { type: "json" };
+import seo from "./seo/plugin.manifest.json" with { type: "json" };
 export const manifests = [
   themes,
   media,
@@ -25,4 +26,5 @@ export const manifests = [
   production_connections,
   login_security,
   maintenance,
+  seo,
 ];

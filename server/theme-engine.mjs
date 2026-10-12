@@ -1788,8 +1788,13 @@ function dynamic(type, s, ctx, children) {
     settings = ctx.settings;
   if (type === "core/site-brand") {
     const display = s.display || "auto";
+    const logo =
+      settings.logo ||
+      (settings.siteIconId
+        ? "/api/media/" + encodeURIComponent(settings.siteIconId) + "/file"
+        : "");
     const showLogo =
-      !!settings.logo && ["auto", "logo", "logo-and-name"].includes(display);
+      !!logo && ["auto", "logo", "logo-and-name"].includes(display);
     const showName =
       display === "name" ||
       display === "logo-and-name" ||
@@ -1797,7 +1802,7 @@ function dynamic(type, s, ctx, children) {
     const level = /^(?:h[1-6]|p|span)$/.test(s.level) ? s.level : "h2";
     const content =
       (showLogo
-        ? `<img class="theme-site-logo" src="${esc(settings.logo)}" alt="${esc(settings.title)}" height="${num(s.logoHeight ?? 52, 8, 512)}" style="height:${num(s.logoHeight ?? 52, 8, 512)}px;width:auto;object-fit:contain">`
+        ? `<img class="theme-site-logo" src="${esc(logo)}" alt="${esc(settings.title)}" height="${num(s.logoHeight ?? 52, 8, 512)}" style="height:${num(s.logoHeight ?? 52, 8, 512)}px;width:auto;object-fit:contain">`
         : "") +
       (showName
         ? `<${level} class="theme-site-name"${typographyAttributes(s)}>${esc(settings.title)}</${level}>`
@@ -1815,6 +1820,10 @@ function dynamic(type, s, ctx, children) {
         ? `<a href="${esc(contentPath(c))}"${typographyAttributes(s)}>${esc(text)}</a>`
         : esc(text);
     return `<${level} class="theme-content-title"${typographyAttributes(s)}>${title}</${level}>`;
+  }
+  if (type === "core/tagline") {
+    if (!settings.tagline) return "";
+    return `<p class="theme-site-tagline"${typographyAttributes(s)}>${esc(settings.tagline)}</p>`;
   }
   if (type === "core/excerpt") return renderListExcerpt(c?.excerpt, s);
   if (type === "core/post-content" || type === "core/content") {

@@ -1,4 +1,5 @@
 import { navigationSettingsError } from "../shared/navigation-blocks.ts";
+import { validateSeo } from "./seo.mjs";
 import { normalizeFormattedHtmlBlocks } from "../shared/formatted-html.ts";
 import { themeMediaIds, sanitizeParagraph } from "./theme-engine.mjs";
 import definitions from "../shared/theme-blocks.json" with { type: "json" };
@@ -235,6 +236,7 @@ export async function validateDetails(db, details = {}) {
   if (typeof details !== "object" || Array.isArray(details) || details === null)
     fail("Invalid editor options.");
   const clean = {
+    ...(details.seo !== undefined ? { seo: validateSeo(details.seo) } : {}),
     featuredImageId: details.featuredImageId || "",
     categories: details.categories || [],
     tags: details.tags || [],

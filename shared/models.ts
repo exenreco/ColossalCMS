@@ -6,6 +6,7 @@ export interface RichNode {
   content?: RichNode[];
 }
 export interface ContentDetails {
+  seo?: import("./seo").SeoOptions;
   contentMain?: Record<string, unknown>;
   richText?: RichNode;
   contentBlocks?: import("./theme-models").BlockNode[];
@@ -70,6 +71,8 @@ export interface Plugin {
   pending?: boolean;
 }
 export interface Settings {
+  titleFormat?: "page-site" | "site-page" | "page-only" | "site-only";
+  titleSeparator?: string;
   title: string;
   tagline: string;
   accent: string;

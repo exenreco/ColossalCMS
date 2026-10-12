@@ -51,10 +51,12 @@ import {
   PICKER_FIELD_KEYS,
 } from "./pickers/appearance-picker-panel.component";
 import { Content, RichNode } from "./models";
+import { SeoPanelComponent } from "./seo-panel.component";
 @Component({
   selector: "cl-content-editor-modal",
   standalone: true,
   imports: [
+    SeoPanelComponent,
     FormsModule,
     DatePipe,
     NgComponentOutlet,
@@ -467,23 +469,30 @@ import { Content, RichNode } from "./models";
                     </p>
                   }
                   @case ("seo") {
-                    <label
-                      >URL slug<input
-                        [(ngModel)]="entry.slug"
-                        (input)="slugEdited = true"
-                        maxlength="160" /></label
-                    ><label
-                      >Meta title<input
-                        [(ngModel)]="entry.details!.metaTitle"
-                        maxlength="200"
-                        [placeholder]="entry.title || 'Page title'" /></label
-                    ><label
-                      >Meta description<textarea
-                        [(ngModel)]="entry.details!.metaDescription"
-                        maxlength="500"
-                        rows="4"
-                      ></textarea>
-                    </label>
+                    @if (seoEnabled) {
+                      <cl-seo-panel
+                        [entry]="entry"
+                        (slugChange)="slugEdited = true"
+                      />
+                    } @else {
+                      <label
+                        >URL slug<input
+                          [(ngModel)]="entry.slug"
+                          (input)="slugEdited = true"
+                          maxlength="160" /></label
+                      ><label
+                        >Meta title<input
+                          [(ngModel)]="entry.details!.metaTitle"
+                          maxlength="200"
+                          [placeholder]="entry.title || 'Page title'" /></label
+                      ><label
+                        >Meta description<textarea
+                          [(ngModel)]="entry.details!.metaDescription"
+                          maxlength="500"
+                          rows="4"
+                        ></textarea>
+                      </label>
+                    }
                   }
                   @case ("authoring") {
                     <label
@@ -802,6 +811,11 @@ import { Content, RichNode } from "./models";
   `,
 })
 export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
+  get seoEnabled() {
+    return !!this.api
+      .state()
+      ?.plugins.some((p) => p.id === "com.colossal.seo" && p.active);
+  }
   api = inject(ApiService);
   host = inject(ElementRef) as ElementRef<HTMLElement>;
   sanitizer = inject(DomSanitizer);

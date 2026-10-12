@@ -121,6 +121,7 @@ export class AppearancePickerPanelComponent {
       "core/heading",
       "core/paragraph",
       "core/title",
+      "core/tagline",
       "core/excerpt",
       "core/site-brand",
       "core/rich-text",

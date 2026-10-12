@@ -6,9 +6,106 @@ import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { DialogFocusDirective } from "../../../../shared/dialog-focus.directive";
 import { Content } from "../../../../shared/models";
+import { analyzeSeo } from "../../../../shared/seo";
 @Component({
   selector: "cl-content",
   standalone: true,
+  styles: `
+    .seo-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .seo-score-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pillar-content-icon {
+      display: inline-flex;
+      align-items: center;
+      color: var(--accent, #246b50);
+    }
+    .seo-score-badge.poor {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .seo-score-badge.fair {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+    .seo-score-badge.good {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .seo-score-badge:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+    .content-title-cell {
+      min-width: 280px;
+      position: relative;
+      padding-bottom: 28px;
+    }
+    .title-inline-menu {
+      position: absolute;
+      left: 48px;
+      bottom: 0;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s;
+    }
+    .content-title-cell:hover .title-inline-menu,
+    .content-title-cell:focus-within .title-inline-menu {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .title-inline-menu button {
+      background: none;
+      border: 0;
+      padding: 2px 0;
+      color: var(--accent, #246b50);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .title-inline-menu .danger-text {
+      color: #b42318;
+    }
+    .title-inline-menu button:disabled {
+      color: var(--muted, #888);
+      cursor: default;
+    }
+    .title-inline-menu button:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+    @media (hover: none), (prefers-reduced-motion: reduce) {
+      .title-inline-menu {
+        transition: none;
+      }
+    }
+    @media (hover: none) {
+      .title-inline-menu {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+  `,
   imports: [
     DatePipe,
     FormsModule,
@@ -83,26 +180,83 @@ import { Content } from "../../../../shared/models";
               }
               <th>Status</th>
               <th>Updated</th>
-              <th>Actions</th>
+              @if (seoEnabled) {
+                <th>SEO</th>
+              }
+              <th>View</th>
             </tr>
           </thead>
           <tbody>
             @for (c of filtered; track c.id) {
               <tr>
                 <td>
-                  <button class="content-title title-button" (click)="open(c)">
-                    <span class="content-icon"
-                      ><cl-icon
-                        [name]="kind === 'post' ? 'posts' : 'pages'" /></span
-                    ><span
-                      ><strong
-                        >{{ c.title }}
-                        @if (role(c)) {
-                          <span class="badge">{{ role(c) }}</span>
-                        }</strong
-                      ><small>/{{ c.slug }}</small></span
+                  <div class="content-title-cell">
+                    <button
+                      class="content-title title-button"
+                      (click)="open(c)"
                     >
-                  </button>
+                      <span class="content-icon"
+                        ><cl-icon
+                          [name]="kind === 'post' ? 'posts' : 'pages'" /></span
+                      ><span
+                        ><strong
+                          >{{ c.title }}
+                          @if (role(c)) {
+                            <span class="badge">{{ role(c) }}</span>
+                          }</strong
+                        ><small>/{{ c.slug }}</small></span
+                      >
+                    </button>
+                    <div
+                      class="title-inline-menu"
+                      role="group"
+                      [attr.aria-label]="'Actions for ' + c.title"
+                    >
+                      <button
+                        type="button"
+                        [attr.aria-label]="'Edit ' + c.title"
+                        (click)="open(c)"
+                      >
+                        Edit
+                      </button>
+                      <button type="button" (click)="quickEdit(c)">
+                        Quick Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="danger-text"
+                        [attr.aria-label]="'Delete ' + c.title"
+                        (click)="deleting = c; error = ''"
+                      >
+                        Delete
+                      </button>
+                      @if (seoEnabled) {
+                        <button
+                          type="button"
+                          (click)="instantIndex(c)"
+                          [disabled]="
+                            !!indexingId ||
+                            status(c) !== 'published' ||
+                            c.details?.seo?.noindex ||
+                            role(c) === '404'
+                          "
+                          [attr.title]="
+                            status(c) !== 'published'
+                              ? 'Publish before submitting for indexing'
+                              : c.details?.seo?.noindex
+                                ? 'Remove noindex before submitting'
+                                : 'Submit this URL to IndexNow'
+                          "
+                        >
+                          {{
+                            indexingId === c.id
+                              ? "Submitting…"
+                              : "Instant Index"
+                          }}
+                        </button>
+                      }
+                    </div>
+                  </div>
                 </td>
                 @if (kind === "page") {
                   <td>
@@ -125,20 +279,41 @@ import { Content } from "../../../../shared/models";
                   }
                 </td>
                 <td class="date-cell">{{ c.updatedAt | date: "MMM d, y" }}</td>
+                @if (seoEnabled) {
+                  <td>
+                    <div class="seo-score-cell">
+                      <button
+                        [class]="'seo-score-badge ' + seo(c).level"
+                        [attr.title]="
+                          'SEO guidance: ' +
+                          seo(c).score +
+                          '/100. Click to edit.'
+                        "
+                        (click)="open(c)"
+                      >
+                        {{ seo(c).score }} / 100
+                        <span>{{
+                          seo(c).level === "poor"
+                            ? "Bad"
+                            : seo(c).level === "fair"
+                              ? "Low"
+                              : "Good"
+                        }}</span>
+                      </button>
+                      @if (c.details?.seo?.pillarContent) {
+                        <span
+                          class="pillar-content-icon"
+                          title="Pillar content"
+                          role="img"
+                          aria-label="Pillar content"
+                          ><cl-icon name="pillar"
+                        /></span>
+                      }
+                    </div>
+                  </td>
+                }
                 <td>
                   <div class="row-actions">
-                    <button
-                      class="icon-button"
-                      (click)="open(c)"
-                      [attr.aria-label]="'Edit ' + c.title"
-                    >
-                      <cl-icon name="posts" />
-                    </button>
-                    @if (kind === "page") {
-                      <button class="button small" (click)="quickEdit(c)">
-                        Quick Edit
-                      </button>
-                    }
                     @if (status(c) === "published") {
                       <a
                         class="icon-button"
@@ -148,19 +323,17 @@ import { Content } from "../../../../shared/models";
                         ><cl-icon name="external"
                       /></a>
                     }
-                    <button
-                      class="icon-button danger-text"
-                      (click)="deleting = c; error = ''"
-                      [attr.aria-label]="'Delete ' + c.title"
-                    >
-                      <cl-icon name="trash" />
-                    </button>
                   </div>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td [attr.colspan]="kind === 'page' ? 7 : 4" class="empty-cell">
+                <td
+                  [attr.colspan]="
+                    (kind === 'page' ? 7 : 4) + (seoEnabled ? 1 : 0)
+                  "
+                  class="empty-cell"
+                >
                   <h3>No {{ kind }}s found</h3>
                   <p>
                     {{
@@ -194,7 +367,7 @@ import { Content } from "../../../../shared/models";
           aria-labelledby="quick-title"
           (ngSubmit)="saveQuick()"
         >
-          <h2 id="quick-title">Quick Edit page</h2>
+          <h2 id="quick-title">Quick Edit {{ kind }}</h2>
           <label class="standalone-field"
             >Title<input
               name="title"
@@ -279,6 +452,29 @@ import { Content } from "../../../../shared/models";
   `,
 })
 export class ContentComponent implements OnInit {
+  indexingId = "";
+  async instantIndex(c: Content) {
+    if (this.indexingId) return;
+    this.indexingId = c.id;
+    try {
+      const result = await this.api.request("/admin/seo/index", "POST", {
+        contentId: c.id,
+      });
+      this.api.toast(result.message);
+    } catch (error) {
+      this.api.toast((error as Error).message);
+    } finally {
+      this.indexingId = "";
+    }
+  }
+  seo(c: Content) {
+    return analyzeSeo(c, this.api.state()?.settings);
+  }
+  get seoEnabled() {
+    return !!this.api
+      .state()
+      ?.plugins.some((p) => p.id === "com.colossal.seo" && p.active);
+  }
   api = inject(ApiService);
   route = inject(ActivatedRoute);
   router = inject(Router);
@@ -370,7 +566,7 @@ export class ContentComponent implements OnInit {
           ...this.quick,
           expectedUpdatedAt: this.quick.updatedAt,
         },
-        "Page updated.",
+        this.kind === "post" ? "Post updated." : "Page updated.",
       );
       this.quick = null;
     } catch (e) {

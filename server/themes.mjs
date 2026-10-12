@@ -1,5 +1,7 @@
 import { zipSync, strToU8 } from "fflate";
 import semver from "semver";
+import { seoMetadata } from "./seo.mjs";
+import { formatPageTitle } from "../shared/page-title.ts";
 import {
   migrateThemeDocument,
   removeStandaloneExcerptBlocks,
@@ -289,6 +291,17 @@ export async function ensureThemes(db) {
     !(await ensureThemeDocumentUpgrade(
       db,
       "glossy-identity-menu-v1",
+      (document) => {
+        if (isGlasseyTheme(document.manifest?.id))
+          migrateGlasseyDocument(document);
+      },
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-brand-layout-v1",
       (document) => {
         if (isGlasseyTheme(document.manifest?.id))
           migrateGlasseyDocument(document);
@@ -644,9 +657,8 @@ export async function publicThemeRenderData(request, env) {
     ? ctx.content.details?.metaTitle || ctx.content.title
     : "";
   const metadata = {
-    title: entryTitle
-      ? entryTitle + " · " + ctx.settings.title
-      : ctx.settings.title,
+    ...(await seoMetadata(env.DB, ctx, u.origin, !!token)),
+    title: formatPageTitle(entryTitle, ctx.settings),
     description:
       ctx.content?.details?.metaDescription ||
       ctx.content?.excerpt ||

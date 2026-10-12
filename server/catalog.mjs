@@ -1,6 +1,8 @@
 import { manifests } from "../plugins/registry.mjs";
 export const catalog = manifests;
 export const defaultSettings = {
+  titleFormat: "page-site",
+  titleSeparator: "·",
   title: "Colossal Journal",
   tagline: "A space for ideas worth sharing.",
   accent: "#246b50",
@@ -36,4 +38,58 @@ export const sampleContent = [
     body: "Start with the idea you cannot stop thinking about.\n\nThis sample draft is only visible in your workspace until you publish it.",
     status: "draft",
   },
-];
+].map((entry) => ({
+  ...entry,
+  details: {
+    contentBlocks: entry.body.split(/\n\n+/).map((text, index) => ({
+      id: `blk_sample_${entry.id}_${index + 1}`,
+      type: "core/paragraph",
+      settings: {
+        html: text
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;"),
+        align: "left",
+      },
+    })),
+  },
+}));
+
+/** Upgrade untouched sample bodies without overwriting authored blocks or formatting. */
+export async function migrateSampleContent(db) {
+  for (const sample of sampleContent) {
+    const row = await db
+      .prepare("SELECT kind,body,details FROM content WHERE id=?")
+      .bind(sample.id)
+      .first();
+    if (!row || row.kind !== sample.kind || row.body !== sample.body) continue;
+    let details;
+    try {
+      details = JSON.parse(row.details || "{}");
+    } catch {
+      continue;
+    }
+    if (
+      !details ||
+      typeof details !== "object" ||
+      Array.isArray(details) ||
+      details.contentBlocks !== undefined ||
+      details.richText !== undefined
+    )
+      continue;
+    await db
+      .prepare(
+        "UPDATE content SET details=? WHERE id=? AND body=? AND details=?",
+      )
+      .bind(
+        JSON.stringify({
+          ...details,
+          contentBlocks: sample.details.contentBlocks,
+        }),
+        sample.id,
+        row.body,
+        row.details,
+      )
+      .run();
+  }
+}

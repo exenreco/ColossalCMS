@@ -33,6 +33,7 @@ All application files live at the **repository root**. Run commands in the direc
 - [Plugins and extensions](#plugins-and-extensions)
   - [Maintenance](#maintenance)
   - [Google Ads](#google-ads)
+  - [Advanced SEO](#advanced-seo)
   - [Plugin packages and development](#plugin-packages-and-development)
 - [Authentication and authorization](#authentication-and-authorization)
   - [Runtime identity boundary](#runtime-identity-boundary)
@@ -498,6 +499,8 @@ Dirty content autosaves every 60 seconds. Manual updates use `expectedUpdatedAt`
     </tbody>
 </table>
 
+In **Settings → General → Page titles**, choose Page title + Site title, Site title + Page title, Page title only, or Site title only, and select a separator (`|`, `·`, `-`, `—`, or `:`). Browser titles and SEO previews use this format, including each entry’s meta-title override. Existing sites retain Page title · Site title until changed.
+
 In **Settings → General → Pages & Routing**, choose published Home, Posts, and 404 pages. A page can have one role. The 404 page is excluded from normal navigation and ordinary page routing. Unpublishing/deleting assigned pages clears the role and creates a notice.
 
 ## Block editors
@@ -784,7 +787,7 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
         </tr>
         <tr>
             <td>Optional bundled</td>
-            <td>Reading time, Announcement bar, Google Ads, Login Security, Maintenance</td>
+            <td>Reading time, Announcement bar, Google Ads, Login Security, Maintenance, Advanced SEO</td>
         </tr>
     </tbody>
 </table>
@@ -862,6 +865,14 @@ The cron endpoint returns **200** for successful or skipped runs and **503** for
 ### Login Security
 
 Login Security is an optional bundled plugin activated by default. It provides persistent IP attempt limits, automatic timed blocks, admin-managed blocks, sign-in activity monitoring and login-form retry countdowns. Open **Admin → Login Security** to configure it. See [Login Security workflows, hosting behavior and API](docs/developers/login-security.md).
+
+### Advanced SEO
+
+Advanced SEO is an optional bundled plugin enabled when first registered. Open **Admin → SEO** to configure the production site origin, publisher identity, default page/post schemas and breadcrumb metadata. In each page or post’s right Inspector, expand **SEO** for a focus keyword, a live score and checklist, desktop/mobile search previews, canonical URL, indexing, social sharing and schema controls. Pages and Posts tables also display scores.
+
+Schemas include WebPage, Article, BlogPosting, AboutPage, ContactPage, ProfilePage and per-entry FAQPage questions/answers. Published pages receive metadata and JSON-LD in their first HTML response; frontend navigation refreshes that metadata. `/sitemap.xml` lists public indexable content, and `/robots.txt` links to it. Deactivation removes plugin output without deleting saved settings or the existing title/description fields. Scores and previews are guidance, not guarantees of rankings or search result layouts. See the [Advanced SEO workflow, storage and API guide](docs/developers/seo.md).
+
+Hover or keyboard-focus a page/post title to reveal **Edit**, **Quick Edit**, and **Delete** without shifting the table. With SEO active, the menu adds **Instant Index** for published, indexable content. Configure IndexNow in **SEO → Instant indexing** with the production HTTPS origin and generated verification key, save and deploy. The CMS hosts the public key file and submits the saved entry URL to IndexNow on demand, reporting acceptance or pending verification. This notifies participating search engines; it does not guarantee indexing and does not use Google's restricted Indexing API for ordinary content.
 
 ### Google Ads
 
