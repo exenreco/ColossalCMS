@@ -6,6 +6,7 @@ import {
   esc,
 } from "./theme-engine.mjs";
 import { upgradeMidnight } from "./midnight-maintenance.mjs";
+import { analyticsTarget } from "./view-analytics.mjs";
 import {
   all,
   parse,
@@ -218,6 +219,7 @@ export async function maintenanceRender(db, state) {
       "Our website is temporarily under maintenance. Please check back soon.",
     maintenance: true,
     status: 503,
+    analyticsTarget: analyticsTarget("maintenance", state.document.manifest.id),
     adsEnabled: false,
     preview: false,
   };

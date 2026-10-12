@@ -29,6 +29,10 @@ import { MaintenanceState } from "../maintenance-state";
     .maintenance-settings h2 {
       margin-bottom: 12px;
     }
+    .maintenance-views {
+      display: block;
+      margin-top: 8px;
+    }
     .maintenance-controls {
       display: flex;
       flex-wrap: wrap;
@@ -188,6 +192,9 @@ import { MaintenanceState } from "../maintenance-state";
                 >{{ l.hasDraft ? "Draft saved · " : "" }}Edit with the full
                 block editor and Inspector.</small
               >
+              <small class="maintenance-views"
+                >{{ views[l.id] || 0 }} views · last 30 days</small
+              >
             </div>
           </article>
         }
@@ -228,6 +235,8 @@ import { MaintenanceState } from "../maintenance-state";
               {{ l.active ? "Selected layout" : "Available layout"
               }}{{ l.hasDraft ? " · Draft saved" : "" }}
             </dd>
+            <dt>Views · last 30 days</dt>
+            <dd>{{ views[l.id] || 0 }}</dd>
           </dl>
           @if (error) {
             <p class="error" role="alert">{{ error }}</p>
@@ -281,6 +290,7 @@ export class MaintenanceComponent implements OnInit {
   router = inject(Router);
   layouts: ThemeSummary[] = [];
   thumbnails: Record<string, SafeHtml> = {};
+  views: Record<string, number> = {};
   settings = {
     enabled: false,
     layoutId: "",
@@ -308,6 +318,10 @@ export class MaintenanceComponent implements OnInit {
       this.layouts = data.layouts;
       this.settings = data.settings;
       this.revision = data.revision;
+      const analytics = await this.api.request(
+        "/admin/analytics/views?type=maintenance",
+      );
+      this.views = analytics.counts;
       await Promise.all(
         this.layouts.map(async (l) => {
           const record = await this.api.request("/maintenance/" + l.id);

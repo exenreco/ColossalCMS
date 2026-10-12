@@ -337,6 +337,42 @@ test("maintenance serves rendered HTTP 503, preserves admin access and disables 
       (await call(preview.data.url, "GET", undefined, {})).status,
       200,
     );
+    await call("/", "GET", undefined, { "Sec-Purpose": "prefetch" });
+    const selectedPreview = (await call("/api/maintenance")).data.settings
+      .layoutId;
+    await call("/api/maintenance/" + selectedPreview + "/preview");
+    const analytics = await call("/api/admin/analytics/views?type=maintenance");
+    const selected = (await call("/api/maintenance")).data.settings.layoutId;
+    assert.equal(analytics.status, 200);
+    assert.equal(analytics.data.counts[selected], 4);
+    assert.equal(analytics.data.days, 30);
+    assert.equal(
+      (
+        await call(
+          "/api/admin/analytics/views?type=maintenance",
+          "GET",
+          undefined,
+          {},
+        )
+      ).status,
+      401,
+    );
+    assert.equal(
+      (await call("/api/admin/analytics/views?type=bad%20type")).status,
+      400,
+    );
+    assert.equal(
+      (await DB.prepare("SELECT COUNT(*) AS n FROM analytics_views").first()).n,
+      4,
+    );
+    const originalPrepare = DB.prepare;
+    DB.prepare = (sql) => {
+      if (sql.startsWith("INSERT INTO analytics_views"))
+        throw new Error("Tracking unavailable");
+      return originalPrepare(sql);
+    };
+    assert.equal((await call("/about", "GET", undefined, {})).status, 503);
+    DB.prepare = originalPrepare;
     await call("/api/admin/plugins", "POST", {
       id: MAINTENANCE_ID,
       action: "deactivate",

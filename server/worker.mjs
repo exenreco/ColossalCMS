@@ -21,7 +21,8 @@ import {
 } from "./seo.mjs";
 import { editorPreferences } from "./editor-preferences.mjs";
 import { migrateSiteAppearance } from "./site-appearance.mjs";
-import { contentViewAnalytics, recordContentView } from "./content-views.mjs";
+import { contentViewAnalytics } from "./content-views.mjs";
+import { recordDocumentView, analyticsViewCounts } from "./view-analytics.mjs";
 import {
   readAdSettings,
   validateAdSettings,
@@ -407,6 +408,9 @@ export default {
                 String(maintenance.settings.retryAfter),
               );
               headers.set("X-Robots-Tag", "noindex");
+              await recordDocumentView(database(env), request, rendered).catch(
+                () => {},
+              );
               return new Response(
                 request.method === "HEAD"
                   ? null
@@ -434,7 +438,7 @@ export default {
           headers.set("Cache-Control", "no-store");
           headers.set("Content-Type", "text/html; charset=utf-8");
           // Analytics failure must never replace a successfully rendered page.
-          await recordContentView(database(env), request, rendered).catch(
+          await recordDocumentView(database(env), request, rendered).catch(
             () => {},
           );
           let html =
@@ -600,6 +604,14 @@ export default {
         return json({ user, passwordAuth: env.PASSWORD_AUTH === true });
       }
       const user = await identity(request, db);
+      if (path === "/api/admin/analytics/views" && request.method === "GET") {
+        if (user.role !== "admin")
+          fail("Administrator access is required.", 403);
+        const type = url.searchParams.get("type") || "";
+        if (!/^[a-z][a-z0-9._-]{0,79}$/.test(type))
+          fail("Choose a valid analytics target type.");
+        return json(await analyticsViewCounts(db, type));
+      }
       if (path === "/api/admin/editor/preferences")
         return await editorPreferences(request, db, user);
       if (path.startsWith("/api/maintenance"))

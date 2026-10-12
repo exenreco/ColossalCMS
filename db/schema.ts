@@ -39,6 +39,23 @@ export const contentViews = sqliteTable(
     index("idx_content_views_content").on(t.contentId),
   ],
 );
+export const analyticsViews = sqliteTable(
+  "analytics_views",
+  {
+    id: text("id").primaryKey(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    viewedAt: text("viewed_at").notNull(),
+  },
+  (t) => [
+    index("idx_analytics_views_target").on(
+      t.targetType,
+      t.viewedAt,
+      t.targetId,
+    ),
+    index("idx_analytics_views_time").on(t.viewedAt),
+  ],
+);
 export const authCredentials = sqliteTable("auth_credentials", {
   id: text("id").primaryKey(),
   passwordHash: text("password_hash").notNull(),

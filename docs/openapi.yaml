@@ -142,6 +142,34 @@ components:
             properties:
               error: { type: string }
 paths:
+  /admin/analytics/views:
+    get:
+      summary: Read core analytics totals for a plugin target type
+      description: Administrator-only rolling 30-day document views by target ID. Maintenance views count public HTTP 503 document loads separately from page/post totals. Editor renders, previews, HEAD and prefetch requests are excluded. This is a read endpoint; plugins cannot submit views from the browser.
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema: { type: string, pattern: "^[a-z][a-z0-9._-]{0,79}$" }
+          example: maintenance
+      responses:
+        "200":
+          description: Counts for targets with views; missing IDs have zero views
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type: { type: string }
+                  days: { type: integer, const: 30 }
+                  start: { type: string, format: date-time }
+                  end: { type: string, format: date-time }
+                  counts:
+                    type: object
+                    additionalProperties: { type: integer, minimum: 0 }
+        "400": { description: Invalid target type }
+        "401": { description: Sign-in required }
+        "403": { description: Administrator access required }
   /admin/seo/index:
     post:
       summary: Submit a published indexable entry to IndexNow (authenticated member, same origin)

@@ -34,6 +34,9 @@ describe("Maintenance layout cards and details", () => {
       .should("not.exist");
     cy.get("@card").find(".theme-details-trigger").focus();
     cy.get("@card")
+      .find(".maintenance-views")
+      .should("have.text", "0 views · last 30 days");
+    cy.get("@card")
       .find(".theme-preview-overlay")
       .should("have.css", "opacity", "1");
     cy.get("@card")
@@ -53,6 +56,10 @@ describe("Maintenance layout cards and details", () => {
     cy.get(".theme-details-description").should(
       "have.text",
       layout.description,
+    );
+    cy.get(".theme-details-meta").should(
+      "contain.text",
+      "Views · last 30 days",
     );
     cy.get(".theme-details-actions .button")
       .should("have.length", 4)
