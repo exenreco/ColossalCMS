@@ -1,3 +1,4 @@
+import { pluginRuntime } from "./plugin-runtime.mjs";
 import {
   ensureThemes,
   activeTheme,
@@ -12,30 +13,11 @@ import { renderContentCanvas } from "./theme-engine.mjs";
 import { publicHtml, unavailablePublicRender } from "./public-html.mjs";
 import { WORKSPACE_STEPS } from "../shared/workspace-progress.ts";
 import { TITLE_FORMATS, TITLE_SEPARATORS } from "../shared/page-title.ts";
-import {
-  readSeoSettings,
-  validateSeoSettings,
-  seoDiscovery,
-  indexNowKeyFile,
-  submitIndexNow,
-} from "./seo.mjs";
 import { editorPreferences } from "./editor-preferences.mjs";
 import { migrateSiteAppearance } from "./site-appearance.mjs";
 import { contentViewAnalytics } from "./content-views.mjs";
 import { recordDocumentView, analyticsViewCounts } from "./view-analytics.mjs";
-import {
-  readAdSettings,
-  validateAdSettings,
-  adVerification,
-} from "./google-ads.mjs";
-import { handleConnections } from "./production-connections.mjs";
-import {
-  handleMaintenance,
-  maintenanceState,
-  maintenanceRender,
-  maintenanceHtml,
-} from "./maintenance.mjs";
-import { handleLoginSecurity, LOGIN_SECURITY_ID } from "./login-security.mjs";
+import { LOGIN_SECURITY_ID } from "./login-security.mjs";
 import { handleMedia, serveMedia } from "./media.mjs";
 import {
   uploadedPlugins,
@@ -318,45 +300,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     try {
-      if (
-        /^\/[a-zA-Z0-9-]{8,128}\.txt$/.test(path) &&
-        ["GET", "HEAD"].includes(request.method)
-      ) {
-        const key = await indexNowKeyFile(database(env), path);
-        if (key)
-          return new Response(request.method === "HEAD" ? null : key.body, {
-            headers: key.headers,
-          });
-      }
-      if (path === "/ads.txt" && ["GET", "HEAD"].includes(request.method)) {
-        const { adsTxt } = await adVerification(database(env));
-        return new Response(
-          request.method === "HEAD"
-            ? null
-            : adsTxt ||
-                "ads.txt is disabled or no AdSense publisher is configured.\n",
-          {
-            status: adsTxt ? 200 : 404,
-            headers: {
-              "Content-Type": "text/plain; charset=utf-8",
-              "Cache-Control": "no-store",
-              "X-Content-Type-Options": "nosniff",
-            },
-          },
-        );
-      }
+      const pluginPublicResponse = await pluginRuntime.dispatch("public", {
+        request,
+        env,
+        path,
+        database: () => database(env),
+      });
+      if (pluginPublicResponse) return pluginPublicResponse;
       if (!path.startsWith("/api/")) {
-        if (
-          ["/robots.txt", "/sitemap.xml"].includes(path) &&
-          ["GET", "HEAD"].includes(request.method)
-        ) {
-          const discovery = await seoDiscovery(database(env), request);
-          if (discovery)
-            return new Response(
-              request.method === "HEAD" ? null : discovery.body,
-              { status: discovery.status, headers: discovery.headers },
-            );
-        }
         if (path === "/admin")
           return Response.redirect(url.origin + "/admin/", 302);
         const isAdmin = path.startsWith("/admin/");
@@ -388,34 +339,28 @@ export default {
           response.status === 200 &&
           ["GET", "HEAD"].includes(request.method)
         ) {
-          let rendered, publisher;
+          let rendered, pluginMetadata;
           try {
-            let maintenance = await maintenanceState(database(env), request);
-            if (maintenance && url.searchParams.has("themePreview")) {
-              await publicThemeRender(request, env); // Validate signed previews before allowing a bypass.
-              maintenance = null;
-            }
-            if (maintenance) {
-              const rendered = await maintenanceRender(
-                database(env),
-                maintenance,
-              );
+            const override = await pluginRuntime.document({
+              request,
+              env,
+              database: () => database(env),
+            });
+            if (override) {
               headers.delete("Content-Length");
               headers.delete("ETag");
-              headers.set("Cache-Control", "no-store");
-              headers.set(
-                "Retry-After",
-                String(maintenance.settings.retryAfter),
-              );
-              headers.set("X-Robots-Tag", "noindex");
-              await recordDocumentView(database(env), request, rendered).catch(
-                () => {},
-              );
+              for (const [key, value] of Object.entries(override.headers || {}))
+                headers.set(key, value);
+              await recordDocumentView(
+                database(env),
+                request,
+                override.rendered,
+              ).catch(() => {});
               return new Response(
                 request.method === "HEAD"
                   ? null
-                  : maintenanceHtml(await response.text(), rendered),
-                { status: 503, headers },
+                  : override.html(await response.text()),
+                { status: override.status, headers },
               );
             }
             const renderUrl = new URL(request.url);
@@ -428,7 +373,12 @@ export default {
               new Request(renderUrl, request),
               env,
             );
-            ({ publisher } = await adVerification(database(env)));
+            pluginMetadata = await pluginRuntime.metadata({
+              request,
+              env,
+              rendered,
+              database: () => database(env),
+            });
           } catch (error) {
             if (url.searchParams.has("themePreview")) throw error;
             rendered = unavailablePublicRender();
@@ -445,11 +395,8 @@ export default {
             request.method === "HEAD"
               ? null
               : publicHtml(await response.text(), rendered);
-          if (html && publisher)
-            html = html.replace(
-              /<\/head>/i,
-              `<meta name="google-adsense-account" content="${publisher}"></head>`,
-            );
+          if (html && pluginMetadata)
+            html = html.replace(/<\/head>/i, pluginMetadata + "</head>");
           if (rendered.preview) headers.set("X-Robots-Tag", "noindex");
           else if (rendered.seo?.robots)
             headers.set("X-Robots-Tag", rendered.seo.robots);
@@ -465,10 +412,6 @@ export default {
       }
       const db = database(env);
       if (path === "/api/themes/render" && request.method === "GET") {
-        const maintenance =
-          !url.searchParams.has("themePreview") &&
-          (await maintenanceState(db, request));
-        if (maintenance) return json(await maintenanceRender(db, maintenance));
         return await publicThemeRender(request, env);
       }
       const themeAsset = path.match(/^\/api\/themes\/([^/]+)\/assets\/(.+)$/);
@@ -507,14 +450,6 @@ export default {
           identity,
         );
       if (path === "/api/public" && request.method === "GET") {
-        if (await maintenanceState(db, request))
-          return json({
-            maintenance: true,
-            settings: {},
-            content: [],
-            plugins: [],
-            media: [],
-          });
         const s = await state(db, null);
         return json({
           settings: s.settings,
@@ -614,20 +549,15 @@ export default {
       }
       if (path === "/api/admin/editor/preferences")
         return await editorPreferences(request, db, user);
-      if (path.startsWith("/api/maintenance"))
-        return await handleMaintenance(request, env, user, path);
-      if (path.startsWith("/api/admin/connections"))
-        return await handleConnections(request, env, user);
-      if (path.startsWith("/api/admin/login-security"))
-        return await handleLoginSecurity(request, env, user);
-      if (path === "/api/admin/google-ads" && request.method === "GET") {
-        requireAdmin(user);
-        return json(await readAdSettings(db));
-      }
-      if (path === "/api/admin/seo" && request.method === "GET") {
-        requireAdmin(user);
-        return json(await readSeoSettings(db));
-      }
+      const pluginAdminResponse = await pluginRuntime.dispatch("admin", {
+        request,
+        env,
+        db,
+        user,
+        path,
+        log: (message) => log(db, message),
+      });
+      if (pluginAdminResponse) return pluginAdminResponse;
       if (path.startsWith("/api/themes"))
         return await handleThemes(request, env, user, path);
       if (path.startsWith("/api/media"))
@@ -682,14 +612,6 @@ export default {
         } catch {
           fail("Invalid JSON.");
         }
-      }
-      if (path === "/api/admin/seo/index" && request.method === "POST") {
-        const result = await submitIndexNow(db, request, body.contentId);
-        await log(
-          db,
-          `IndexNow submitted ${result.url} (HTTP ${result.status})`,
-        );
-        return json(result);
       }
       if (path === "/api/admin/content/render" && request.method === "POST") {
         const draft = body.content || {};
@@ -961,28 +883,6 @@ export default {
         return json({ ok: true });
       }
       requireAdmin(user);
-      if (path === "/api/admin/seo" && request.method === "POST") {
-        const settings = validateSeoSettings(body);
-        await db
-          .prepare(
-            "INSERT INTO config (id,value) VALUES ('seo',?) ON CONFLICT(id) DO UPDATE SET value=excluded.value",
-          )
-          .bind(JSON.stringify(settings))
-          .run();
-        await log(db, "Updated SEO settings");
-        return json({ ok: true });
-      }
-      if (path === "/api/admin/google-ads" && request.method === "POST") {
-        const settings = validateAdSettings(body);
-        await db
-          .prepare(
-            "INSERT INTO config (id,value) VALUES ('google-ads',?) ON CONFLICT(id) DO UPDATE SET value=excluded.value",
-          )
-          .bind(JSON.stringify(settings))
-          .run();
-        await log(db, "Updated Google Ads settings");
-        return json({ ok: true });
-      }
       if (path === "/api/admin/plugins" && request.method === "POST") {
         const plugin = catalog.find((p) => p.id === body.id);
         if (!plugin) fail("This plugin is not in the bundled catalog.", 404);

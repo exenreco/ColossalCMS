@@ -10,7 +10,7 @@ export function buildVercelRuntime(outfile = "dist/server/vercel-runtime.mjs") {
     format: "esm",
     platform: "node",
     target: "node24",
-    external: ["mongodb", "@aws-sdk/*", "bcryptjs", "dotenv"],
+    external: ["mongodb", "@aws-sdk/*", "bcryptjs", "dotenv", "nodemailer"],
     banner: {
       js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',
     },

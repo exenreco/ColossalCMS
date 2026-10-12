@@ -8,6 +8,7 @@ import { resolve, extname } from "node:path";
 import { localDatabase } from "./local-database.mjs";
 import worker from "../server/worker.mjs";
 import { connectionManager } from "./connection-manager.mjs";
+import { siteMailer } from "./site-mailer.mjs";
 import { passwordAuth } from "./password-auth.mjs";
 import { handleNodeAuth } from "./node-auth.mjs";
 import { writeResponseBody } from "./response-body.mjs";
@@ -18,6 +19,7 @@ await mkdir(dataDir, { recursive: true });
 const STORAGE = localStorage(resolve(dataDir, "storage"));
 const DB = localDatabase(resolve(dataDir, "colossal.sqlite"));
 const CONNECTIONS = connectionManager({ localDataDir: resolve(dataDir) });
+const MAIL = siteMailer(DB, CONNECTIONS);
 const bypass = process.env.CMS_DEV_AUTH_BYPASS === "true";
 let setupToken = process.env.CMS_SETUP_TOKEN || "";
 const tokenFile = resolve(dataDir, "setup-token");
@@ -110,6 +112,7 @@ const cmsServer = http
         ASSETS,
         STORAGE,
         CONNECTIONS,
+        MAIL,
         AUTH,
         HEARTBEAT,
         PASSWORD_AUTH: !bypass,

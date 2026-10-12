@@ -5,6 +5,7 @@ import { FormsModule } from "@angular/forms";
 import { DatePipe } from "@angular/common";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
+import { SmtpSettingsComponent } from "../../../../shared/smtp-settings.component";
 import {
   formatPageTitle,
   TITLE_SEPARATORS,
@@ -12,7 +13,13 @@ import {
 @Component({
   selector: "cl-settings",
   standalone: true,
-  imports: [DialogFocusDirective, FormsModule, IconComponent, DatePipe],
+  imports: [
+    DialogFocusDirective,
+    FormsModule,
+    IconComponent,
+    DatePipe,
+    SmtpSettingsComponent,
+  ],
   styles: `
     .reading-panels {
       display: grid;
@@ -21,6 +28,14 @@ import {
     .admin-appearance-section {
       border-top: 0;
       padding-top: 0;
+    }
+    .settings-layout.smtp-layout {
+      grid-template-columns: 180px minmax(0, 1fr);
+    }
+    @media (max-width: 700px) {
+      .settings-layout.smtp-layout {
+        grid-template-columns: 1fr;
+      }
     }
   `,
   template: `
@@ -37,13 +52,14 @@ import {
         <p>Ask your workspace administrator to update these settings.</p>
       </div>
     } @else {
-      <div class="settings-layout">
+      <div class="settings-layout" [class.smtp-layout]="tab === 'SMTP'">
         <nav class="settings-nav" aria-label="Settings sections">
           @for (
             t of [
               "General",
               "Reading",
               "Appearance",
+              "SMTP",
               "Team & roles",
               "API keys",
             ];
@@ -55,6 +71,9 @@ import {
           }
         </nav>
         <div class="settings-content">
+          @if (tab === "SMTP") {
+            <cl-smtp-settings />
+          }
           @if (tab === "General" || tab === "Appearance") {
             <form class="panel settings-panel" (ngSubmit)="save()">
               <div class="panel-heading">

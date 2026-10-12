@@ -1,4 +1,4 @@
-import { SeoOverviewComponent } from "../../../../shared/seo-overview.component";
+import { AdminExtensionSlotComponent } from "../../../../shared/admin-extension-slot.component";
 import { ViewsChartComponent } from "../../../../shared/views-chart.component";
 import { Component, inject } from "@angular/core";
 import { DatePipe } from "@angular/common";
@@ -13,7 +13,7 @@ import { Content } from "../../../../shared/models";
     RouterLink,
     IconComponent,
     DatePipe,
-    SeoOverviewComponent,
+    AdminExtensionSlotComponent,
     ViewsChartComponent,
   ],
   template: `
@@ -90,7 +90,7 @@ import { Content } from "../../../../shared/models";
         </p>
       </section>
     }
-    <cl-seo-overview />
+    <cl-admin-extension-slot slot="dashboard" />
     <div class="dashboard-columns">
       <div class="dashboard-main">
         <section class="panel">

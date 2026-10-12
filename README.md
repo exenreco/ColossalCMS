@@ -796,6 +796,44 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 
 ## Plugins and extensions
 
+### Shared SMTP mail
+
+Open **Settings → SMTP** to configure outgoing mail for the entire site. Mail2World is the default provider; **Other SMTP provider** supports any provider offering authenticated SMTP. Enter the outgoing hostname supplied for your account, port, encryption, From address/name, and optional Reply-to address. Mail2World lists SMTP access with its [Premium offering](https://www.mail2world.com/); verify the capabilities of your own account. The CMS does not assume a universal Mail2World server hostname.
+
+The SMTP tab uses two separate panels: **SMTP** configuration on the left and **Test email** on the right. They sit side by side on wider screens and stack on narrow screens. The **Enable outgoing mail** checkbox and label are displayed inline. Use the SMTP panel to save account settings and verify the connection; use the Test email panel to check delivery to a specific recipient.
+
+Save settings before testing. **Verify connection** connects/authenticates without sending mail. **Send test email** submits a fixed test message to the entered recipient. SMTP acceptance does not guarantee inbox delivery; check spam and the provider’s sender/domain requirements. SMTP is disabled initially, and all test/configuration endpoints require administrator access. No mail is sent automatically during setup or configuration.
+
+| Setting | Storage | Purpose |
+| --- | --- | --- |
+| Provider, host, port, encryption, From, Reply-to, enabled | Database `config` record `smtp` | Shared site-wide configuration |
+| `SMTP_USERNAME` | Hosting environment or private `.env.production` | Account login |
+| `SMTP_PASSWORD` | Hosting environment or private `.env.production` | Password/app password; never returned by SMTP settings API |
+
+On local/persistent Node hosting, the SMTP tab writes credentials through the existing private dotenv credential manager. Blank password inputs preserve the current password. Hosting-managed credentials cannot be overwritten from the UI. On Vercel, set `SMTP_USERNAME` and `SMTP_PASSWORD` in Project Settings and redeploy; the SMTP tab can still save non-secret database settings. Native Cloudflare Worker hosting requires a compatible `MAIL` adapter; the supplied SMTP transport runs on Node, including Vercel Functions.
+
+Trusted server plugins call the shared capability instead of creating their own transports or storing credentials:
+
+```js
+import { sendSiteMail } from "../../server/mail.mjs";
+await sendSiteMail(env, {
+  to: "recipient@example.com",
+  subject: "Your notification",
+  text: "Message supplied by the plugin.",
+});
+```
+
+The service enforces the configured sender, TLS/certificate validation, bounded connection timeouts, and disabled URL/filesystem content loading. It accepts 1–50 recipients with text and/or HTML bodies; attachment and transport overrides are not part of this initial contract. Plugins must call it from trusted, authorized workflows, not create public arbitrary-recipient sending endpoints. Disabled or incomplete configurations fail explicitly; provider errors are masked. Existing features that do not send email are unchanged; future mail features should use `sendSiteMail`. There is no background queue or automatic retry.
+
+| Endpoint | Method | Behavior |
+| --- | --- | --- |
+| `/api/admin/settings/smtp` | GET | Settings and credential availability/management flags; no password |
+| `/api/admin/settings/smtp` | POST | Save `{ settings, username?, password? }` |
+| `/api/admin/settings/smtp/verify` | POST | Verify saved connection without sending mail |
+| `/api/admin/settings/smtp/test` | POST | Send a fixed test message using `{ to }` |
+
+Plugin server routes, document overrides, metadata, block rendering, and admin dashboard widgets use reviewed extension registries. See the [Plugin extension registry guide](docs/developers/plugin-extensions.md) for contribution contracts, composition roots, permission rules, and the current decoupling status.
+
 <table>
     <caption>Plugins and extensions</caption>
     <thead>

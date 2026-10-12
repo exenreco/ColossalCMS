@@ -15,6 +15,8 @@ import {
 } from "./data-migration.mjs";
 
 export const ENV_FIELDS = [
+  { key: "SMTP_USERNAME", label: "SMTP username", group: "smtp" },
+  { key: "SMTP_PASSWORD", label: "SMTP password", group: "smtp", secret: true },
   {
     key: "CRON_SECRET",
     label: "Scheduled heartbeat secret",
@@ -299,6 +301,10 @@ export function connectionManager({
       } finally {
         saving = false;
       }
+    },
+    async mailCredentials() {
+      const values = await config();
+      return { user: values.SMTP_USERNAME, pass: values.SMTP_PASSWORD };
     },
     async reveal(key) {
       if (!ENV_FIELDS.some((f) => f.key === key))

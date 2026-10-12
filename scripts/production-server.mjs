@@ -9,6 +9,7 @@ import {
   validateConnectionConfig,
 } from "./connection-manager.mjs";
 import { connectMongo } from "./mongo-database.mjs";
+import { siteMailer } from "./site-mailer.mjs";
 import { d1Database, migrateD1 } from "./d1-database.mjs";
 import { s3Storage } from "./s3-storage.mjs";
 import { connectGridFS } from "./gridfs-storage.mjs";
@@ -75,11 +76,18 @@ export async function productionRuntime(config, log = console.log) {
       );
     }
     await seedBuiltInData(DB, log, config.CMS_ADMIN_EMAIL);
+    const CONNECTIONS = connectionManager({
+      active: {
+        database: config.CMS_DB_PROVIDER,
+        storage: config.CMS_STORAGE_PROVIDER,
+      },
+    });
     return {
       DB,
       STORAGE,
       AUTH,
       PASSWORD_AUTH: true,
+      MAIL: siteMailer(DB, CONNECTIONS),
       HEARTBEAT: mongodbHeartbeat({
         db: DB,
         ping: DB.ping
@@ -93,12 +101,7 @@ export async function productionRuntime(config, log = console.log) {
           config.CRON_SECRET.length >= 32,
         log,
       }),
-      CONNECTIONS: connectionManager({
-        active: {
-          database: config.CMS_DB_PROVIDER,
-          storage: config.CMS_STORAGE_PROVIDER,
-        },
-      }),
+      CONNECTIONS,
     };
   } catch (e) {
     await DB?.close?.().catch(() => {});

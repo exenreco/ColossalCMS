@@ -142,6 +142,79 @@ components:
             properties:
               error: { type: string }
 paths:
+  /admin/settings/smtp:
+    get:
+      summary: Read shared SMTP settings and credential status (admin only)
+      responses:
+        "200":
+          {
+            description: Non-secret settings and credential flags; password is never returned,
+          }
+    post:
+      summary: Save shared SMTP settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [settings]
+              properties:
+                settings:
+                  type: object
+                  properties:
+                    enabled: { type: boolean }
+                    provider:
+                      {
+                        type: string,
+                        enum: [mail2world, custom],
+                        default: mail2world,
+                      }
+                    host: { type: string }
+                    port:
+                      {
+                        type: integer,
+                        minimum: 1,
+                        maximum: 65535,
+                        default: 587,
+                      }
+                    encryption:
+                      { type: string, enum: [starttls, tls], default: starttls }
+                    fromEmail: { type: string }
+                    fromName: { type: string }
+                    replyTo: { type: string }
+                username: { type: string }
+                password: { type: string, writeOnly: true }
+      responses:
+        "200":
+          { description: Settings saved; blank passwords preserve credentials }
+        "409":
+          {
+            description: Hosting-managed credentials must be configured in the hosting dashboard,
+          }
+  /admin/settings/smtp/verify:
+    post:
+      summary: Verify saved SMTP connection without sending email (admin only)
+      responses:
+        "200": { description: Connection verified }
+        "409": { description: SMTP disabled or credentials incomplete }
+        "502": { description: Masked SMTP provider error }
+  /admin/settings/smtp/test:
+    post:
+      summary: Send a fixed SMTP test email (admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to: { type: string, format: email }
+      responses:
+        "200":
+          {
+            description: Message accepted by SMTP server; not a guarantee of inbox delivery,
+          }
+        "502": { description: Masked SMTP provider error }
   /admin/analytics/views:
     get:
       summary: Read core analytics totals for a plugin target type
