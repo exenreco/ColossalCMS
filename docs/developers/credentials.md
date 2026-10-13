@@ -2,16 +2,17 @@
 
 ## Minimal production setup
 
-For MongoDB with GridFS, set these four variables in your hosting secrets or private `.env.production` file:
+For MongoDB with GridFS, set these five variables in your hosting secrets or private `.env.production` file:
 
 | Variable             | Purpose                                                                         |
 | -------------------- | ------------------------------------------------------------------------------- |
+| `CMS_DB_PROVIDER`    | Explicit bootstrap database selector: `mongodb` or `d1`                         |
 | `CMS_PUBLIC_URL`     | Exact HTTPS site origin used for authentication and request validation          |
 | `MONGODB_URI`        | Database bootstrap connection; it cannot be stored inside the database it opens |
 | `CMS_SETUP_TOKEN`    | Random token of at least 32 characters for first-run administrator setup        |
 | `CMS_ENCRYPTION_KEY` | Persistent 32-byte key encoded as 64 hexadecimal characters                     |
 
-MongoDB, database `ColossalCMS`, GridFS and bucket `colossal_media` are defaults. Generate a key on your own machine:
+Set `CMS_DB_PROVIDER=mongodb` for MongoDB or `CMS_DB_PROVIDER=d1` for Cloudflare D1. The selector is read before opening the database and remains in your private environment. If omitted, MongoDB remains the compatibility default. Database `ColossalCMS`, GridFS and bucket `colossal_media` are defaults. Generate a key on your own machine:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
@@ -27,7 +28,7 @@ For D1 through the Node adapter, configure `CMS_DB_PROVIDER=d1`, `CLOUDFLARE_ACC
 
 | Values                                                                                      | Storage                                   |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Database bootstrap connection, encryption key, setup token, cron secret                     | Private environment/hosting configuration |
+| Database provider and bootstrap connection, encryption key, setup token, cron secret        | Private environment/hosting configuration |
 | AI provider keys and Custom API URL                                                         | Encrypted database records                |
 | SMTP username and password                                                                  | Encrypted database records                |
 | Storage provider, GridFS bucket and R2 endpoint/bucket/region/credentials/path-style option | Encrypted database records                |
