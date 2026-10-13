@@ -45,6 +45,26 @@ describe("Content title inline menus", () => {
         });
         cy.get("@row").contains("button", "Quick Edit").click();
         cy.contains("h2", `Quick Edit ${kind}`).should("be.visible");
+        cy.request("/api/admin/state").then(({ body: state }) => {
+          const templates = state.activeTheme.manifest.templates.filter((t) =>
+            t.appliesTo.includes(kind),
+          );
+          expect(templates.length).to.be.greaterThan(0);
+          cy.wrap(templates[0].id).as("chosenTemplate");
+          cy.get('form.quick-edit-dialog select[name="templateId"]')
+            .should("have.value", "")
+            .select(templates[0].id);
+          for (const template of state.activeTheme.manifest.templates.filter(
+            (t) => !t.appliesTo.includes(kind),
+          ))
+            cy.get(
+              'form.quick-edit-dialog select[name="templateId"] option',
+            ).should(($options) =>
+              expect(
+                Array.from($options, (option) => option.value),
+              ).not.to.include(template.id),
+            );
+        });
         if (kind === "page")
           cy.get('form.quick-edit-dialog input[name="order"]')
             .should("have.value", "0")
@@ -59,6 +79,13 @@ describe("Content title inline menus", () => {
           .type(`Updated inline ${kind}`);
         cy.get("form.quick-edit-dialog").contains("button", "Save").click();
         cy.contains("tr", `Updated inline ${kind}`).as("updated");
+        cy.get("@chosenTemplate").then((templateId) => {
+          cy.request("/api/admin/state").then(({ body: state }) => {
+            expect(
+              state.content.find((c) => c.id === body.id).templateId,
+            ).to.eq(templateId);
+          });
+        });
         if (kind === "page") {
           cy.get("tbody tr").first().should("contain", "Updated inline page");
           cy.reload();
@@ -68,6 +95,11 @@ describe("Content title inline menus", () => {
           cy.get('form.quick-edit-dialog input[name="order"]').should(
             "have.value",
             "-2",
+          );
+          cy.get("@chosenTemplate").then((id) =>
+            cy
+              .get('form.quick-edit-dialog select[name="templateId"]')
+              .should("have.value", id),
           );
           cy.get("form.quick-edit-dialog").contains("button", "Cancel").click();
         }

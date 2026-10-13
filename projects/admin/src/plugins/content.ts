@@ -1,3 +1,4 @@
+import { contentTemplateScope } from "../../../../shared/content-template-scope";
 import { ContentTableState } from "../content-table-state";
 import { ChangeDetectorRef, Component, inject, OnInit } from "@angular/core";
 import { DatePipe } from "@angular/common";
@@ -400,7 +401,9 @@ import { analyzeSeo } from "../../../../shared/seo";
                         Delete
                       </button>
                       @if (seoEnabled) {
-                        <span class="action-separator" aria-hidden="true">|</span>
+                        <span class="action-separator" aria-hidden="true"
+                          >|</span
+                        >
                         <button
                           type="button"
                           (click)="instantIndex(c)"
@@ -618,6 +621,25 @@ import { analyzeSeo } from "../../../../shared/seo";
               that role in Reading Settings before changing its status.
             </p>
           }
+          <label class="standalone-field">
+            Template
+            <select
+              name="templateId"
+              [(ngModel)]="quick.templateId"
+              [disabled]="busy"
+            >
+              <option value="">Default (theme)</option>
+              @if (quickTemplateUnavailable) {
+                <option [value]="quick.templateId">
+                  {{ quick.templateId }} (unavailable; theme fallback)
+                </option>
+              }
+              @for (template of quickTemplates; track template.id) {
+                <option [value]="template.id">{{ template.name }}</option>
+              }
+            </select>
+            <small>Choose a compatible template from the active theme.</small>
+          </label>
           @if (kind === "page") {
             <label class="standalone-field"
               >Order
@@ -849,6 +871,26 @@ export class ContentComponent implements OnInit {
   authorFilter = "";
   quick: Content | null = null;
   quickOrder = 0;
+  get quickTemplates() {
+    const state = this.api.state();
+    if (!this.quick) return [];
+    const scope = contentTemplateScope(
+      this.kind,
+      this.quick.id,
+      state?.settings,
+    );
+    return (
+      state?.activeTheme?.manifest.templates.filter((t) =>
+        t.appliesTo.includes(scope),
+      ) || []
+    );
+  }
+  get quickTemplateUnavailable() {
+    return (
+      !!this.quick?.templateId &&
+      !this.quickTemplates.some((t) => t.id === this.quick!.templateId)
+    );
+  }
   get authors() {
     return [...new Set(this.all.map((c) => c.author).filter(Boolean))].sort();
   }
@@ -928,7 +970,7 @@ export class ContentComponent implements OnInit {
   }
   quickEdit(c: Content) {
     if (this.busy) return;
-    this.quick = structuredClone(c);
+    this.quick = { ...structuredClone(c), templateId: c.templateId || "" };
     this.quickOrder = c.details?.order ?? 0;
     this.error = "";
   }

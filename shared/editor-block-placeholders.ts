@@ -98,6 +98,11 @@ export function installEditorBlockPlaceholders(
     let empty = false;
     let target = element;
     switch (node.type) {
+      case "core/tagline":
+        empty = !element
+          .querySelector(".theme-site-tagline")
+          ?.textContent?.trim();
+        break;
       case "core/site-brand":
         empty =
           s.display !== "name" &&

@@ -1,4 +1,4 @@
-describe("Site Identity image placeholder", () => {
+describe("Site Identity and tagline placeholders", () => {
   const headers = { Origin: "http://127.0.0.1:4201" };
   it("shows a compact selectable image placeholder when no site image is configured", () => {
     cy.request({
@@ -18,7 +18,12 @@ describe("Site Identity image placeholder", () => {
       method: "POST",
       url: "/api/admin/settings",
       headers,
-      body: { logo: "", siteIconId: "", siteLogoId: "" },
+      body: {
+        logo: "",
+        siteIconId: "",
+        siteLogoId: "",
+        tagline: "Tagline from admin settings",
+      },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -39,6 +44,7 @@ describe("Site Identity image placeholder", () => {
               type: "core/site-brand",
               settings: { display: "logo" },
             },
+            { id: "blk_site_tagline", type: "core/tagline", settings: {} },
           ];
           cy.request({
             method: "PUT",
@@ -53,6 +59,14 @@ describe("Site Identity image placeholder", () => {
             const placeholder = $frame[0].contentDocument.querySelector(
               '[data-block-id="blk_empty_identity"] [aria-label="Site image placeholder"]',
             );
+            const tagline = $frame[0].contentDocument.querySelector(
+              '[data-block-id="blk_site_tagline"]',
+            );
+            expect(tagline.textContent).to.contain(
+              "Tagline from admin settings",
+            );
+            expect(tagline.querySelector(".cl-editor-block-placeholder")).not.to
+              .exist;
             expect(placeholder).to.exist;
             expect(placeholder.querySelector("svg")).to.exist;
             expect(placeholder.getBoundingClientRect().height).to.be.lessThan(
@@ -72,6 +86,21 @@ describe("Site Identity image placeholder", () => {
             "cl-editor-block-placeholder",
           ),
         );
+        cy.request({
+          method: "POST",
+          url: "/api/admin/settings",
+          headers,
+          body: { tagline: "" },
+        });
+        cy.reload();
+        cy.get(".theme-live-preview").should(($frame) => {
+          const tagline = $frame[0].contentDocument.querySelector(
+            '[data-block-id="blk_site_tagline"]',
+          );
+          expect(tagline).to.exist;
+          expect(tagline.querySelector('[aria-label="Tagline placeholder"]')).to
+            .exist;
+        });
       });
   });
 });

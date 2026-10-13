@@ -200,6 +200,10 @@ html[data-admin-mode="dark"] :is(.theme-card-title span, .theme-card small, .the
   padding: 20px;
   font-size: 13px;
 }
+html[data-admin-mode="dark"] .theme-report {
+  background: #141414;
+  border-color: #2b2c2a;
+}
 .theme-editor {
   position: fixed;
   inset: 0;

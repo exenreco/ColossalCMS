@@ -1,3 +1,4 @@
+import { contentTemplateScope } from "./content-template-scope";
 import {
   Component,
   ChangeDetectorRef,
@@ -1940,20 +1941,11 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
     );
   }
   get templateScope() {
-    const s = this.api.state()?.settings;
-    return this.kind === "page" &&
-      this.entry.id &&
-      this.entry.id === s?.postsPageId
-      ? "post-index"
-      : this.kind === "page" &&
-          this.entry.id &&
-          this.entry.id === s?.notFoundPageId
-        ? "404"
-        : this.kind === "page" &&
-            this.entry.id &&
-            this.entry.id === s?.homePageId
-          ? "home"
-          : this.kind;
+    return contentTemplateScope(
+      this.kind,
+      this.entry.id,
+      this.api.state()?.settings,
+    );
   }
   get defaultTemplateName() {
     const list = this.api.state()?.activeTheme?.manifest.templates || [];

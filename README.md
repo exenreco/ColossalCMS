@@ -493,7 +493,7 @@ Dashboard includes a separate **Page and post views** panel with daily UTC line 
 
 A shared **SEO overview** chart panel appears on Dashboard when Advanced SEO is installed and active, and above Site Identity on the SEO plugin page. It shows the score distribution, average score, Pages/Posts breakdowns, and pillar-content coverage using the same analysis as the editor and content tables. These are content-readiness scores, not search rankings or search-engine traffic.
 
-Quick Edit opens in the reusable `AdminModalComponent` details drawer. It supports the admin color mode, a blurred backdrop, scrolling content, keyboard focus trapping, Escape/backdrop dismissal, and focus restoration. Dismissal is disabled while saving. `BulkActionsComponent`, `TablePaginationComponent`, and `TableSelection` share selection and table controls across content and plugin administration.
+Quick Edit opens in the reusable `AdminModalComponent` details drawer. Pages and posts can choose a compatible active-theme template or return to **Default (theme)**. Pages assigned Home, Posts or 404 routing roles use that role's compatible templates. It supports the admin color mode, a blurred backdrop, scrolling content, keyboard focus trapping, Escape/backdrop dismissal, and focus restoration. Dismissal is disabled while saving. `BulkActionsComponent`, `TablePaginationComponent`, and `TableSelection` share selection and table controls across content and plugin administration.
 
 ### Routing
 
