@@ -2,17 +2,18 @@
 
 ## Minimal production setup
 
-For MongoDB with GridFS, set these five variables in your hosting secrets or private `.env.production` file:
+For MongoDB with GridFS, set these six variables in your hosting secrets or private `.env.production` file:
 
-| Variable             | Purpose                                                                         |
-| -------------------- | ------------------------------------------------------------------------------- |
-| `CMS_DB_PROVIDER`    | Explicit bootstrap database selector: `mongodb` or `d1`                         |
-| `CMS_PUBLIC_URL`     | Exact HTTPS site origin used for authentication and request validation          |
-| `MONGODB_URI`        | Database bootstrap connection; it cannot be stored inside the database it opens |
-| `CMS_SETUP_TOKEN`    | Random token of at least 32 characters for first-run administrator setup        |
-| `CMS_ENCRYPTION_KEY` | Persistent 32-byte key encoded as 64 hexadecimal characters                     |
+| Variable              | Purpose                                                                         |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `CMS_DB_PROVIDER`     | Explicit bootstrap database selector: `mongodb` or `d1`                         |
+| `CMS_PUBLIC_URL`      | Exact HTTPS site origin used for authentication and request validation          |
+| `MONGODB_URI`         | Database bootstrap connection; it cannot be stored inside the database it opens |
+| `MONGODB_DNS_SERVERS` | Node SRV/TXT resolvers: `1.1.1.1,8.8.8.8`; explicitly blank uses system DNS     |
+| `CMS_SETUP_TOKEN`     | Random token of at least 32 characters for first-run administrator setup        |
+| `CMS_ENCRYPTION_KEY`  | Persistent 32-byte key encoded as 64 hexadecimal characters                     |
 
-Set `CMS_DB_PROVIDER=mongodb` for MongoDB or `CMS_DB_PROVIDER=d1` for Cloudflare D1. The selector is read before opening the database and remains in your private environment. If omitted, MongoDB remains the compatibility default. Database `ColossalCMS`, GridFS and bucket `colossal_media` are defaults. Generate a key on your own machine:
+Set `CMS_DB_PROVIDER=mongodb` for MongoDB or `CMS_DB_PROVIDER=d1` for Cloudflare D1. The selector is read before opening the database and remains in your private environment. If omitted, MongoDB remains the compatibility default. Configure `MONGODB_DNS_SERVERS` explicitly alongside the MongoDB connection; the same resolvers remain the runtime fallback if it is omitted. Restart or redeploy after changing DNS. Database `ColossalCMS`, GridFS and bucket `colossal_media` are defaults. Generate a key on your own machine:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
