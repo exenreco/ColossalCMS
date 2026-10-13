@@ -13,7 +13,9 @@ import productionConnections from "../plugins/production-connections/plugin.mani
 import loginSecurity from "../plugins/login-security/plugin.manifest.json";
 import maintenance from "../plugins/maintenance/plugin.manifest.json";
 import seo from "../plugins/seo/plugin.manifest.json";
+import aiAssistant from "../plugins/ai-assistant/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
+  aiAssistant,
   themes,
   media,
   dashboard,
@@ -31,6 +33,10 @@ export const PLUGIN_MANIFESTS = [
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  AiAssistantComponent: () =>
+    import("../projects/admin/src/plugins/ai-assistant").then(
+      (m) => m.AiAssistantComponent,
+    ),
   SeoComponent: () =>
     import("../projects/admin/src/plugins/seo").then((m) => m.SeoComponent),
   MaintenanceComponent: () =>

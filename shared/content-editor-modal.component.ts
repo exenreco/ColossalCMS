@@ -25,6 +25,7 @@ import {
 import { IconComponent } from "./icon.component";
 import { ThemeEditorState } from "./theme-editor-state";
 import { BlockListDrawerComponent } from "./block-list-drawer.component";
+import { EditorAutomationApi } from "./editor-automation.service";
 import { ThemeOutlineApi } from "./theme-outline-api";
 import { hydrateSliders } from "./swiper-host";
 import { hydrateModels } from "./gltf-host";
@@ -71,7 +72,7 @@ import { SeoPanelComponent } from "./seo-panel.component";
     ContextualBlockToolbarComponent,
     AppearancePickerPanelComponent,
   ],
-  providers: [ThemeEditorState, ThemeOutlineApi],
+  providers: [ThemeEditorState, ThemeOutlineApi, EditorAutomationApi],
   template: `
     <section
       class="content-editor-fullscreen block-workspace"
@@ -826,6 +827,7 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
   panels = inject(ContentEditorPanelRegistry);
   context = inject(ContentEditorContext);
   themeState = inject(ThemeEditorState);
+  automation = inject(EditorAutomationApi);
   private textEditor = new InlineTextCanvasEditor(this.themeState, {
     blocks: () =>
       this.themeState.blocks.filter(
@@ -1432,6 +1434,7 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
       )
         return;
       this.previewError = "";
+      this.automation.reportRenderError();
       const html =
         '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0}html,body{min-height:100%}' +
         rendered.css +
@@ -1451,6 +1454,7 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
     } catch (e) {
       if (sequence === this.canvasSequence) {
         this.previewError = (e as Error).message;
+        this.automation.reportRenderError(this.previewError);
         this.cdr.markForCheck();
       }
     }

@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.ai-assistant",
+  "name": "AI Assistant",
+  "version": "0.0.3",
+  "description": "Chat with an AI provider to preview and apply undoable editor block changes.",
+  "author": "Colossal Core Team",
+  "license": "MIT",
+  "isCore": false,
+  "icon": "ai",
+  "requires": { "colossal": ">=0.0.3", "plugins": [] },
+  "admin": {
+    "entryComponent": "AiAssistantComponent",
+    "menu": {
+      "label": "AI Assistant",
+      "icon": "ai",
+      "path": "/admin/ai-assistant",
+      "order": 85,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

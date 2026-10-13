@@ -1,3 +1,7 @@
+import {
+  credentialStore,
+  DATABASE_CONFIG_KEYS,
+} from "../server/credential-store.mjs";
 import { readFile, writeFile, rename, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parse as parseEnv } from "dotenv";
@@ -15,6 +19,26 @@ import {
 } from "./data-migration.mjs";
 
 export const ENV_FIELDS = [
+  {
+    key: "CUSTOM_AI_API_KEY",
+    label: "Custom AI API key",
+    group: "ai",
+    secret: true,
+  },
+  { key: "CUSTOM_AI_BASE_URL", label: "Custom AI API base URL", group: "ai" },
+  { key: "OPENAI_API_KEY", label: "OpenAI API key", group: "ai", secret: true },
+  {
+    key: "ANTHROPIC_API_KEY",
+    label: "Anthropic API key",
+    group: "ai",
+    secret: true,
+  },
+  {
+    key: "GEMINI_API_KEY",
+    label: "Google Gemini API key",
+    group: "ai",
+    secret: true,
+  },
   { key: "SMTP_USERNAME", label: "SMTP username", group: "smtp" },
   { key: "SMTP_PASSWORD", label: "SMTP password", group: "smtp", secret: true },
   {
@@ -209,6 +233,9 @@ export function validateConnectionConfig(config, complete = false) {
 }
 
 export function connectionManager({
+  db,
+  encryptionKey,
+  readOnlyBootstrap = false,
   filename = ".env.production",
   hostEnv = process.env,
   active = { database: "sqlite", storage: "local" },
@@ -226,21 +253,32 @@ export function connectionManager({
       throw e;
     }
   }
+  const vault = db
+    ? credentialStore(db, {
+        key: encryptionKey || hostEnv.CMS_ENCRYPTION_KEY || "",
+        environment: hostEnv,
+        legacy: fileConfig,
+      })
+    : null;
   async function config() {
     const file = await fileConfig();
+    const stored = vault ? await vault.values() : {};
     return Object.fromEntries(
       ENV_FIELDS.map((f) => [
         f.key,
-        hostEnv[f.key] ?? file[f.key] ?? f.default ?? "",
+        hostEnv[f.key] ?? stored[f.key] ?? file[f.key] ?? f.default ?? "",
       ]),
     );
   }
   return {
     config,
+    vault,
     async describe() {
       const values = await config();
+      const encrypted = vault ? await vault.describe() : null;
       return {
         runtime: "node",
+        credentials: encrypted,
         active,
         filename: ".env.production",
         restartRequired: true,
@@ -253,6 +291,14 @@ export function connectionManager({
           value: f.secret ? "" : values[f.key],
           configured: Boolean(values[f.key]),
           managed: Object.hasOwn(hostEnv, f.key),
+          source:
+            encrypted?.fields[f.key]?.source ||
+            (Object.hasOwn(hostEnv, f.key) ? "environment" : "file"),
+          readOnly:
+            Object.hasOwn(hostEnv, f.key) ||
+            (DATABASE_CONFIG_KEYS.has(f.key) && vault
+              ? !vault.writable()
+              : readOnlyBootstrap),
         })),
       };
     },
@@ -268,6 +314,8 @@ export function connectionManager({
           fail("Use an environment configuration object.");
         const next = await config(),
           file = await fileConfig();
+        const databaseUpdates = {};
+        let fileChanged = false;
         for (const [key, value] of Object.entries(input)) {
           const field = ENV_FIELDS.find((f) => f.key === key);
           if (!field) fail("This environment key cannot be edited.");
@@ -275,9 +323,21 @@ export function connectionManager({
             fail(key + " is managed by your hosting environment.");
           if (field.secret && value === "") continue;
           next[key] = value;
-          file[key] = value;
+          if (vault && DATABASE_CONFIG_KEYS.has(key))
+            databaseUpdates[key] = value;
+          else {
+            if (readOnlyBootstrap)
+              fail(
+                "Configure bootstrap environment variables in your hosting dashboard and redeploy.",
+              );
+            file[key] = value;
+            fileChanged = true;
+          }
         }
         validateConnectionConfig(next);
+        if (Object.keys(databaseUpdates).length)
+          await vault.save(databaseUpdates);
+        if (!fileChanged) return this.describe();
         const content =
           Object.entries(file)
             .map(([key, value]) => {
@@ -309,6 +369,10 @@ export function connectionManager({
     async reveal(key) {
       if (!ENV_FIELDS.some((f) => f.key === key))
         fail("Unknown environment key.");
+      if ((await vault?.describe())?.fields[key]?.source === "database")
+        fail(
+          "Saved database credentials are never revealed. Enter a replacement to update them.",
+        );
       return { key, value: (await config())[key] };
     },
     job(id) {

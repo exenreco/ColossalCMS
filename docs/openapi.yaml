@@ -142,6 +142,309 @@ components:
             properties:
               error: { type: string }
 paths:
+  /admin/editor/batch/preview:
+    post:
+      summary: Validate an atomic editor batch without saving (admin/editor)
+      description: Neutral editor API, independent of AI Assistant activation. Supply the current editor document and scope; receives a sanitized root and before/after changes. Use EditorAutomationApi to apply locally as one undo step.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document, templateId, part, kind, revision, commands]
+              properties:
+                document: { type: object }
+                templateId: { type: string }
+                part: { type: string }
+                kind: { type: string, enum: [Body, Main] }
+                revision: { type: string }
+                commands:
+                  {
+                    type: array,
+                    minItems: 1,
+                    maxItems: 40,
+                    items: { type: object },
+                  }
+      responses:
+        "200":
+          {
+            description: Sanitized root,
+            selected ID and change list; no persistence,
+          }
+        "400": { description: Invalid batch or document }
+        "409": { description: Revision mismatch }
+  /admin/ai-assistant/settings:
+    get:
+      summary: Read AI provider configuration and key status (admin only)
+      responses:
+        "200":
+          {
+            description: Settings and configured/read-only flags; keys are never returned,
+          }
+    post:
+      summary: Save AI settings and encrypted provider credentials (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [settings]
+              properties:
+                settings:
+                  type: object
+                  required: [enabled, provider, maxOutputTokens]
+                  properties:
+                    enabled: { type: boolean }
+                    provider:
+                      {
+                        type: string,
+                        enum: ["", openai, anthropic, gemini, custom],
+                        default: "",
+                      }
+                    models:
+                      type: object
+                      properties:
+                        openai: { type: string, maxLength: 120 }
+                        anthropic: { type: string, maxLength: 120 }
+                        gemini: { type: string, maxLength: 120 }
+                        custom: { type: string, maxLength: 120 }
+                    maxOutputTokens:
+                      {
+                        type: integer,
+                        minimum: 512,
+                        maximum: 16384,
+                        default: 4096,
+                      }
+                customBaseUrl:
+                  type: string
+                  format: uri
+                  maxLength: 2048
+                  description: Trusted HTTPS Custom provider base URL; saved encrypted in the database. Hosting-managed overrides are read-only.
+                keys:
+                  type: object
+                  properties:
+                    openai: { type: string, writeOnly: true }
+                    anthropic: { type: string, writeOnly: true }
+                    gemini: { type: string, writeOnly: true }
+                    custom: { type: string, writeOnly: true }
+      responses:
+        "200": { description: Configuration saved }
+        "409":
+          {
+            description: Encryption key missing or credential managed by hosting override,
+          }
+  /admin/ai-assistant/models:
+    get:
+      summary: Discover available models for the saved provider (admin/editor, active plugin)
+      responses:
+        "200":
+          {
+            description: Provider,
+            sanitized model IDs and labels,
+            truncated flag; cached for five minutes,
+          }
+        "409": { description: Saved credentials missing }
+        "502": { description: Model catalog unavailable }
+    post:
+      summary: Query provider model catalog with entered or saved credentials (admin only, active plugin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider]
+              properties:
+                provider:
+                  { type: string, enum: [openai, anthropic, gemini, custom] }
+                apiKey:
+                  {
+                    type: string,
+                    writeOnly: true,
+                    maxLength: 4096,
+                    description: Optional entered key used only for this query; not saved.,
+                  }
+                customBaseUrl:
+                  {
+                    type: string,
+                    format: uri,
+                    maxLength: 2048,
+                    description: Optional trusted HTTPS Custom provider endpoint used only for this query.,
+                  }
+      responses:
+        "200":
+          {
+            description: Provider,
+            sanitized model IDs/labels,
+            and truncated flag; at most 500 models,
+          }
+        "409": { description: Saved API key or Custom endpoint missing }
+        "502":
+          {
+            description: Provider catalog unavailable,
+            unsupported or timed out; raw errors withheld,
+          }
+  /admin/ai-assistant/status:
+    get:
+      summary: Read editor AI availability (admin/editor)
+      responses:
+        "200":
+          { description: Enabled state, provider, model and key availability }
+  /admin/ai-assistant/media:
+    get:
+      summary: Find media for an editor proposal (admin/editor, active plugin)
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string, maxLength: 200 }
+      responses:
+        "200": { description: Up to 30 media IDs and preview metadata }
+  /admin/ai-assistant/chat:
+    post:
+      summary: Stream an AI editor proposal (admin/editor, active and enabled plugin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, context]
+              properties:
+                message: { type: string, maxLength: 8000 }
+                context:
+                  {
+                    type: object,
+                    description: Current scope root,
+                    block catalog,
+                    selected ID and revision from EditorAutomationApi,
+                  }
+                mode:
+                  {
+                    type: string,
+                    enum: [build, plan, explain],
+                    default: build,
+                    description: Plan and Explain cannot return executable block commands.,
+                  }
+                provider:
+                  {
+                    type: string,
+                    enum: [openai, anthropic, gemini, custom],
+                    description: Optional configured provider for this request; does not change saved defaults.,
+                  }
+                model:
+                  {
+                    type: string,
+                    maxLength: 120,
+                    description: Model ID selected from the provider catalog; validated on the server.,
+                  }
+                attachments:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [id, kind]
+                    properties:
+                      id: { type: string, maxLength: 200 }
+                      kind: { type: string, enum: [block, media] }
+                history: { type: array, items: { type: object } }
+      responses:
+        "200":
+          description: NDJSON status, delta, proposal or error events; no document writes
+          content:
+            application/x-ndjson:
+              schema: { type: string }
+        "409": { description: Plugin disabled or provider/model/key missing }
+        "429":
+          { description: Concurrent request or per-process member rate limit }
+  /admin/ai-assistant/test:
+    post:
+      summary: Verify the saved provider model catalog (admin only, active plugin)
+      responses:
+        "200":
+          {
+            description: NDJSON provider test result; verifies model-list access without inference,
+          }
+  /admin/ai-assistant/preview:
+    post:
+      summary: Validate and sanitize an editor batch without saving (admin/editor, active plugin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document, templateId, part, kind, revision, commands]
+              properties:
+                document: { type: object }
+                templateId: { type: string }
+                part: { type: string }
+                kind: { type: string, enum: [Body, Main] }
+                revision:
+                  {
+                    type: string,
+                    description: SHA-256 of editor document and scope,
+                  }
+                commands:
+                  type: array
+                  minItems: 1
+                  maxItems: 40
+                  items:
+                    {
+                      type: object,
+                      description: Outline document command with optional ref,
+                    }
+      responses:
+        "200":
+          {
+            description: Sanitized root,
+            selected ID and before/after changes; saved and published are false,
+          }
+        "400":
+          { description: Invalid batch, nesting, settings or media references }
+        "409": { description: Editor revision mismatch }
+  /admin/connections:
+    get:
+      summary: Read production configuration and encrypted credential metadata (admin only)
+      responses:
+        "200":
+          {
+            description: Masked fields,
+            sources,
+            write availability,
+            heartbeat state and credential migration candidates,
+          }
+  /admin/connections/credentials/migrate:
+    post:
+      summary: Copy existing plugin environment credentials into encrypted database records (admin only)
+      description: Preserves existing encrypted records and source configuration. Environment overrides continue to take precedence until removed. Database bootstrap credentials, encryption key, setup token and cron secret are excluded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200":
+          {
+            description: Copied count and safe migration instructions; no secret values,
+          }
+        "409": { description: Encryption key missing or invalid }
+  /admin/connections/save:
+    post:
+      summary: Save allowlisted production configuration (admin only)
+      description: Plugin and storage values are encrypted in the database. Bootstrap settings stay in dotenv locally; Vercel rejects bootstrap writes. Environment overrides cannot be overwritten.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: { type: string } }
+      responses:
+        "200": { description: Masked saved configuration }
+        "409":
+          {
+            description: Environment-managed settings or unsupported bootstrap writes,
+          }
   /admin/settings/smtp:
     get:
       summary: Read shared SMTP settings and credential status (admin only)

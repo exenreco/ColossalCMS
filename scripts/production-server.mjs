@@ -28,7 +28,9 @@ import {
 } from "./heartbeat-runtime.mjs";
 
 export async function productionRuntime(config, log = console.log) {
-  config = validateConnectionConfig({ ...connectionDefaults, ...config }, true);
+  const bootstrapEnvironment = { ...config };
+  config = validateConnectionConfig({ ...connectionDefaults, ...config });
+  validateConnectionConfig({ ...config, CMS_STORAGE_PROVIDER: "local" }, true);
   let DB, STORAGE;
   try {
     if (config.CMS_DB_PROVIDER === "mongodb")
@@ -40,6 +42,27 @@ export async function productionRuntime(config, log = console.log) {
       await migrateD1(DB, log);
     } else
       throw new Error("Production requires CMS_DB_PROVIDER=mongodb or d1.");
+    const activeProviders = {
+      database: config.CMS_DB_PROVIDER,
+      storage: config.CMS_STORAGE_PROVIDER,
+    };
+    const CONNECTIONS = connectionManager({
+      db: DB,
+      hostEnv: bootstrapEnvironment,
+      encryptionKey: bootstrapEnvironment.CMS_ENCRYPTION_KEY,
+      readOnlyBootstrap: bootstrapEnvironment.VERCEL === "1",
+      active: activeProviders,
+    });
+    config = validateConnectionConfig(
+      { ...config, ...(await CONNECTIONS.config()) },
+      true,
+    );
+    if (config.VERCEL === "1" && config.CMS_STORAGE_PROVIDER === "local")
+      throw Object.assign(
+        new Error("Vercel requires GridFS or R2-compatible storage."),
+        { code: "CMS_SERVERLESS_STORAGE" },
+      );
+    activeProviders.storage = config.CMS_STORAGE_PROVIDER;
     if (config.CMS_STORAGE_PROVIDER === "r2") {
       STORAGE = s3Storage(config);
       await STORAGE.test();
@@ -76,12 +99,6 @@ export async function productionRuntime(config, log = console.log) {
       );
     }
     await seedBuiltInData(DB, log, config.CMS_ADMIN_EMAIL);
-    const CONNECTIONS = connectionManager({
-      active: {
-        database: config.CMS_DB_PROVIDER,
-        storage: config.CMS_STORAGE_PROVIDER,
-      },
-    });
     return {
       DB,
       STORAGE,
@@ -102,6 +119,7 @@ export async function productionRuntime(config, log = console.log) {
         log,
       }),
       CONNECTIONS,
+      CREDENTIALS: CONNECTIONS.vault,
     };
   } catch (e) {
     await DB?.close?.().catch(() => {});

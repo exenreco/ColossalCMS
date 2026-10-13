@@ -1,3 +1,4 @@
+import { DATABASE_CONFIG_KEYS } from "./credential-store.mjs";
 import { mongodbHeartbeat } from "./mongodb-heartbeat.mjs";
 
 const fail = (message, status = 400) => {
@@ -10,7 +11,12 @@ const json = (data) =>
       "X-Content-Type-Options": "nosniff",
     },
   });
-export async function handleConnections(request, env, user) {
+export async function handleConnections(
+  request,
+  env,
+  user,
+  log = async () => {},
+) {
   if (user.role !== "admin")
     fail("Only admins can manage production connections.", 403);
   const plugin = await env.DB.prepare("SELECT active FROM plugins WHERE id=?")
@@ -37,18 +43,34 @@ export async function handleConnections(request, env, user) {
     await heartbeat.run({ force: true, source: "admin" });
     return json(await heartbeat.describe());
   }
+  if (
+    path === "/api/admin/connections/credentials/migrate" &&
+    request.method === "POST"
+  ) {
+    if (!manager?.vault)
+      fail("Encrypted credentials are unavailable on this runtime.", 503);
+    const result = await manager.vault.migrate();
+    await log("Migrated plugin credentials into encrypted database storage");
+    return json(result);
+  }
   if (env.SERVERLESS) {
     if (request.method === "GET" && path === "/api/admin/connections")
       return json({
         ...(await manager.describe()),
         heartbeat: await heartbeat.describe(),
-        readOnly: true,
+        readOnly: !manager.vault,
+        jobsAvailable: false,
+        fields: (await manager.describe()).fields.map((field) => ({
+          ...field,
+          readOnly: field.readOnly || !DATABASE_CONFIG_KEYS.has(field.key),
+        })),
         message:
-          "Vercel uses hosting environment variables. Configure providers in Project Settings and redeploy. Startup initializes schemas automatically. Run local migration from the development server; background console jobs are unavailable on this host.",
+          "Database bootstrap settings are managed by your host. Plugin credentials and storage settings can be saved in the encrypted database. Storage changes need a redeploy; AI and SMTP credential changes apply immediately.",
       });
     if (
       path !== "/api/admin/connections/password" &&
-      path !== "/api/admin/connections/reveal"
+      path !== "/api/admin/connections/reveal" &&
+      !(path === "/api/admin/connections/save" && manager?.vault)
     )
       fail(
         "Configure Vercel environment variables and redeploy. Connection jobs and local dotenv writes require the persistent Node server.",
@@ -83,8 +105,19 @@ export async function handleConnections(request, env, user) {
   }
   if (request.method === "POST") {
     const body = await request.json();
-    if (path === "/api/admin/connections/save")
-      return json(await manager.save(body));
+    if (path === "/api/admin/connections/save") {
+      if (
+        env.SERVERLESS &&
+        Object.keys(body).some((key) => !DATABASE_CONFIG_KEYS.has(key))
+      )
+        fail(
+          "Configure database bootstrap variables in your hosting dashboard and redeploy.",
+          409,
+        );
+      const result = await manager.save(body);
+      await log("Updated production connection configuration");
+      return json(result);
+    }
     if (path === "/api/admin/connections/reveal")
       return json(await manager.reveal(body.key));
     if (path === "/api/admin/connections/run")

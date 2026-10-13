@@ -126,6 +126,10 @@ export function localSnapshot(directory) {
           ? db
               .prepare("SELECT * FROM " + table)
               .all()
+              .filter(
+                (row) =>
+                  table !== "config" || !row.id.startsWith("credential:"),
+              )
               .map((row) => ({ ...rowDefaults(schema[table]), ...row }))
           : [],
       ]),

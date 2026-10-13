@@ -1,4 +1,5 @@
 import { Injectable, Type } from "@angular/core";
+import { aiAdminExtensions } from "../plugins/ai-assistant/admin";
 import { seoAdminExtensions } from "../plugins/seo/admin";
 
 export interface AdminExtension {
@@ -9,7 +10,10 @@ export interface AdminExtension {
 }
 
 /** Composition root for reviewed UI contributions; manifests do not execute uploaded code. */
-const contributions: AdminExtension[] = [...seoAdminExtensions];
+const contributions: AdminExtension[] = [
+  ...seoAdminExtensions,
+  ...aiAdminExtensions,
+];
 @Injectable({ providedIn: "root" })
 export class AdminExtensionRegistry {
   private loaded = new Map<string, Promise<Type<unknown>>>();

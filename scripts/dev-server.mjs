@@ -1,3 +1,4 @@
+import { localCredentialKey } from "./credential-runtime.mjs";
 import { localStorage } from "./local-storage.mjs";
 import { clientIp } from "./client-ip.mjs";
 import { mongodbHeartbeat } from "../server/mongodb-heartbeat.mjs";
@@ -18,7 +19,11 @@ const port =
 await mkdir(dataDir, { recursive: true });
 const STORAGE = localStorage(resolve(dataDir, "storage"));
 const DB = localDatabase(resolve(dataDir, "colossal.sqlite"));
-const CONNECTIONS = connectionManager({ localDataDir: resolve(dataDir) });
+const CONNECTIONS = connectionManager({
+  db: DB,
+  encryptionKey: await localCredentialKey(dataDir),
+  localDataDir: resolve(dataDir),
+});
 const MAIL = siteMailer(DB, CONNECTIONS);
 const bypass = process.env.CMS_DEV_AUTH_BYPASS === "true";
 let setupToken = process.env.CMS_SETUP_TOKEN || "";
@@ -112,6 +117,7 @@ const cmsServer = http
         ASSETS,
         STORAGE,
         CONNECTIONS,
+        CREDENTIALS: CONNECTIONS.vault,
         MAIL,
         AUTH,
         HEARTBEAT,

@@ -796,6 +796,16 @@ Replacement retains IDs and must preserve media type. Deletion is blocked while 
 
 ## Plugins and extensions
 
+### AI Assistant
+
+Install and activate **AI Assistant** from Plugins to add chat to the shared theme, maintenance, post and page editors. Its plugin page configures OpenAI, Anthropic, Google Gemini or a Custom provider using private API keys. Available models load automatically when a configured provider is selected. Save and enable the assistant, open its chat button from the editor rail, then choose a discovered text chat model from its dropdown. Manual model entry is not required.
+
+The assistant proposes native block changes using the current document and actual block catalog. Review the before/after changes, then apply the validated batch as one undo step. Changes cannot publish automatically; normal editor save/publish and content autosave behavior still apply. Editing the document while reviewing a proposal invalidates that proposal.
+
+AI keys are saved encrypted through the shared credential service. Configure `CMS_ENCRYPTION_KEY` once, then manage keys on the plugin page without redeploying. Existing `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` and Custom provider environment overrides remain supported; changing those explicit overrides requires redeployment. Configuration responses show only whether a key is configured; blank inputs preserve it. Provider requests send current block content/settings, media names and recent chat, and may incur charges. Chat is retained only in editor-session memory. **Test saved provider** sends a small request.
+
+See [AI Assistant and editor automation API](docs/developers/ai-assistant.md) for configuration, streaming endpoints, block catalog, media search, batch previews, revision protection and limits.
+
 ### Shared SMTP mail
 
 Open **Settings → SMTP** to configure outgoing mail for the entire site. Mail2World is the default provider; **Other SMTP provider** supports any provider offering authenticated SMTP. Enter the outgoing hostname supplied for your account, port, encryption, From address/name, and optional Reply-to address. Mail2World lists SMTP access with its [Premium offering](https://www.mail2world.com/); verify the capabilities of your own account. The CMS does not assume a universal Mail2World server hostname.
@@ -804,13 +814,13 @@ The SMTP tab uses two separate panels: **SMTP** configuration on the left and **
 
 Save settings before testing. **Verify connection** connects/authenticates without sending mail. **Send test email** submits a fixed test message to the entered recipient. SMTP acceptance does not guarantee inbox delivery; check spam and the provider’s sender/domain requirements. SMTP is disabled initially, and all test/configuration endpoints require administrator access. No mail is sent automatically during setup or configuration.
 
-| Setting | Storage | Purpose |
-| --- | --- | --- |
-| Provider, host, port, encryption, From, Reply-to, enabled | Database `config` record `smtp` | Shared site-wide configuration |
-| `SMTP_USERNAME` | Hosting environment or private `.env.production` | Account login |
-| `SMTP_PASSWORD` | Hosting environment or private `.env.production` | Password/app password; never returned by SMTP settings API |
+| Setting                                                   | Storage                                           | Purpose                                                    |
+| --------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| Provider, host, port, encryption, From, Reply-to, enabled | Database `config` record `smtp`                   | Shared site-wide configuration                             |
+| `SMTP_USERNAME`                                           | Encrypted database; optional environment override | Account login                                              |
+| `SMTP_PASSWORD`                                           | Encrypted database; optional environment override | Password/app password; never returned by SMTP settings API |
 
-On local/persistent Node hosting, the SMTP tab writes credentials through the existing private dotenv credential manager. Blank password inputs preserve the current password. Hosting-managed credentials cannot be overwritten from the UI. On Vercel, set `SMTP_USERNAME` and `SMTP_PASSWORD` in Project Settings and redeploy; the SMTP tab can still save non-secret database settings. Native Cloudflare Worker hosting requires a compatible `MAIL` adapter; the supplied SMTP transport runs on Node, including Vercel Functions.
+The SMTP tab saves credentials encrypted in the database through the shared credential service, including on Vercel. Configure CMS_ENCRYPTION_KEY in hosting secrets first. Blank passwords preserve existing credentials. Explicit hosting overrides remain read-only and require redeployment when changed. Native Cloudflare Workers require a compatible MAIL adapter; the supplied SMTP transport runs on Node, including Vercel Functions.
 
 Trusted server plugins call the shared capability instead of creating their own transports or storing credentials:
 
@@ -825,12 +835,12 @@ await sendSiteMail(env, {
 
 The service enforces the configured sender, TLS/certificate validation, bounded connection timeouts, and disabled URL/filesystem content loading. It accepts 1–50 recipients with text and/or HTML bodies; attachment and transport overrides are not part of this initial contract. Plugins must call it from trusted, authorized workflows, not create public arbitrary-recipient sending endpoints. Disabled or incomplete configurations fail explicitly; provider errors are masked. Existing features that do not send email are unchanged; future mail features should use `sendSiteMail`. There is no background queue or automatic retry.
 
-| Endpoint | Method | Behavior |
-| --- | --- | --- |
-| `/api/admin/settings/smtp` | GET | Settings and credential availability/management flags; no password |
-| `/api/admin/settings/smtp` | POST | Save `{ settings, username?, password? }` |
-| `/api/admin/settings/smtp/verify` | POST | Verify saved connection without sending mail |
-| `/api/admin/settings/smtp/test` | POST | Send a fixed test message using `{ to }` |
+| Endpoint                          | Method | Behavior                                                           |
+| --------------------------------- | ------ | ------------------------------------------------------------------ |
+| `/api/admin/settings/smtp`        | GET    | Settings and credential availability/management flags; no password |
+| `/api/admin/settings/smtp`        | POST   | Save `{ settings, username?, password? }`                          |
+| `/api/admin/settings/smtp/verify` | POST   | Verify saved connection without sending mail                       |
+| `/api/admin/settings/smtp/test`   | POST   | Send a fixed test message using `{ to }`                           |
 
 Plugin server routes, document overrides, metadata, block rendering, and admin dashboard widgets use reviewed extension registries. See the [Plugin extension registry guide](docs/developers/plugin-extensions.md) for contribution contracts, composition roots, permission rules, and the current decoupling status.
 
@@ -919,7 +929,7 @@ Disabling the checkbox stops explicit scheduled ping commands. On Vercel, the da
 
 #### Heartbeat API
 
-Admin endpoints require an authenticated administrator and the core Connections plugin; POST requests require same-origin JSON. Heartbeat settings remain writable on Vercel even though its environment-configuration panel is read-only.
+Admin endpoints require an authenticated administrator and the core Connections plugin; POST requests require same-origin JSON. Heartbeat and encrypted plugin/storage settings remain writable on Vercel; database bootstrap fields remain host-managed.
 
 | Method | Endpoint                                | Purpose                                                         |
 | ------ | --------------------------------------- | --------------------------------------------------------------- |
@@ -1051,7 +1061,7 @@ D1 on Node uses the REST adapter and applies checked-in SQL migrations. R2-compa
 
 Tests do not initialize schemas/copy files and do not prove all write/index permissions. Initialization/startup seed missing built-in themes, plugins, settings, and samples while preserving edits. Saving configuration does not switch development away from SQLite.
 
-Values stay server-side in `.env.production` or host variables, not Angular bundles or CMS configuration rows. Host variables override file values and appear host-managed. Blank secrets preserve saved values; Show reveals one allowlisted secret and Hide masks it. Console run history is in memory and lost on restart.
+Database bootstrap credentials stay in `.env.production` or hosting secrets. AI, SMTP and storage settings can be saved encrypted in reserved database configuration rows. Explicit host variables take precedence and appear host-managed. Blank secrets preserve saved values; encrypted database secrets cannot be revealed. Connections includes an explicit migration action that copies existing plugin credentials without deleting source values. Console run history is in memory and lost on restart.
 
 ### Optional local migration
 
@@ -1059,7 +1069,7 @@ The checkbox defaults off. The running server must access SQLite and upload file
 
 - Read a consistent, read-only SQLite snapshot; never delete local data.
 - Copy content/blocks, themes/history, revisions, settings, plugin packages/state, media/files, members/password hashes, API-key hashes, activity, and notices.
-- Exclude sessions and migration bookkeeping.
+- Exclude sessions, migration bookkeeping, and encrypted credentials; configure destination credentials separately.
 - Preflight unique-key conflicts, edited production data, missing referenced files, and destination hashes.
 - Skip identical data; replace untouched built-in samples with local edited versions where appropriate.
 - Verify copied files with SHA-256 before transactional record batches of up to 50 statements.
@@ -1070,6 +1080,8 @@ Avoid concurrent edits during migration. This workflow does not migrate an exist
 If production has no owner, initialization can register the local setup owner and bcrypt hash without full migration. It preserves an existing production owner/credentials, copies no other members or sessions in that case, and rejects email conflicts. Production browser setup writes directly to its active database.
 
 ## Environment configuration
+
+The default MongoDB/GridFS setup needs four variables: `CMS_PUBLIC_URL`, `MONGODB_URI`, `CMS_SETUP_TOKEN` and `CMS_ENCRYPTION_KEY`. MongoDB uses `ColossalCMS` by default. Configure AI, SMTP and optional storage through the admin; plugin credential changes do not require a redeploy. Storage provider changes require a restart/redeploy and do not migrate files automatically. See [encrypted credentials, migration and recovery](docs/developers/credentials.md).
 
 Use [.env.example](.env.example) as a template. Never commit credentials or embed them in frontend code. Development does not automatically load `.env.production`; production startup and the Connections manager read it for their respective operations.
 
@@ -1082,6 +1094,7 @@ Use [.env.example](.env.example) as a template. Never commit credentials or embe
         </tr>
     </thead>
     <tbody>
+        <tr><td><code>CMS_ENCRYPTION_KEY</code></td><td>Persistent 64-hex-character key for encrypted plugin credentials; keep outside the database and back up securely.</td></tr>
         <tr>
             <td>`CMS_PUBLIC_URL`</td>
             <td>Required exact production HTTPS origin; no path/query/credentials</td>
@@ -1667,7 +1680,7 @@ See [Vercel deployment](docs/developers/vercel.md) for setup, preview configurat
 4. Use Node 24 and pnpm 11.19.0.
 5. Build: `pnpm install --frozen-lockfile --prod=false && pnpm build`.
 6. Start: `pnpm start`; health check: `/healthz`.
-7. Set exact HTTPS `CMS_PUBLIC_URL`, provider credentials, and random `CMS_SETUP_TOKEN` in hosting secrets.
+7. Set exact HTTPS `CMS_PUBLIC_URL`, database credentials, random `CMS_SETUP_TOKEN` and a persistent 64-hex-character `CMS_ENCRYPTION_KEY` in hosting secrets.
 8. Deploy, complete `/setup`, sign in, then remove the setup token.
 
 The Blueprint provides MongoDB/GridFS defaults and prompts for secret values; it does **not** generate a setup-token value. Host variables override `.env.production`. Production binds to `0.0.0.0` on `PORT`.
@@ -1682,7 +1695,7 @@ There is no general Wrangler configuration or `pnpm deploy` command supplied her
 
 ### Backups and operations
 
-Back up records and blob storage together. For local SQLite, stop writes or take a consistent SQLite backup; copying only the main file during WAL writes may omit data. Keep environment credentials separate from source control.
+Back up records and blob storage together. For local SQLite, stop writes or take a consistent SQLite backup; copying only the main file during WAL writes may omit data. Keep environment credentials separate from source control. Back up CMS_ENCRYPTION_KEY separately from the database: restoring encrypted credentials requires the original key.
 
 The repository does not configure scheduled production backups. Use provider facilities and verify restoration. Migration retry is not a backup. Interrupted GridFS writes/cleanup can leave orphaned files or chunks needing maintenance. Account for in-memory media processing and request limits.
 

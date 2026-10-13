@@ -12,7 +12,9 @@ import production_connections from "./production-connections/plugin.manifest.jso
 import login_security from "./login-security/plugin.manifest.json" with { type: "json" };
 import maintenance from "./maintenance/plugin.manifest.json" with { type: "json" };
 import seo from "./seo/plugin.manifest.json" with { type: "json" };
+import aiAssistant from "./ai-assistant/plugin.manifest.json" with { type: "json" };
 export const manifests = [
+  aiAssistant,
   themes,
   media,
   dashboard,

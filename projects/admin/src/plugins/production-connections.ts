@@ -7,6 +7,7 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { DatePipe } from "@angular/common";
+import { IconComponent } from "../../../../shared/icon.component";
 import { ApiService } from "../../../../shared/api.service";
 
 interface EnvField {
@@ -18,6 +19,8 @@ interface EnvField {
   value: string;
   configured: boolean;
   managed: boolean;
+  readOnly?: boolean;
+  source?: string;
 }
 interface Run {
   id: string;
@@ -28,19 +31,19 @@ interface Run {
 @Component({
   selector: "cl-production-connections",
   standalone: true,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, IconComponent],
   styles: `
-    .connection-layout {
+    .connection-content {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
       gap: 24px;
-      align-items: start;
+      min-width: 0;
+      align-content: start;
     }
     .connection-panel {
       padding: 24px;
     }
     .connection-heartbeat {
-      margin-top: 24px;
+      margin-top: 0;
     }
     .connection-heartbeat .heartbeat-status-start {
       margin-top: 24px;
@@ -149,12 +152,7 @@ interface Run {
       color: #a42d2d;
     }
     .connection-password {
-      margin-top: 24px;
-    }
-    @media (max-width: 1000px) {
-      .connection-layout {
-        grid-template-columns: 1fr;
-      }
+      margin-top: 0;
     }
   `,
   template: `
@@ -184,124 +182,259 @@ interface Run {
             : "Cloudflare bindings"
         }}</span>
       </div>
-      @if (info.readOnly) {
-        <section class="panel connection-panel">
-          <h2>Host-managed connections</h2>
-          <p>{{ info.message }}</p>
-        </section>
-      } @else {
-        <div class="connection-layout">
-          <form
-            class="panel connection-panel"
-            (ngSubmit)="save()"
-            autocomplete="off"
-          >
-            <h2>Production environment</h2>
-            <p>
-              Saved to <code>.env.production</code> on this server. Hosting
-              environment variables take precedence and are managed in your host
-              dashboard. Restart production after changes; this development
-              workflow uses SQLite and local files.
+      <div class="settings-layout connections-settings-layout">
+        <nav class="settings-nav" aria-label="Connection sections">
+          @for (section of sections; track section) {
+            <button
+              type="button"
+              [class.active]="tab === section"
+              [attr.aria-current]="tab === section ? 'page' : null"
+              (click)="selectSection(section)"
+            >
+              {{ section }}<cl-icon name="chevron" />
+            </button>
+          }
+        </nav>
+        <div class="settings-content connection-content">
+          @if (error) {
+            <p class="error" role="alert">{{ error }}</p>
+          }
+          @if (dirty) {
+            <p class="info-note" role="status">
+              You have unsaved configuration changes. Save configuration applies
+              changes from all sections.
             </p>
-            @for (group of groups; track group.id) {
-              @if (groupVisible(group.id)) {
-                <h3>{{ group.label }}</h3>
-                @for (field of fields; track field.key) {
-                  @if (field.group === group.id) {
-                    <div class="env-field">
-                      <label [for]="field.key"
-                        >{{ field.label }}<code>{{ field.key }}</code></label
-                      >
-                      <div class="env-input">
-                        @if (field.options) {
-                          <select
-                            [id]="field.key"
-                            [name]="field.key"
-                            [(ngModel)]="values[field.key]"
-                            [disabled]="field.managed || busy"
+          }
+          @if (info.readOnly) {
+            <section class="panel connection-panel">
+              <h2>Host-managed connections</h2>
+              <p>{{ info.message }}</p>
+            </section>
+          } @else if (tab !== "Connection Console") {
+            <form
+              class="panel connection-panel"
+              (ngSubmit)="save()"
+              autocomplete="off"
+            >
+              <h2>{{ tab }}</h2>
+              <p>{{ sectionDescription }}</p>
+              @for (group of groups; track group.id) {
+                @if (groupVisible(group.id)) {
+                  <h3>{{ group.label }}</h3>
+                  @for (field of fields; track field.key) {
+                    @if (field.group === group.id) {
+                      <div class="env-field">
+                        <label [for]="field.key"
+                          >{{ field.label }}<code>{{ field.key }}</code></label
+                        >
+                        <div class="env-input">
+                          @if (field.options) {
+                            <select
+                              [id]="field.key"
+                              [name]="field.key"
+                              [(ngModel)]="values[field.key]"
+                              [disabled]="
+                                field.managed || field.readOnly || busy
+                              "
+                            >
+                              @for (option of field.options; track option) {
+                                <option [value]="option">
+                                  {{
+                                    option === "mongodb"
+                                      ? "MongoDB"
+                                      : option === "gridfs"
+                                        ? "MongoDB GridFS"
+                                        : option
+                                  }}
+                                </option>
+                              }
+                            </select>
+                          } @else {
+                            <input
+                              [id]="field.key"
+                              [name]="field.key"
+                              [type]="
+                                field.secret && !shown[field.key]
+                                  ? 'password'
+                                  : 'text'
+                              "
+                              [(ngModel)]="values[field.key]"
+                              [disabled]="
+                                field.managed || field.readOnly || busy
+                              "
+                              [placeholder]="
+                                field.secret && field.configured
+                                  ? 'Saved value — leave blank to keep'
+                                  : ''
+                              "
+                              [attr.autocomplete]="
+                                field.secret ? 'new-password' : 'off'
+                              "
+                              maxlength="4096"
+                              spellcheck="false"
+                            />
+                          }
+                          @if (field.secret) {
+                            <button
+                              type="button"
+                              class="button"
+                              (click)="toggle(field)"
+                              [disabled]="
+                                busy ||
+                                (field.source === 'database' &&
+                                  !values[field.key])
+                              "
+                              [attr.aria-label]="
+                                (shown[field.key] ? 'Hide ' : 'Show ') +
+                                field.label
+                              "
+                            >
+                              {{ shown[field.key] ? "Hide" : "Show" }}
+                            </button>
+                          }
+                        </div>
+                        @if (field.key === "MONGODB_DNS_SERVERS") {
+                          <small
+                            >Comma-separated DNS server IPs for Node.js SRV/TXT
+                            lookups. Leave blank for system DNS. Restart Node
+                            after changing this setting.</small
                           >
-                            @for (option of field.options; track option) {
-                              <option [value]="option">
-                                {{
-                                  option === "mongodb"
-                                    ? "MongoDB"
-                                    : option === "gridfs"
-                                      ? "MongoDB GridFS"
-                                      : option
-                                }}
-                              </option>
-                            }
-                          </select>
-                        } @else {
-                          <input
-                            [id]="field.key"
-                            [name]="field.key"
-                            [type]="
-                              field.secret && !shown[field.key]
-                                ? 'password'
-                                : 'text'
-                            "
-                            [(ngModel)]="values[field.key]"
-                            [disabled]="field.managed || busy"
-                            [placeholder]="
-                              field.secret && field.configured
-                                ? 'Saved value — leave blank to keep'
-                                : ''
-                            "
-                            [attr.autocomplete]="
-                              field.secret ? 'new-password' : 'off'
-                            "
-                            maxlength="4096"
-                            spellcheck="false"
-                          />
                         }
-                        @if (field.secret) {
-                          <button
-                            type="button"
-                            class="button"
-                            (click)="toggle(field)"
-                            [disabled]="busy"
-                            [attr.aria-label]="
-                              (shown[field.key] ? 'Hide ' : 'Show ') +
-                              field.label
-                            "
+                        @if (field.managed) {
+                          <small>Managed by the hosting environment.</small>
+                        } @else if (field.secret && field.configured) {
+                          <small
+                            >Configured. Hidden values are never included in the
+                            initial response.</small
                           >
-                            {{ shown[field.key] ? "Hide" : "Show" }}
-                          </button>
                         }
                       </div>
-                      @if (field.key === "MONGODB_DNS_SERVERS") {
-                        <small
-                          >Comma-separated DNS server IPs for Node.js SRV/TXT
-                          lookups. Leave blank for system DNS. Restart Node
-                          after changing this setting.</small
-                        >
-                      }
-                      @if (field.managed) {
-                        <small>Managed by the hosting environment.</small>
-                      } @else if (field.secret && field.configured) {
-                        <small
-                          >Configured. Hidden values are never included in the
-                          initial response.</small
-                        >
-                      }
-                    </div>
+                    }
                   }
                 }
               }
+              <div class="connection-actions">
+                <button class="button primary" [disabled]="busy || running">
+                  {{ busy ? "Saving…" : "Save configuration" }}
+                </button>
+              </div>
+            </form>
+          }
+          @if (tab === "Setup") {
+            @if (info.credentials) {
+              <section class="panel connection-panel">
+                <h2>Encrypted plugin credentials</h2>
+                <p>
+                  AI Assistant, SMTP and optional storage credentials are
+                  encrypted in the database. Database connections and
+                  CMS_ENCRYPTION_KEY stay in your private hosting environment.
+                </p>
+                @if (!info.credentials.writable) {
+                  <p class="error">
+                    Set CMS_ENCRYPTION_KEY to 64 hexadecimal characters (32
+                    random bytes) in your hosting secrets and redeploy. Keep a
+                    secure backup of this key.
+                  </p>
+                } @else {
+                  <p>
+                    Encrypted credential storage is ready. Configure AI and SMTP
+                    on their plugin pages.
+                  </p>
+                }
+                <p>
+                  {{ info.credentials.migration.candidates.length }} existing
+                  environment or dotenv settings available to copy. Existing
+                  encrypted records are preserved.
+                </p>
+                <button
+                  type="button"
+                  class="button"
+                  [disabled]="
+                    credentialBusy ||
+                    dirty ||
+                    !info.credentials.writable ||
+                    !info.credentials.migration.candidates.length
+                  "
+                  (click)="migrateCredentials()"
+                >
+                  {{
+                    credentialBusy
+                      ? "Migrating…"
+                      : "Migrate existing plugin credentials"
+                  }}
+                </button>
+                @if (credentialMessage) {
+                  <p role="status">{{ credentialMessage }}</p>
+                }
+                @if (credentialError) {
+                  <p class="error" role="alert">{{ credentialError }}</p>
+                }
+              </section>
             }
-            <div class="connection-actions">
-              <button class="button primary" [disabled]="busy || running">
-                {{ busy ? "Saving…" : "Save environment" }}
-              </button>
-            </div>
-            @if (error) {
-              <p class="error" role="alert">{{ error }}</p>
+
+            @if (!info.readOnly) {
+              <form
+                class="panel connection-panel connection-password"
+                (ngSubmit)="setPassword()"
+              >
+                <h2>Member password</h2>
+                <p>
+                  Enter an email and password to add or update a member in this
+                  workspace. New members have the Editor role and can sign in on
+                  Node production hosting. Passwords use bcrypt with cost 12;
+                  setting one revokes that member's existing sessions.
+                </p>
+                <div class="env-field">
+                  <label for="member-email">Member email</label>
+                  <div class="env-input">
+                    <input
+                      id="member-email"
+                      name="memberEmail"
+                      type="email"
+                      [(ngModel)]="memberEmail"
+                      autocomplete="off"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="env-field">
+                  <label for="member-password">New password</label>
+                  <div class="env-input">
+                    <input
+                      id="member-password"
+                      name="memberPassword"
+                      [type]="showPassword ? 'text' : 'password'"
+                      [(ngModel)]="memberPassword"
+                      minlength="12"
+                      autocomplete="new-password"
+                      required
+                    /><button
+                      type="button"
+                      class="button"
+                      (click)="showPassword = !showPassword"
+                    >
+                      {{ showPassword ? "Hide" : "Show" }}
+                    </button>
+                  </div>
+                </div>
+                <button class="button" [disabled]="busy">
+                  Set member password
+                </button>
+                @if (passwordError) {
+                  <p class="error" role="alert">{{ passwordError }}</p>
+                }
+              </form>
             }
-          </form>
-          <div>
+          }
+          @if (tab === "Connection Console" && !info.readOnly) {
             <section class="panel connection-panel">
               <h2>Connection console</h2>
+              @if (info.jobsAvailable === false) {
+                <p>
+                  Vercel initializes schemas at startup. Run connection jobs and
+                  local migration from a persistent Node or development server.
+                </p>
+              }
               <p>
                 Save your configuration, then test connectivity or create the
                 required schemas and indexes. Built-in themes, plugins, default
@@ -354,14 +487,18 @@ interface Run {
                   type="button"
                   class="button"
                   (click)="start('test')"
-                  [disabled]="busy || running || dirty"
+                  [disabled]="
+                    busy || running || dirty || info.jobsAvailable === false
+                  "
                 >
                   Test connections</button
                 ><button
                   type="button"
                   class="button primary"
                   (click)="start('initialize')"
-                  [disabled]="busy || running || dirty"
+                  [disabled]="
+                    busy || running || dirty || info.jobsAvailable === false
+                  "
                 >
                   Connect & initialize schemas
                 </button>
@@ -370,184 +507,163 @@ interface Run {
                 <p>Save environment changes before starting a run.</p>
               }
             </section>
-            <form
-              class="panel connection-panel connection-password"
-              (ngSubmit)="setPassword()"
-            >
-              <h2>Member password</h2>
-              <p>
-                Enter an email and password to add or update a member in this
-                workspace. New members have the Editor role and can sign in on
-                Node production hosting. Passwords use bcrypt with cost 12;
-                setting one revokes that member's existing sessions.
-              </p>
-              <div class="env-field">
-                <label for="member-email">Member email</label>
-                <div class="env-input">
+          }
+          @if (tab === "Heartbeat") {
+            @if (heartbeat) {
+              <form
+                class="panel connection-panel connection-heartbeat"
+                (ngSubmit)="saveHeartbeat()"
+              >
+                <h2>MongoDB heartbeat</h2>
+                <p>
+                  Send a scheduled MongoDB ping even when nobody visits your
+                  site. Once per day is recommended for Atlas Free's 30-day
+                  inactivity window.
+                </p>
+                <label class="migration-choice">
                   <input
-                    id="member-email"
-                    name="memberEmail"
-                    type="email"
-                    [(ngModel)]="memberEmail"
-                    autocomplete="off"
+                    type="checkbox"
+                    name="heartbeatEnabled"
+                    [(ngModel)]="heartbeatSettings.enabled"
+                    [disabled]="heartbeatBusy"
+                  />
+                  Enable scheduled heartbeat
+                </label>
+                <div class="env-field">
+                  <label for="heartbeatInterval"
+                    >Heartbeat interval
+                    <small>1–14 days; default: 1 day</small></label
+                  >
+                  <input
+                    id="heartbeatInterval"
+                    type="number"
+                    name="heartbeatInterval"
+                    [(ngModel)]="heartbeatSettings.intervalDays"
+                    min="1"
+                    max="14"
                     required
+                    [disabled]="heartbeatBusy"
                   />
                 </div>
-              </div>
-              <div class="env-field">
-                <label for="member-password">New password</label>
-                <div class="env-input">
-                  <input
-                    id="member-password"
-                    name="memberPassword"
-                    [type]="showPassword ? 'text' : 'password'"
-                    [(ngModel)]="memberPassword"
-                    minlength="12"
-                    autocomplete="new-password"
-                    required
-                  /><button
-                    type="button"
+                @if (!heartbeat.supported) {
+                  <p>
+                    The running app uses SQLite or D1 without MongoDB storage.
+                    These saved settings apply when the app runs on MongoDB or
+                    MongoDB GridFS.
+                  </p>
+                } @else if (heartbeat.mode === "vercel") {
+                  <p>
+                    Vercel checks daily around 12:00 UTC and pings only when the
+                    saved interval is due. The admin page can be closed.
+                  </p>
+                  @if (!heartbeat.cronConfigured) {
+                    <p class="error">
+                      Background scheduling needs CRON_SECRET (at least 32
+                      random characters) in Vercel's Production environment. Add
+                      it and redeploy.
+                    </p>
+                  }
+                  <p class="hint">
+                    Disabling stops explicit pings. Scheduled checks still read
+                    settings from MongoDB. Remove the cron schedule from Vercel
+                    to stop all scheduled database access.
+                  </p>
+                } @else {
+                  <p>
+                    Runs in the production Node server while that process is
+                    running. Sleeping or stopped hosts need an external
+                    scheduler.
+                  </p>
+                }
+                <p class="heartbeat-status-start">
+                  Last result: <strong>{{ heartbeat.state.status }}</strong>
+                </p>
+                <p>
+                  Last successful ping:
+                  <strong>{{
+                    heartbeat.state.lastSuccessAt
+                      ? (heartbeat.state.lastSuccessAt | date: "medium")
+                      : "No successful ping yet"
+                  }}</strong>
+                </p>
+                @if (heartbeat.state.lastAttemptAt) {
+                  <p>
+                    Last attempt:
+                    {{ heartbeat.state.lastAttemptAt | date: "medium" }} ·
+                    {{ heartbeat.state.durationMs || 0 }} ms ·
+                    {{ heartbeat.state.source }}
+                  </p>
+                }
+                @if (heartbeatSettings.enabled && heartbeat.nextDueAt) {
+                  <p>
+                    Next eligible day:
+                    {{ heartbeat.nextDueAt | date: "mediumDate" }}
+                  </p>
+                }
+                @if (heartbeat.state.message) {
+                  <p [class.error]="heartbeat.state.status === 'failed'">
+                    {{ heartbeat.state.message }}
+                  </p>
+                }
+                <div class="connection-actions">
+                  <button class="button primary" [disabled]="heartbeatBusy">
+                    {{ heartbeatBusy ? "Working…" : "Save heartbeat settings" }}
+                  </button>
+                  <button
                     class="button"
-                    (click)="showPassword = !showPassword"
+                    type="button"
+                    (click)="pingHeartbeat()"
+                    [disabled]="heartbeatBusy || !heartbeat.supported"
                   >
-                    {{ showPassword ? "Hide" : "Show" }}
+                    Ping now
+                  </button>
+                  <button
+                    class="button"
+                    type="button"
+                    (click)="refreshHeartbeat()"
+                    [disabled]="heartbeatBusy"
+                  >
+                    Refresh status
                   </button>
                 </div>
-              </div>
-              <button class="button" [disabled]="busy">
-                Set member password
-              </button>
-              @if (passwordError) {
-                <p class="error" role="alert">{{ passwordError }}</p>
-              }
-            </form>
-          </div>
-        </div>
-      }
-      @if (heartbeat) {
-        <form
-          class="panel connection-panel connection-heartbeat"
-          (ngSubmit)="saveHeartbeat()"
-        >
-          <h2>MongoDB heartbeat</h2>
-          <p>
-            Send a scheduled MongoDB ping even when nobody visits your site.
-            Once per day is recommended for Atlas Free's 30-day inactivity
-            window.
-          </p>
-          <label class="migration-choice">
-            <input
-              type="checkbox"
-              name="heartbeatEnabled"
-              [(ngModel)]="heartbeatSettings.enabled"
-              [disabled]="heartbeatBusy"
-            />
-            Enable scheduled heartbeat
-          </label>
-          <div class="env-field">
-            <label for="heartbeatInterval"
-              >Heartbeat interval
-              <small>1–14 days; default: 1 day</small></label
-            >
-            <input
-              id="heartbeatInterval"
-              type="number"
-              name="heartbeatInterval"
-              [(ngModel)]="heartbeatSettings.intervalDays"
-              min="1"
-              max="14"
-              required
-              [disabled]="heartbeatBusy"
-            />
-          </div>
-          @if (!heartbeat.supported) {
-            <p>
-              The running app uses SQLite or D1 without MongoDB storage. These
-              saved settings apply when the app runs on MongoDB or MongoDB
-              GridFS.
-            </p>
-          } @else if (heartbeat.mode === "vercel") {
-            <p>
-              Vercel checks daily around 12:00 UTC and pings only when the saved
-              interval is due. The admin page can be closed.
-            </p>
-            @if (!heartbeat.cronConfigured) {
-              <p class="error">
-                Background scheduling needs CRON_SECRET (at least 32 random
-                characters) in Vercel's Production environment. Add it and
-                redeploy.
-              </p>
+                @if (heartbeatError) {
+                  <p class="error" role="alert">{{ heartbeatError }}</p>
+                }
+              </form>
             }
-            <p class="hint">
-              Disabling stops explicit pings. Scheduled checks still read
-              settings from MongoDB. Remove the cron schedule from Vercel to
-              stop all scheduled database access.
-            </p>
-          } @else {
-            <p>
-              Runs in the production Node server while that process is running.
-              Sleeping or stopped hosts need an external scheduler.
-            </p>
           }
-          <p class="heartbeat-status-start">
-            Last result: <strong>{{ heartbeat.state.status }}</strong>
-          </p>
-          <p>
-            Last successful ping:
-            <strong>{{
-              heartbeat.state.lastSuccessAt
-                ? (heartbeat.state.lastSuccessAt | date: "medium")
-                : "No successful ping yet"
-            }}</strong>
-          </p>
-          @if (heartbeat.state.lastAttemptAt) {
-            <p>
-              Last attempt:
-              {{ heartbeat.state.lastAttemptAt | date: "medium" }} ·
-              {{ heartbeat.state.durationMs || 0 }} ms ·
-              {{ heartbeat.state.source }}
-            </p>
-          }
-          @if (heartbeatSettings.enabled && heartbeat.nextDueAt) {
-            <p>
-              Next eligible day: {{ heartbeat.nextDueAt | date: "mediumDate" }}
-            </p>
-          }
-          @if (heartbeat.state.message) {
-            <p [class.error]="heartbeat.state.status === 'failed'">
-              {{ heartbeat.state.message }}
-            </p>
-          }
-          <div class="connection-actions">
-            <button class="button primary" [disabled]="heartbeatBusy">
-              {{ heartbeatBusy ? "Working…" : "Save heartbeat settings" }}
-            </button>
-            <button
-              class="button"
-              type="button"
-              (click)="pingHeartbeat()"
-              [disabled]="heartbeatBusy || !heartbeat.supported"
-            >
-              Ping now
-            </button>
-            <button
-              class="button"
-              type="button"
-              (click)="refreshHeartbeat()"
-              [disabled]="heartbeatBusy"
-            >
-              Refresh status
-            </button>
-          </div>
-          @if (heartbeatError) {
-            <p class="error" role="alert">{{ heartbeatError }}</p>
-          }
-        </form>
-      }
+        </div>
+      </div>
     }
   `,
 })
 export class ProductionConnectionsComponent implements OnInit, OnDestroy {
+  sections = [
+    "Setup",
+    "Database Provider",
+    "Storage Provider",
+    "Connection Console",
+    "Heartbeat",
+  ];
+  tab = "Setup";
+  get sectionDescription() {
+    const descriptions: Record<string, string> = {
+      Setup:
+        "Manage the first-run administrator setup token. Bootstrap settings stay in your private hosting environment.",
+      "Database Provider":
+        "Choose MongoDB or Cloudflare D1 and configure its connection. Database credentials stay in your private hosting environment. Restart or redeploy to apply changes; development keeps using SQLite.",
+      "Storage Provider":
+        "Choose where production media is stored. Storage credentials are encrypted in the database; hosting environment overrides take precedence. MongoDB GridFS uses the MongoDB connection below. Restart or redeploy to apply changes; development keeps using local files.",
+      Heartbeat:
+        "Configure the secret used to authorize scheduled heartbeat requests. Keep it in your hosting environment and redeploy after changing it.",
+    };
+    return descriptions[this.tab] || "";
+  }
+  selectSection(section: string) {
+    this.tab = section;
+    this.shown = {};
+    this.showPassword = false;
+  }
   api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   info: any = { active: { database: "sqlite", storage: "local" } };
@@ -569,6 +685,28 @@ export class ProductionConnectionsComponent implements OnInit, OnDestroy {
     { id: "r2", label: "R2 / S3-compatible storage" },
     { id: "gridfs", label: "MongoDB GridFS storage" },
   ];
+  credentialBusy = false;
+  credentialMessage = "";
+  credentialError = "";
+  async migrateCredentials() {
+    this.credentialBusy = true;
+    this.credentialMessage = "";
+    this.credentialError = "";
+    try {
+      const result = await this.api.request(
+        "/admin/connections/credentials/migrate",
+        "POST",
+        {},
+      );
+      this.credentialMessage = `${result.saved} settings migrated. ${result.message}`;
+      this.apply(await this.api.request("/admin/connections"));
+    } catch (e) {
+      this.credentialError = (e as Error).message;
+    } finally {
+      this.credentialBusy = false;
+      this.cdr.markForCheck();
+    }
+  }
   loading = true;
   busy = false;
   error = "";
@@ -589,11 +727,17 @@ export class ProductionConnectionsComponent implements OnInit, OnDestroy {
     );
   }
   groupVisible(group: string) {
+    const sectionGroups: Record<string, string[]> = {
+      Setup: ["setup"],
+      "Database Provider": ["database", "mongodb", "d1"],
+      "Storage Provider": ["storage", "r2", "gridfs", "mongodb"],
+      Heartbeat: ["heartbeat"],
+    };
+    if (!sectionGroups[this.tab]?.includes(group)) return false;
     if (group === "mongodb")
-      return (
-        this.values["CMS_DB_PROVIDER"] === "mongodb" ||
-        this.values["CMS_STORAGE_PROVIDER"] === "gridfs"
-      );
+      return this.tab === "Database Provider"
+        ? this.values["CMS_DB_PROVIDER"] === "mongodb"
+        : this.values["CMS_STORAGE_PROVIDER"] === "gridfs";
     if (group === "d1") return this.values["CMS_DB_PROVIDER"] === "d1";
     if (group === "r2" || group === "gridfs")
       return this.values["CMS_STORAGE_PROVIDER"] === group;
@@ -687,7 +831,12 @@ export class ProductionConnectionsComponent implements OnInit, OnDestroy {
     try {
       const input = Object.fromEntries(
         this.fields
-          .filter((f) => !f.managed)
+          .filter(
+            (f) =>
+              !f.managed &&
+              !f.readOnly &&
+              this.values[f.key] !== this.original[f.key],
+          )
           .map((f) => [f.key, this.values[f.key]]),
       );
       this.apply(

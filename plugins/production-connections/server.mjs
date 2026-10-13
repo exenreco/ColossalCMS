@@ -7,7 +7,8 @@ export default {
       prefix: "/api/admin/connections",
       methods: ["GET", "POST", "PUT", "DELETE"],
       admin: true,
-      handle: ({ request, env, user }) => handleConnections(request, env, user),
+      handle: ({ request, env, user, log }) =>
+        handleConnections(request, env, user, log),
     },
   ],
 };

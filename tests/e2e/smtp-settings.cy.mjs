@@ -35,6 +35,12 @@ describe("Shared SMTP settings", () => {
     cy.get('cl-smtp-settings input[name="fromEmail"]').type(
       "sender@example.test",
     );
+    cy.get('cl-smtp-settings input[name="username"]')
+      .clear()
+      .type("john@example.com");
+    cy.get('cl-smtp-settings input[name="password"]').type(
+      "e2e-fake-mail-password",
+    );
     cy.contains("button", "Save SMTP settings").click();
     cy.contains('[role="status"]', "SMTP settings saved.").should("be.visible");
     cy.contains(".settings-nav button", "General").click();
@@ -42,6 +48,10 @@ describe("Shared SMTP settings", () => {
     cy.get('cl-smtp-settings input[name="host"]').should(
       "have.value",
       "smtp.example.test",
+    );
+    cy.get('cl-smtp-settings input[name="username"]').should(
+      "have.value",
+      "john@example.com",
     );
     cy.get('cl-smtp-settings input[name="password"]').should("have.value", "");
     cy.contains("button", "Verify connection").should("be.disabled");

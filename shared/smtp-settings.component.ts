@@ -162,7 +162,10 @@ import { ApiService } from "./api.service";
                     credentials.readOnly || credentials.usernameManaged
                   "
                   autocomplete="off"
-                /><small>SMTP_USERNAME</small></label
+                /><small
+                  >Encrypted database setting; environment overrides are
+                  supported.</small
+                ></label
               >
               <label
                 >SMTP password
@@ -189,7 +192,7 @@ import { ApiService } from "./api.service";
                   </button>
                 </div>
                 <small
-                  >SMTP_PASSWORD. Saved passwords are never returned to the
+                  >Saved passwords are encrypted and never returned to the
                   browser.</small
                 ></label
               >
@@ -202,9 +205,9 @@ import { ApiService } from "./api.service";
             }
             @if (credentials.readOnly) {
               <p class="info-note">
-                Set SMTP_USERNAME and SMTP_PASSWORD in your hosting environment
-                and redeploy. Provider, host, encryption and sender settings can
-                be saved here.
+                Configure CMS_ENCRYPTION_KEY in your hosting secrets and
+                redeploy to save credentials here. Existing SMTP environment
+                credentials remain supported.
               </p>
             }
             @if (!credentials.available) {

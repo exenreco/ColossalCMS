@@ -20,7 +20,12 @@ export default {
           return json({
             settings: await readMailSettings(db),
             credentials: env.MAIL
-              ? { ...(await env.MAIL.describe()), readOnly: !!env.SERVERLESS }
+              ? {
+                  ...(await env.MAIL.describe()),
+                  readOnly: env.CONNECTIONS?.vault
+                    ? !env.CONNECTIONS.vault.writable()
+                    : !!env.SERVERLESS,
+                }
               : {
                   available: false,
                   readOnly: true,

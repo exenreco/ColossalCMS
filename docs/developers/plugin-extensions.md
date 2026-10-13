@@ -4,14 +4,14 @@ Colossal CMS separates plugin contributions from the server router and provides 
 
 ## Extension points
 
-| Extension | Registry entry | Host responsibility |
-| --- | --- | --- |
-| Public HTTP endpoint | `routes` with `scope: "public"` | Match URL/method, dispatch, preserve fallback |
-| Authenticated HTTP endpoint | `routes` with `scope: "admin"` | Require identity; enforce `admin: true` when declared |
-| Public document override | `document(context)` | Apply response headers/status, count views, deliver HTML |
-| Public head metadata | `metadata(context)` | Insert reviewed metadata into the HTML response |
-| Plugin block renderer | `blockRenderers` | Resolve plugin block output before native block rendering |
-| Admin dashboard widget | Admin contribution with `slot: "dashboard"` | Filter by active plugin, lazy load the Angular component |
+| Extension                   | Registry entry                              | Host responsibility                                       |
+| --------------------------- | ------------------------------------------- | --------------------------------------------------------- |
+| Public HTTP endpoint        | `routes` with `scope: "public"`             | Match URL/method, dispatch, preserve fallback             |
+| Authenticated HTTP endpoint | `routes` with `scope: "admin"`              | Require identity; enforce `admin: true` when declared     |
+| Public document override    | `document(context)`                         | Apply response headers/status, count views, deliver HTML  |
+| Public head metadata        | `metadata(context)`                         | Insert reviewed metadata into the HTML response           |
+| Plugin block renderer       | `blockRenderers`                            | Resolve plugin block output before native block rendering |
+| Admin dashboard widget      | Admin contribution with `slot: "dashboard"` | Filter by active plugin, lazy load the Angular component  |
 
 `server/plugin-registry.mjs` implements the server contract without importing plugin implementations. `server/plugin-runtime.mjs`, `server/plugin-blocks.mjs`, and `shared/admin-extension-registry.service.ts` are composition roots: adding a reviewed contribution happens there. Core callers use the registry rather than checking a plugin ID and branching on its implementation.
 
@@ -22,15 +22,17 @@ Create a plugin-owned `plugins/<name>/server.mjs` contribution:
 ```js
 export default {
   id: "com.example.plugin",
-  routes: [{
-    scope: "admin",
-    path: "/api/admin/example",
-    methods: ["GET"],
-    admin: true,
-    async handle({ request, env, db, user, path, log }) {
-      return Response.json({ ok: true });
+  routes: [
+    {
+      scope: "admin",
+      path: "/api/admin/example",
+      methods: ["GET"],
+      admin: true,
+      async handle({ request, env, db, user, path, log }) {
+        return Response.json({ ok: true });
+      },
     },
-  }],
+  ],
 };
 ```
 
@@ -61,6 +63,8 @@ export default {
 An unregistered type returns `undefined`, allowing native rendering to continue. A registered renderer may return an empty string to hide its block. Duplicate types and replacing `core/*` renderers are rejected. Renderers must escape user content and apply activation/preview rules. Google Ads is the first migrated renderer; its configuration and renderer are in `plugins/google-ads/` without a dependency on the theme engine. The existing `server/google-ads.mjs` exports remain compatible for callers.
 
 ## Admin UI slots
+
+AI Assistant contributes a lazy chat tool to `editor-tools` through `plugins/ai-assistant/admin.ts`. The shared shell mounts the neutral extension slot; the contribution resolves the current editor's `EditorAutomationApi` from its provider scope. Provider routes, settings and chat transport remain in the plugin. See [AI Assistant](ai-assistant.md) for its automation contract.
 
 `plugins/seo/admin.ts` contributes a lazy SEO overview to the `dashboard` slot. `AdminExtensionSlotComponent` reads active plugins from admin state and renders only contributions belonging to active plugins. Dashboard code uses `<cl-admin-extension-slot slot="dashboard" />`, with no direct SEO component import. Components are cached after loading and removed from the slot when their plugin is deactivated.
 

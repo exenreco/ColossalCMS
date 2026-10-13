@@ -1,3 +1,4 @@
+import { validatePreview } from "./editor-automation.mjs";
 import { pluginRuntime } from "./plugin-runtime.mjs";
 import {
   ensureThemes,
@@ -27,6 +28,7 @@ import {
 } from "./plugin-installer.mjs";
 import {
   parse,
+  readJson,
   mediaIds,
   mediaRecord,
   validateDetails,
@@ -546,6 +548,16 @@ export default {
         if (!/^[a-z][a-z0-9._-]{0,79}$/.test(type))
           fail("Choose a valid analytics target type.");
         return json(await analyticsViewCounts(db, type));
+      }
+      if (
+        path === "/api/admin/editor/batch/preview" &&
+        request.method === "POST"
+      ) {
+        if (!["admin", "editor"].includes(user.role))
+          fail("Editor access is required.", 403);
+        return json(
+          await validatePreview(db, await readJson(request, 2_000_000)),
+        );
       }
       if (path === "/api/admin/editor/preferences")
         return await editorPreferences(request, db, user);

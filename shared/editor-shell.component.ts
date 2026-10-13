@@ -12,6 +12,7 @@ import {
   afterNextRender,
   Injector,
 } from "@angular/core";
+import { AdminExtensionSlotComponent } from "./admin-extension-slot.component";
 import { EditorIconComponent } from "./editor-icon.component";
 import { UiSurfaceComponent } from "./ui-surface.component";
 import { EditorPreferencesService } from "./editor-preferences.service";
@@ -21,7 +22,11 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
 @Component({
   selector: "cl-editor-shell",
   standalone: true,
-  imports: [EditorIconComponent, UiSurfaceComponent],
+  imports: [
+    EditorIconComponent,
+    UiSurfaceComponent,
+    AdminExtensionSlotComponent,
+  ],
   template: `
     <div
       class="shared-editor"
@@ -74,6 +79,7 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
           >
             <cl-editor-icon name="outline" />
           </button>
+          <cl-admin-extension-slot slot="editor-tools" />
         </div>
         <button
           class="editor-tool editor-tour-replay"

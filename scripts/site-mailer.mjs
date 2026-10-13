@@ -9,6 +9,7 @@ export function siteMailer(db, manager) {
       const password = fields.find((field) => field.key === "SMTP_PASSWORD");
       return {
         available: true,
+        readOnly: manager.vault ? !manager.vault.writable() : false,
         username: username.value,
         usernameManaged: username.managed,
         passwordConfigured: password.configured,
@@ -16,7 +17,7 @@ export function siteMailer(db, manager) {
       };
     },
     async saveCredentials({ username, password }, serverless) {
-      if (serverless)
+      if (serverless && !manager.vault)
         throw Object.assign(
           new Error(
             "Set SMTP_USERNAME and SMTP_PASSWORD in your hosting environment and redeploy.",

@@ -130,6 +130,7 @@ export const BLOCK_ICON_PATHS: Record<string, string[]> = {
 };
 
 export const APP_ICON_PATHS: Record<string, string> = {
+  ai: "M12 3v3M10 3h4M7 6h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM4 12H2v4h2M20 12h2v4h-2M8 11v2M16 11v2M9 17h6",
   login: "M15 3h6v18h-6M3 12h12M10 7l5 5-5 5",
   download: "M12 3v12M7 10l5 5 5-5M3 16v5h18v-5",
   details: "M12 11v6M12 7h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
@@ -173,6 +174,12 @@ export const APP_ICON_PATHS: Record<string, string> = {
 };
 
 export const EDITOR_ICON_PATHS: Record<string, string> = {
+  ai: "M12 3v3M10 3h4M7 6h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM4 12H2v4h2M20 12h2v4h-2M8 11v2M16 11v2M9 17h6",
+  sparkles:
+    "M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3M20 2v4M18 4h4",
+  stop: "M7 7h10v10H7z",
+  comment:
+    "M21 11a8 8 0 0 1-8 8H7l-4 3v-7a8 8 0 0 1 8-12h2a8 8 0 0 1 8 8zM7 9h10M7 13h6",
   trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7",
   duplicate: "M8 8h13v13H8zM16 8V3H3v13h5M11 14.5h7M14.5 11v7",
   copy: "M9 9h12v12H9zM15 9V3H3v12h6",

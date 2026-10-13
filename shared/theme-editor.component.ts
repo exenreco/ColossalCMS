@@ -16,6 +16,7 @@ import { ApiService } from "./api.service";
 import { ThemeRecord, BlockField, ThemeTemplate } from "./theme-models";
 import { ThemeEditorState } from "./theme-editor-state";
 import { BlockListDrawerComponent } from "./block-list-drawer.component";
+import { EditorAutomationApi } from "./editor-automation.service";
 import { ThemeOutlineApi } from "./theme-outline-api";
 import { BlockLibraryDrawerComponent } from "./block-library-drawer.component";
 import { EditorShellComponent, EditorPanel } from "./editor-shell.component";
@@ -66,7 +67,7 @@ import {
     AppearancePickerPanelComponent,
     ColorPickerComponent,
   ],
-  providers: [ThemeEditorState, ThemeOutlineApi],
+  providers: [ThemeEditorState, ThemeOutlineApi, EditorAutomationApi],
   templateUrl: "./theme-editor.component.html",
 })
 export class ThemeEditorComponent implements OnInit, OnDestroy {
@@ -124,6 +125,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
     },
   });
   outlineApi = inject(ThemeOutlineApi);
+  automation = inject(EditorAutomationApi);
   api = inject(ApiService);
   route = inject(ActivatedRoute);
   router = inject(Router);
@@ -492,6 +494,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         },
       );
       if (seq !== this.sequence || this.destroyed) return;
+      this.automation.reportRenderError();
       if (this.dragging || this.textEditor.editing || this.htmlEditor.editing) {
         this.refreshPending = true;
         return;
@@ -513,7 +516,10 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
         this.canvasHtml = this.sanitizer.bypassSecurityTrustHtml(html);
       }
     } catch (e) {
-      if (seq === this.sequence) this.error = (e as Error).message;
+      if (seq === this.sequence) {
+        this.error = (e as Error).message;
+        this.automation.reportRenderError(this.error);
+      }
     } finally {
       this.cdr.markForCheck();
     }
