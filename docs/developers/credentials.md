@@ -23,7 +23,7 @@ Keep the key in hosting secrets, separate from the database and source control. 
 
 For D1 through the Node adapter, configure `CMS_DB_PROVIDER=d1`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID` and `CLOUDFLARE_API_TOKEN` outside the database. GridFS still needs MongoDB bootstrap credentials; alternatively configure R2 after setup using a working initial storage provider. Native Workers retain their D1/R2 bindings and require a compatible mail adapter; this admin credential workflow is supplied by the Node and Vercel adapters.
 
-`CRON_SECRET` remains an optional, separate hosting secret for scheduled heartbeat authorization. Bootstrap setup/authentication secrets are not copied into plugin credential records.
+`CRON_SECRET` is a separate hosting secret, required when using Vercel or external scheduled heartbeat requests. Generate a separate random value of at least 32 characters, save it in private `.env.production`, and add the same value to Vercel's Production environment variables before redeploying. Local dotenv files do not synchronize with Vercel. Vercel needs this environment variable to send the authentication header; storing it only in the CMS database cannot authenticate Vercel's requests. The persistent Node timer does not require it. Bootstrap setup/authentication secrets are not copied into plugin credential records.
 
 ## Storage and precedence
 

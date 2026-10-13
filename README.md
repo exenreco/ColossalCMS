@@ -889,7 +889,7 @@ Layouts are independent of site themes and use the configured database's `config
 
 ### MongoDB heartbeat
 
-Production Connections includes a **MongoDB heartbeat** panel at the bottom of the Connections page. It sends a native MongoDB `ping` command with a 10-second timeout to the configured MongoDB database, or to MongoDB GridFS storage when the database provider is Cloudflare D1. SQLite and D1 without GridFS have no MongoDB target. The heartbeat runs on the server, so the admin browser does not need to remain open.
+Production Connections includes a **MongoDB heartbeat** panel under **Connections → Heartbeat**. It sends a native MongoDB `ping` command with a 10-second timeout to the configured MongoDB database, or to MongoDB GridFS storage when the database provider is Cloudflare D1. SQLite and D1 without GridFS have no MongoDB target. The heartbeat runs on the server, so the admin browser does not need to remain open.
 
 #### Enable and verify heartbeat
 
@@ -917,7 +917,21 @@ Once daily is the CMS recommendation because Atlas Free clusters can auto-pause 
 | Persistent Node    | A server timer checks for due work once per minute and pings only at the saved day interval. It stops when the server shuts down and cannot run while the hosting process is asleep or stopped.               |
 | External scheduler | May call the authenticated cron endpoint on a running Node deployment. It requires `CRON_SECRET`; static-only hosting cannot execute the backend.                                                             |
 
-Vercel requires a random **`CRON_SECRET` of at least 32 characters** in its Production environment and a redeployment after changing it. Vercel sends `Authorization: Bearer <CRON_SECRET>`; the handler validates authorization before initializing the database runtime. Do not put this secret in a URL or commit it. It is separate from the initial-owner `CMS_SETUP_TOKEN` and remains necessary after setup.
+The CMS requires a random **`CRON_SECRET` of at least 32 characters** for authenticated scheduled requests. On Vercel, store it in the Production environment and redeploy after changing it. Vercel sends `Authorization: Bearer <CRON_SECRET>`; the handler validates authorization before initializing the database runtime. Do not put this secret in a URL or commit it. It is separate from the initial-owner `CMS_SETUP_TOKEN` and remains necessary after setup.
+
+#### Configure the cron secret
+
+1. Generate a separate secret locally:
+
+   ```sh
+   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+   ```
+
+2. Save the generated value as `CRON_SECRET` in your private `.env.production`. The blank entry in `.env.example` is a placeholder; never commit the actual secret.
+3. In your Vercel project, open **Settings → Environment Variables**, add `CRON_SECRET` with the same value, and select **Production**. Local dotenv files do not synchronize with Vercel automatically.
+4. Redeploy Production, then open **Connections → Heartbeat**, enable scheduled heartbeat, and save. Confirm that the missing-secret warning is gone. **Ping now** checks database connectivity; a later scheduled result verifies cron execution.
+
+Vercel must read this secret from its hosting environment to authenticate requests; storing it only in the CMS database would not supply Vercel's authorization header. Heartbeat enablement, interval, leases and results remain in the database. Persistent Node hosting uses its internal timer without requiring `CRON_SECRET`; configure the secret there only when using an external scheduler. See [Vercel cron authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs).
 
 Intervals use **UTC calendar days** to accommodate cron timing variation. Changing the interval in Connections does not require redeployment. A persisted lease prevents simultaneous scheduled/manual invocations from duplicating work and expires after 10 minutes if a run terminates unexpectedly. Failed pings use a one-hour retry backoff on persistent Node; Vercel retries at its next daily invocation.
 
