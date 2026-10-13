@@ -1,4 +1,10 @@
 import {
+  MAX_BLOCK_DEPTH,
+  MAX_THEME_BLOCKS,
+  MAX_RENDER_DEPTH,
+  MAX_RENDER_BLOCKS,
+} from "../shared/block-limits.ts";
+import {
   renderButton,
   renderMenu,
   renderMenuItem,
@@ -879,9 +885,13 @@ export function validateDocument(input, core = false) {
   ]);
   let total = 0;
   const walk = (node, depth, partMode, ids, parentType) => {
-    if (++total > 2000 || depth > 8)
+    if (++total > MAX_THEME_BLOCKS)
       fail(
-        "Theme blocks exceed the maximum nesting depth of 8 or total block limit.",
+        `Theme exceeds the total block limit of ${MAX_THEME_BLOCKS.toLocaleString("en-US")}. Remove unused blocks or templates.`,
+      );
+    if (depth > MAX_BLOCK_DEPTH)
+      fail(
+        `Theme blocks exceed the maximum nesting depth of ${MAX_BLOCK_DEPTH}. Move this block closer to the template or shared-part root.`,
       );
     if (
       !node ||
@@ -1049,20 +1059,20 @@ export function validateDocument(input, core = false) {
     const root = d.templates[t.id];
     if (root?.type !== "core/container")
       fail("Every template needs a root container.");
+    walk(root, 0, false, new Set());
     if (!paginationPlacementValid(root))
       fail(
         "Pagination must be inside a Post list or one of its layout blocks.",
       );
-    walk(root, 0, false, new Set());
   }
   for (const name of Object.keys(d.manifest.parts)) {
     if (d.parts[name]?.type !== "core/container")
       fail("Each theme part needs a root container.");
+    walk(d.parts[name], 0, true, new Set());
     if (!paginationPlacementValid(d.parts[name]))
       fail(
         "Pagination must be inside a Post list or one of its layout blocks.",
       );
-    walk(d.parts[name], 0, true, new Set());
   }
   const partError = sharedPartsError(d.parts);
   if (partError) fail(partError);
@@ -1329,18 +1339,24 @@ function instanceBlockTree(node, suffix) {
       : {}),
   };
 }
-export function compileBlock(b, d, depth = 0, asBody = false) {
-  if (depth > 16) return "";
+export function compileBlock(
+  b,
+  d,
+  depth = 0,
+  asBody = false,
+  budget = { count: 0 },
+) {
+  if (++budget.count > MAX_RENDER_BLOCKS || depth > MAX_RENDER_DEPTH) return "";
   const s = b.settings || {},
     children = (b.type === "core/post-list" ? [] : b.children || [])
-      .map((n) => compileBlock(n, d, depth + 1))
+      .map((n) => compileBlock(n, d, depth + 1, false, budget))
       .join("");
   let html = "";
   const type = b.type;
   if (type.startsWith("theme/part-")) {
     const tree = d.parts?.[type.slice(11)];
     html = tree
-      ? compileBlock(instanceBlockTree(tree, b.id), d, depth + 1)
+      ? compileBlock(instanceBlockTree(tree, b.id), d, depth + 1, false, budget)
       : "";
   } else if (
     ["core/container", "core/group", "core/column", "core/overlay"].includes(

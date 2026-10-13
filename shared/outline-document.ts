@@ -1,3 +1,5 @@
+// @ts-ignore Node 24 loads shared TypeScript helpers directly.
+import { MAX_BLOCK_DEPTH, MAX_THEME_BLOCKS } from "./block-limits.ts";
 import type { BlockDefinition, BlockNode } from "./theme-models";
 // @ts-ignore Node 24 loads this shared TypeScript helper directly; Angular resolves the same source.
 import * as contextBlocks from "./context-blocks.ts";
@@ -313,8 +315,14 @@ export function applyOutlineCommand(
   const ids = new Set<string>();
   let total = 0;
   const check = (node: BlockNode, depth: number, parent?: BlockNode) => {
-    if (++total > 2000 || depth > 8)
-      throw Error("Blocks are limited to 2,000 items and eight levels.");
+    if (++total > MAX_THEME_BLOCKS)
+      throw Error(
+        `Blocks are limited to ${MAX_THEME_BLOCKS.toLocaleString("en-US")} items.`,
+      );
+    if (depth > MAX_BLOCK_DEPTH)
+      throw Error(
+        `Blocks exceed the maximum nesting depth of ${MAX_BLOCK_DEPTH}. Move the block closer to the document root.`,
+      );
     if (
       !node ||
       typeof node.id !== "string" ||

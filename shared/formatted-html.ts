@@ -1,3 +1,5 @@
+// @ts-ignore Node 24 loads this shared TypeScript helper directly.
+import { MAX_BLOCK_DEPTH } from "./block-limits.ts";
 import type { ThemeDocument, BlockNode } from "./theme-models";
 
 /** The storage identifier stays stable so existing themes and content remain valid. */
@@ -5,7 +7,7 @@ export const FORMATTED_HTML_TYPE = "core/rich-text";
 
 /** Legacy fragments share the same sanitized source and now use the canvas editor. */
 export function normalizeFormattedHtmlBlocks(nodes: BlockNode[], depth = 0) {
-  if (depth > 10) return;
+  if (depth > MAX_BLOCK_DEPTH) return;
   for (const node of nodes) {
     if (!node || typeof node !== "object") continue;
     if (node.type === "core/html") node.type = FORMATTED_HTML_TYPE;

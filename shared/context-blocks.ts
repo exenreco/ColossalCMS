@@ -1,3 +1,5 @@
+// @ts-ignore Node 24 loads this shared TypeScript helper directly.
+import { MAX_BLOCK_DEPTH } from "./block-limits.ts";
 import type { BlockNode, ThemeDocument } from "./theme-models";
 
 /** Repeated result instances share one editable block definition. */
@@ -48,7 +50,8 @@ export function paginationPlacementValid(
   inList = false,
   depth = 0,
 ): boolean {
-  if (!node || typeof node !== "object" || depth > 10) return false;
+  if (!node || typeof node !== "object" || depth > MAX_BLOCK_DEPTH)
+    return false;
   if (node.type === "core/pagination" && !inList) return false;
   return (!Array.isArray(node.children) ? [] : node.children).every((child) =>
     paginationPlacementValid(
@@ -114,7 +117,7 @@ export function normalizeContextBlockTrees(
         !node ||
         !node.settings ||
         typeof node.settings !== "object" ||
-        depth > 10
+        depth > MAX_BLOCK_DEPTH
       )
         return;
       normalizeMenuNode(node);
@@ -204,7 +207,7 @@ export function normalizeContextDocument(
   );
   const used = new Set<string>();
   const visit = (node: BlockNode, depth = 0) => {
-    if (!node || typeof node !== "object" || depth > 10) return;
+    if (!node || typeof node !== "object" || depth > MAX_BLOCK_DEPTH) return;
     used.add(node.type);
     if (Array.isArray(node.children))
       node.children.forEach((child) => visit(child, depth + 1));

@@ -69,7 +69,7 @@ Document commands edit the local draft and share the Inspector's undo history. T
 | `icon`      | `id, icon`                   | Sets the outline icon token                                              |
 | `paste`     | `parentId, index, node`      | Inserts a supplied subtree with fresh IDs                                |
 
-Insertion indexes are zero-based positions in the destination's children **before** removal. Moving a sibling forward adjusts the index automatically. Moving into Columns wraps non-column blocks in a new Column. Slides belong inside Sliders; Overlays belong inside Slides or 3D blocks. Cycles, unknown types, excessive depth and duplicate IDs are rejected. Removing the last Slide or Column requires removing its parent instead. Nesting is bounded at eight levels and theme persistence is bounded at 2,000 total blocks.
+Insertion indexes are zero-based positions in the destination's children **before** removal. Moving a sibling forward adjusts the index automatically. Moving into Columns wraps non-column blocks in a new Column. Slides belong inside Sliders; Overlays belong inside Slides or 3D blocks. Cycles, unknown types, excessive depth and duplicate IDs are rejected. Removing the last Slide or Column requires removing its parent instead. Nesting is bounded at 16 levels and theme persistence is bounded at 2,000 total blocks.
 
 ## HTTP endpoints
 

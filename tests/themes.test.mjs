@@ -154,8 +154,8 @@ test("sanitization removes executable HTML and external CSS while retaining cont
 });
 test("tree validation rejects excessive nesting but accepts reordered shared parts", () => {
   const d = defaultTheme();
-  let node = d.templates.default.children[1];
-  for (let i = 0; i < 9; i++) {
+  let node = d.templates.default;
+  for (let i = 0; i < 17; i++) {
     const child = {
       id: crypto.randomUUID(),
       type: "core/container",

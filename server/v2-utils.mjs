@@ -1,3 +1,4 @@
+import { MAX_BLOCK_DEPTH, MAX_CONTENT_BLOCKS } from "../shared/block-limits.ts";
 import { navigationSettingsError } from "../shared/navigation-blocks.ts";
 import { validateSeo } from "./seo.mjs";
 import { normalizeFormattedHtmlBlocks } from "../shared/formatted-html.ts";
@@ -365,10 +366,6 @@ export async function validateDetails(db, details = {}) {
     if (!Array.isArray(details.contentBlocks)) fail("Invalid content blocks.");
     normalizeFormattedHtmlBlocks(details.contentBlocks);
     normalizeContextBlockTrees(details.contentBlocks, false);
-    if (!details.contentBlocks.every((node) => paginationPlacementValid(node)))
-      fail(
-        "Pagination must be inside a Post list or one of its layout blocks.",
-      );
     const allowed = new Set(
       definitions.filter((d) => !d.legacy).map((d) => d.type),
     );
@@ -393,8 +390,8 @@ export async function validateDetails(db, details = {}) {
     const ids = new Set();
     const checkBlock = (block, depth = 0, parent = "root") => {
       if (
-        ++blockCount > 500 ||
-        depth > 8 ||
+        ++blockCount > MAX_CONTENT_BLOCKS ||
+        depth > MAX_BLOCK_DEPTH ||
         !block ||
         typeof block !== "object"
       )
@@ -493,6 +490,10 @@ export async function validateDetails(db, details = {}) {
     clean.contentBlocks = details.contentBlocks.map((block) =>
       checkBlock(block),
     );
+    if (!details.contentBlocks.every((node) => paginationPlacementValid(node)))
+      fail(
+        "Pagination must be inside a Post list or one of its layout blocks.",
+      );
   }
   for (const id of mediaIds(clean)) {
     const item = await db
