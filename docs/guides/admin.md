@@ -22,7 +22,7 @@ Model cards show a schematic poster. Open a model to load its interactive 3D pre
 
 ## Set your site icon
 
-Settings → General → Select site icon opens the shared image library. Choose an image, Use selected, then Save changes. The public site's browser tab uses it. Remove clears the setting without deleting the media.
+Settings → General → Select site icon opens the shared image library. Choose an image, Use selected, then Save changes. Admin and frontend browser tabs and bookmarks use it. Site Identity blocks use the separate **Site Logo** selector in General. Remove clears the setting without deleting the media.
 
 ## Assign page roles
 

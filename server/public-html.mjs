@@ -48,11 +48,14 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
   );
   html = html.replace(/<meta\b(?=[^>]*\bname=["']description["'])[^>]*>/gi, "");
   if (rendered.siteIcon)
-    html = html.replace(/<link\b(?=[^>]*\brel=["']icon["'])[^>]*>/gi, "");
+    html = html.replace(
+      /<link\b(?=[^>]*\brel=["'](?:icon|apple-touch-icon)["'])[^>]*>/gi,
+      "",
+    );
   return html
     .replace(
       /<\/head>/i,
-      `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
+      `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}"><link rel="apple-touch-icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
     )
     .replace(
       /<body[^>]*>/i,

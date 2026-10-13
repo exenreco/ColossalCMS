@@ -48,7 +48,7 @@ const context = (
   content: { title: "Outer page", excerpt: "Outer summary", details: {} },
   settings: {
     title: "My <site>",
-    logo: "https://example.test/logo.png",
+    siteLogoId: "site-logo",
     tagline: "Stories",
   },
   allContent,
@@ -242,21 +242,22 @@ test("Site identity displays the admin logo, name, both, or the automatic fallba
     /theme-site-name/,
   );
   identity.settings.display = "auto";
-  ctx.settings.logo = "";
+  ctx.settings.siteLogoId = "";
   assert.match(
     renderTheme(document, ctx, "post-archive").html,
     /theme-site-name/,
   );
 });
 
-test("Site Identity falls back to the admin site icon in public and content canvases, while honoring logo and name modes", () => {
+test("Site Identity uses the separate admin site logo in public and content canvases, while honoring logo and name modes", () => {
   const identity = block("site_icon_identity", "core/site-brand", {
     display: "logo",
   });
   const document = themeWith([identity]);
   const ctx = context();
   ctx.settings.logo = "";
-  ctx.settings.siteIconId = "icon with spaces";
+  ctx.settings.siteIconId = "favicon-only";
+  ctx.settings.siteLogoId = "icon with spaces";
   ctx.content.details.contentBlocks = [identity];
   for (const html of [
     renderTheme(document, ctx, "post-archive").html,
@@ -269,9 +270,9 @@ test("Site Identity falls back to the admin site icon in public and content canv
     assert.doesNotMatch(html, /theme-site-name/);
   }
   ctx.settings.logo = "https://example.test/preferred.svg";
-  assert.match(
+  assert.doesNotMatch(
     renderTheme(document, ctx, "post-archive").html,
-    /src="https:\/\/example.test\/preferred.svg"/,
+    /preferred.svg|favicon-only/,
   );
   ctx.settings.logo = "";
   identity.settings.display = "name";
@@ -284,7 +285,7 @@ test("Site Identity falls back to the admin site icon in public and content canv
     renderTheme(document, ctx, "post-archive").html,
     /theme-site-logo/,
   );
-  ctx.settings.siteIconId = "";
+  ctx.settings.siteLogoId = "";
   assert.match(
     renderTheme(document, ctx, "post-archive").html,
     /theme-site-name/,

@@ -1,11 +1,16 @@
-/** Retire the independent logo setting without downloading remote images on the server. */
+/** Preserve legacy identity images when separating logos from browser icons. */
 export async function migrateSiteAppearance(db) {
   const row = await db
     .prepare("SELECT value FROM config WHERE id='site'")
     .first();
   if (!row) return;
   const settings = JSON.parse(row.value);
-  if (!Object.hasOwn(settings, "logo") && settings.adminColorMode) return;
+  if (
+    !Object.hasOwn(settings, "logo") &&
+    settings.adminColorMode &&
+    Object.hasOwn(settings, "siteLogoId")
+  )
+    return;
   const operations = [];
   if (!settings.siteIconId && settings.logo) {
     const url = new URL(settings.logo);
@@ -45,6 +50,8 @@ export async function migrateSiteAppearance(db) {
     );
     settings.siteIconId = id;
   }
+  if (!Object.hasOwn(settings, "siteLogoId"))
+    settings.siteLogoId = settings.siteIconId || "";
   delete settings.logo;
   settings.adminColorMode ||= "system";
   operations.push(

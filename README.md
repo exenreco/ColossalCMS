@@ -635,7 +635,7 @@ Panel and viewport menus support arrow-key navigation. Editor shortcuts defer to
 
 **Settings > Appearance** controls the dashboard and every shared editor with **Light**, **Dark**, or **System** mode. System follows the device color scheme and updates live. This workspace setting persists in the database; the editor has no separate mode toggle. Public theme colors remain controlled by the Theme Editor.
 
-**Settings > General > Site icon** supplies the image for Site Identity blocks, browser tabs, and SEO previews. The separate Logo URL field has been removed. Existing Logo URLs become external image entries in the media library when no Site Icon was selected; an existing Site Icon takes precedence. Migrated URLs remain externally hosted until replaced with a library upload, and do not require downloading files during startup.
+**Settings > General > Site Icon** controls browser tabs and bookmarks in the admin and frontend (and their favicon in SEO previews). **Site Logo** separately supplies the image for Site Identity blocks and the frontend brand. Both use the shared image library. Existing installations copy their former identity image into Site Logo once to preserve their design; afterward, changing or removing either setting does not change the other. Legacy Logo URLs become external library images without server downloads.
 
 ## Themes and templates
 

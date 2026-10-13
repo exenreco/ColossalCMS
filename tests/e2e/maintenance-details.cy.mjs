@@ -106,6 +106,7 @@ describe("Maintenance layout cards and details", () => {
           title: "Midnight Studio",
           tagline: "A new experience is coming",
           siteIconId: media.id,
+          siteLogoId: media.id,
         },
       });
     });

@@ -1,3 +1,4 @@
+import { syncSiteIcon } from "../../../shared/site-icon";
 import { hydrateMenus } from "../../../shared/menu-host";
 import { syncSeoHead } from "../../../shared/seo-head";
 import { formatPageTitle } from "../../../shared/page-title";
@@ -55,9 +56,9 @@ import { themeLoadingCss } from "../../../shared/theme-loading";
         }
         <header class="public-header">
           <a class="public-brand" href="/">
-            @if (site.settings.siteIconId) {
+            @if (site.settings.siteLogoId) {
               <img
-                [src]="'/api/media/' + site.settings.siteIconId + '/file'"
+                [src]="'/api/media/' + site.settings.siteLogoId + '/file'"
                 [alt]="site.settings.title"
               />
             } @else {
@@ -298,10 +299,7 @@ class FrontendComponent implements OnInit, OnDestroy {
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute("content", rendered.description || "");
-    if (rendered.siteIcon) {
-      const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (icon) icon.href = rendered.siteIcon;
-    }
+    syncSiteIcon(document, rendered.siteIcon || "/favicon.svg");
     // Only the server's sanitized theme renderer can cross this HTML boundary.
     this.themeMarkup.set(this.sanitizer.bypassSecurityTrustHtml(rendered.html));
   }
@@ -359,12 +357,14 @@ class FrontendComponent implements OnInit, OnDestroy {
         this.entry = site.content.find(
           (c: Content) => c.id === site.settings.notFoundPageId,
         );
-      const favicon =
-        document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (favicon)
-        favicon.href = site.settings.siteIconId
-          ? "/api/media/" + site.settings.siteIconId + "/file"
-          : "/favicon.svg";
+      syncSiteIcon(
+        document,
+        site.settings.siteIconId
+          ? "/api/media/" +
+              encodeURIComponent(site.settings.siteIconId) +
+              "/file"
+          : "/favicon.svg",
+      );
       document.title = formatPageTitle(
         this.entry ? this.entry.details?.metaTitle || this.entry.title : "",
         site.settings,

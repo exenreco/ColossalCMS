@@ -232,6 +232,7 @@ async function state(db, user) {
     settings: {
       ...defaultSettings,
       siteIconId: "",
+      siteLogoId: "",
       postRouting: "home",
       postsPageId: "",
       homePageId: "",
@@ -460,6 +461,7 @@ export default {
           media: s.media.filter(
             (m) =>
               m.id === s.settings.siteIconId ||
+              m.id === s.settings.siteLogoId ||
               s.content
                 .filter(isPublished)
                 .some((c) => mediaIds(c.details).includes(m.id)),
@@ -944,6 +946,7 @@ export default {
           fail("Choose a valid page title format and separator.");
         const {
           siteIconId = "",
+          siteLogoId = "",
           postRouting = "home",
           postsPageId = "",
           homePageId = "",
@@ -960,6 +963,15 @@ export default {
             .first())
         )
           fail("Choose a site icon from the image library.");
+        if (
+          typeof siteLogoId !== "string" ||
+          (siteLogoId &&
+            !(await db
+              .prepare("SELECT id FROM media WHERE id=? AND type='image'")
+              .bind(siteLogoId)
+              .first()))
+        )
+          fail("Choose a site logo from the image library.");
         if (routingVersion === 2) {
           if (!homePageId && postsPageId)
             fail("Choose a Home page before assigning a Posts page.");
@@ -1028,6 +1040,7 @@ export default {
               adminColorMode,
               announcement,
               siteIconId,
+              siteLogoId,
               postRouting,
               postsPageId: postRouting === "page" ? postsPageId : "",
               homePageId,

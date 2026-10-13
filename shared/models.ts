@@ -79,10 +79,11 @@ export interface Settings {
   title: string;
   tagline: string;
   accent: string;
-  /** Legacy input retained for compatibility; Site Icon supplies identity images. */
+  /** Legacy input retained for migration; Site Logo supplies identity images. */
   logo?: string;
   announcement: string;
   siteIconId?: string;
+  siteLogoId?: string;
   postRouting?: "home" | "page";
   postsPageId?: string;
   homePageId?: string;

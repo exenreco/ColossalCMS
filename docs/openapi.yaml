@@ -101,6 +101,7 @@ components:
           }
         announcement: { type: string, maxLength: 240 }
         siteIconId: { type: string }
+        siteLogoId: { type: string }
         postRouting: { type: string, enum: [home, page] }
         postsPageId:
           { type: string, description: Published page for the post index }

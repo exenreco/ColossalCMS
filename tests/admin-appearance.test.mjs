@@ -27,6 +27,7 @@ test("legacy logo becomes a Site Icon library image once, preserving explicit ic
     assert.equal(settings.logo, undefined);
     assert.equal(settings.tagline, "Hello");
     assert.ok(settings.siteIconId);
+    assert.equal(settings.siteLogoId, settings.siteIconId);
     const media = await db
       .prepare("SELECT * FROM media WHERE id=?")
       .bind(settings.siteIconId)
@@ -70,6 +71,7 @@ test("legacy logo becomes a Site Icon library image once, preserving explicit ic
         .value,
     );
     assert.equal(preserved.siteIconId, media.id);
+    assert.equal(preserved.siteLogoId, media.id);
     assert.equal(preserved.adminColorMode, "dark");
     assert.equal(
       (await db.prepare("SELECT COUNT(*) AS count FROM media").first()).count,
@@ -112,6 +114,100 @@ test("admin appearance persists Light, Dark and System and rejects unsupported m
       (await call("/api/admin/settings", "POST", { adminColorMode: "blue" }))
         .status,
       400,
+    );
+  } finally {
+    DB.close();
+  }
+});
+
+test("site logo and browser icon remain independent, public and protected from deletion", async () => {
+  const DB = localDatabase();
+  const headers = {
+    Origin: "https://cms.test",
+    "Content-Type": "application/json",
+    "oai-authenticated-user-id": "owner",
+    "oai-authenticated-user-email": "owner@example.test",
+  };
+  const call = (path, method = "GET", body, authenticated = true) =>
+    worker.fetch(
+      new Request("https://cms.test/api" + path, {
+        method,
+        headers: authenticated ? headers : {},
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+      {
+        DB,
+        STORAGE: {
+          get: async () => null,
+          put: async () => {},
+          delete: async () => {},
+        },
+      },
+    );
+  try {
+    await call("/admin/setup", "POST", {});
+    for (const id of ["favicon", "brand-logo"]) {
+      await DB.prepare(
+        "INSERT INTO media (id,type,name,mime,storage_key,alt_text,caption,description,tags,metadata,uploaded_by,uploaded_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      )
+        .bind(
+          id,
+          "image",
+          id,
+          "image/png",
+          "",
+          id,
+          "",
+          "",
+          "[]",
+          JSON.stringify({
+            externalUrl: "https://example.test/" + id + ".png",
+          }),
+          "owner",
+          "2026-10-13",
+          "2026-10-13",
+        )
+        .run();
+    }
+    assert.equal(
+      (
+        await call("/admin/settings", "POST", {
+          siteIconId: "favicon",
+          siteLogoId: "brand-logo",
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await call("/media/brand-logo/file", "GET", undefined, false)).status,
+      302,
+    );
+    assert.equal((await call("/media/brand-logo", "DELETE", {})).status, 409);
+    assert.equal(
+      (await call("/admin/settings", "POST", { siteLogoId: "missing" })).status,
+      400,
+    );
+    assert.equal(
+      (await call("/admin/settings", "POST", { siteLogoId: "" })).status,
+      200,
+    );
+    const state = await (await call("/admin/state")).json();
+    assert.equal(state.settings.siteIconId, "favicon");
+    assert.equal(state.settings.siteLogoId, "");
+    await migrateSiteAppearance(DB);
+    const settings = JSON.parse(
+      (await DB.prepare("SELECT value FROM config WHERE id='site'").first())
+        .value,
+    );
+    assert.equal(
+      settings.siteLogoId,
+      "",
+      "migration must not restore a removed logo",
+    );
+    assert.equal((await call("/media/brand-logo", "DELETE", {})).status, 200);
+    assert.equal(
+      (await call("/media/favicon/file", "GET", undefined, false)).status,
+      302,
     );
   } finally {
     DB.close();

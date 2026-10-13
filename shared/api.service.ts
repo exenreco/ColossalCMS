@@ -1,4 +1,6 @@
-import { Injectable, signal } from "@angular/core";
+import { syncSiteIcon } from "./site-icon";
+import { Injectable, signal, effect, inject } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { State } from "./models";
 import {
   readWorkspaceStream,
@@ -8,6 +10,18 @@ import {
 /** Shared API boundary. Server authorization is authoritative. */
 @Injectable({ providedIn: "root" })
 export class ApiService {
+  private document = inject(DOCUMENT);
+  constructor() {
+    effect(() => {
+      const state = this.state();
+      if (!state) return;
+      const id = state.settings.siteIconId;
+      const href = id
+        ? "/api/media/" + encodeURIComponent(id) + "/file"
+        : "/favicon.svg";
+      syncSiteIcon(this.document, href);
+    });
+  }
   state = signal<State | null>(null);
   notice = signal("");
   workspacePasswordAuth = signal<boolean | null>(null);

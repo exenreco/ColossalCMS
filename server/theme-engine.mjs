@@ -1770,11 +1770,9 @@ function dynamic(type, s, ctx, children) {
     settings = ctx.settings;
   if (type === "core/site-brand") {
     const display = s.display || "auto";
-    const logo =
-      settings.logo ||
-      (settings.siteIconId
-        ? "/api/media/" + encodeURIComponent(settings.siteIconId) + "/file"
-        : "");
+    const logo = settings.siteLogoId
+      ? "/api/media/" + encodeURIComponent(settings.siteLogoId) + "/file"
+      : "";
     const showLogo =
       !!logo && ["auto", "logo", "logo-and-name"].includes(display);
     const showName =

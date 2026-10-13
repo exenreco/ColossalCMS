@@ -55,6 +55,7 @@ export async function restoreReleaseDefaults(db) {
           notFoundPageId: "",
           postRouting: "home",
           siteIconId: "",
+          siteLogoId: "",
         }),
       ),
   ];

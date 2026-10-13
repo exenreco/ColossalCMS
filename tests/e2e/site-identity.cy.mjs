@@ -18,7 +18,7 @@ describe("Site Identity image placeholder", () => {
       method: "POST",
       url: "/api/admin/settings",
       headers,
-      body: { logo: "", siteIconId: "" },
+      body: { logo: "", siteIconId: "", siteLogoId: "" },
     });
     cy.request("/api/themes/com.colossal.theme.default")
       .then(({ body }) =>
@@ -65,7 +65,7 @@ describe("Site Identity image placeholder", () => {
               .click();
           });
         cy.get(
-        '.contextual-block-toolbar[aria-label="Block tools for Site identity"]',
+          '.contextual-block-toolbar[aria-label="Block tools for Site identity"]',
         ).should("be.visible");
         cy.request("/api/themes/" + id).then(({ body }) =>
           expect(JSON.stringify(body.draft)).not.contain(

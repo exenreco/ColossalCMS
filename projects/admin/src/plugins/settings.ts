@@ -114,8 +114,8 @@ import {
                   <div class="settings-section">
                     <h3>Site icon</h3>
                     <p class="field-note">
-                      Choose an image for Site Identity blocks, browser tabs,
-                      and bookmarks.
+                      Choose an image for browser tabs and bookmarks in the
+                      admin and frontend.
                     </p>
                     <div class="site-icon-control">
                       @if (siteIcon) {
@@ -138,6 +138,39 @@ import {
                           type="button"
                           class="text-button"
                           (click)="settings.siteIconId = ''"
+                        >
+                          Remove
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="settings-section">
+                    <h3>Site logo</h3>
+                    <p class="field-note">
+                      Choose an image for the site logo and Site Identity
+                      blocks.
+                    </p>
+                    <div class="site-icon-control">
+                      @if (siteLogo) {
+                        <img
+                          [src]="siteLogo.url + '?v=' + siteLogo.updatedAt"
+                          [alt]="siteLogo.altText"
+                        />
+                      }
+                      <button
+                        type="button"
+                        class="button"
+                        (click)="chooseLogo()"
+                      >
+                        <cl-icon name="media" />{{
+                          siteLogo ? "Change site logo" : "Select site logo"
+                        }}
+                      </button>
+                      @if (siteLogo) {
+                        <button
+                          type="button"
+                          class="text-button"
+                          (click)="settings.siteLogoId = ''"
                         >
                           Remove
                         </button>
@@ -508,6 +541,7 @@ export class SettingsComponent {
     titleSeparator: "·",
     adminColorMode: "system" as "light" | "dark" | "system",
     siteIconId: "",
+    siteLogoId: "",
     postRouting: "home" as "home" | "page",
     postsPageId: "",
     notFoundPageId: "",
@@ -530,6 +564,20 @@ export class SettingsComponent {
     return this.api
       .state()!
       .media.find((m) => m.id === this.settings.siteIconId);
+  }
+  get siteLogo() {
+    return this.api
+      .state()!
+      .media.find((m) => m.id === this.settings.siteLogoId);
+  }
+  async chooseLogo() {
+    const [item] = await this.mediaSelection.open({
+      accept: ["image"],
+      initialSelectionIds: this.settings.siteLogoId
+        ? [this.settings.siteLogoId]
+        : [],
+    });
+    if (item) this.settings.siteLogoId = item.id;
   }
   get publishedPages() {
     return this.api

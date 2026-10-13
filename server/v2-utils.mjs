@@ -158,6 +158,13 @@ export async function references(db, id) {
       kind: "settings",
       published: true,
     });
+  if (settings.siteLogoId === id)
+    refs.push({
+      id: "site-logo",
+      title: "Site logo",
+      kind: "settings",
+      published: true,
+    });
   const revisions = await all(
     db,
     "SELECT id,content_id,snapshot FROM revisions",

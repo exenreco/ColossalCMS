@@ -6,7 +6,7 @@ const placeholders: Record<string, [string, string, string]> = {
   "core/site-brand": [
     "Site image",
     "image",
-    "Set a logo or site icon in Admin Settings",
+    "Set a site logo in Admin Settings",
   ],
   "core/tagline": [
     "Tagline",
