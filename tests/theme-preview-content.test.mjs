@@ -46,3 +46,53 @@ test("default templates preview their content and prioritize explicit assignment
     assigned,
   );
 });
+
+test("Home, Posts and 404 template previews use the published pages assigned to those routes", () => {
+  const document = defaultTheme();
+  const pages = [
+    {
+      id: "assigned-home",
+      kind: "page",
+      title: "Real home",
+      templateId: "",
+      details: {
+        contentBlocks: [
+          {
+            id: "hero",
+            type: "core/paragraph",
+            settings: { html: "Home hero copy" },
+          },
+        ],
+      },
+    },
+    { id: "assigned-posts", kind: "page", title: "Real posts", templateId: "" },
+    {
+      id: "assigned-404",
+      kind: "page",
+      title: "Real missing page",
+      templateId: "",
+    },
+  ];
+  const context = {
+    allContent: pages,
+    settings: {
+      homePageId: pages[0].id,
+      postsPageId: pages[1].id,
+      notFoundPageId: pages[2].id,
+    },
+  };
+  for (const [scope, page] of [
+    ["home", pages[0]],
+    ["post-index", pages[1]],
+    ["404", pages[2]],
+  ]) {
+    const template = resolveTemplateForContent(document, scope, "").template;
+    assert.equal(templatePreviewContent(document, template, context), page);
+  }
+  const customHome = { id: "new-home", name: "New Home", appliesTo: ["home"] };
+  document.manifest.templates.push(customHome);
+  assert.equal(
+    templatePreviewContent(document, customHome, context).title,
+    "Sample title · New Home",
+  );
+});

@@ -54,6 +54,7 @@ export interface ThemeManifest {
   blocks: { type: string; file: string; icon?: string }[];
   assets: { styles: string[]; scripts: string[] };
   palette?: string[];
+  patterns?: import("./block-patterns").BlockPattern[];
   homeTemplate?: string;
   bundledRevision?: number;
   loading?: ThemeLoading;

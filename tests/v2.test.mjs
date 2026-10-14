@@ -237,9 +237,7 @@ test("site icon is public and protected; selected posts page falls back with not
   await call("/admin/content/" + page.id, "DELETE", {});
   const state = (await call("/admin/state")).data;
   assert.equal(state.settings.postRouting, "home");
-  assert.ok(
-    state.notices.some((n) => n.message.includes("deleted or unpublished")),
-  );
+  assert.ok(state.notices.some((n) => n.message.includes("deleted")));
   await call("/admin/settings", "POST", { ...state.settings, siteIconId: "" });
   await call("/media/" + m.id, "DELETE", {});
 });

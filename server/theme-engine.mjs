@@ -1,3 +1,4 @@
+import { validateBlockPatterns } from "../shared/block-patterns.ts";
 import {
   MAX_BLOCK_DEPTH,
   MAX_THEME_BLOCKS,
@@ -529,6 +530,7 @@ export function sanitizeCss(css, report = []) {
   return ast.toString();
 }
 export function validateThemeManifest(m, files, core = false) {
+  validateBlockPatterns(m?.patterns);
   if (
     !m ||
     !/^([a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/.test(m.id || "") ||

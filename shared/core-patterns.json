@@ -1,0 +1,216 @@
+[
+  {
+    "id": "hero",
+    "name": "Welcome hero",
+    "category": "Heroes",
+    "description": "A headline, introduction and call to action.",
+    "blocks": [
+      {
+        "id": "hero",
+        "type": "core/group",
+        "settings": {
+          "padding": 40,
+          "background": "#edf3ef",
+          "color": "#153d31",
+          "borderRadius": 16
+        },
+        "children": [
+          {
+            "id": "hero-title",
+            "type": "core/heading",
+            "settings": {
+              "text": "Make something remarkable",
+              "level": "h2",
+              "fontSize": 36
+            }
+          },
+          {
+            "id": "hero-copy",
+            "type": "core/paragraph",
+            "settings": {
+              "html": "Tell visitors who you are and what you do."
+            }
+          },
+          {
+            "id": "hero-button",
+            "type": "core/button",
+            "settings": {
+              "text": "Explore our work",
+              "href": "#",
+              "background": "#246b50",
+              "color": "#ffffff"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "feature-columns",
+    "name": "Three feature cards",
+    "category": "Features",
+    "description": "Three editable cards in a responsive Columns layout.",
+    "blocks": [
+      {
+        "id": "features",
+        "type": "core/columns",
+        "settings": {
+          "gap": 24
+        },
+        "children": [
+          {
+            "id": "column-0",
+            "type": "core/column",
+            "settings": {},
+            "children": [
+              {
+                "id": "card-0",
+                "type": "core/group",
+                "settings": {
+                  "padding": 24,
+                  "background": "#edf3ef",
+                  "color": "#153d31",
+                  "borderRadius": 12
+                },
+                "children": [
+                  {
+                    "id": "title-0",
+                    "type": "core/heading",
+                    "settings": {
+                      "text": "Design",
+                      "level": "h2",
+                      "fontSize": 36
+                    }
+                  },
+                  {
+                    "id": "copy-0",
+                    "type": "core/paragraph",
+                    "settings": {
+                      "html": "Describe the value you offer your audience."
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "column-1",
+            "type": "core/column",
+            "settings": {},
+            "children": [
+              {
+                "id": "card-1",
+                "type": "core/group",
+                "settings": {
+                  "padding": 24,
+                  "background": "#edf3ef",
+                  "color": "#153d31",
+                  "borderRadius": 12
+                },
+                "children": [
+                  {
+                    "id": "title-1",
+                    "type": "core/heading",
+                    "settings": {
+                      "text": "Build",
+                      "level": "h2",
+                      "fontSize": 36
+                    }
+                  },
+                  {
+                    "id": "copy-1",
+                    "type": "core/paragraph",
+                    "settings": {
+                      "html": "Describe the value you offer your audience."
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "column-2",
+            "type": "core/column",
+            "settings": {},
+            "children": [
+              {
+                "id": "card-2",
+                "type": "core/group",
+                "settings": {
+                  "padding": 24,
+                  "background": "#edf3ef",
+                  "color": "#153d31",
+                  "borderRadius": 12
+                },
+                "children": [
+                  {
+                    "id": "title-2",
+                    "type": "core/heading",
+                    "settings": {
+                      "text": "Grow",
+                      "level": "h2",
+                      "fontSize": 36
+                    }
+                  },
+                  {
+                    "id": "copy-2",
+                    "type": "core/paragraph",
+                    "settings": {
+                      "html": "Describe the value you offer your audience."
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "call-to-action",
+    "name": "Simple call to action",
+    "category": "Calls to action",
+    "description": "A compact invitation with an action button.",
+    "blocks": [
+      {
+        "id": "cta",
+        "type": "core/group",
+        "settings": {
+          "padding": 32,
+          "background": "#153d31",
+          "color": "#ffffff",
+          "borderRadius": 12
+        },
+        "children": [
+          {
+            "id": "cta-title",
+            "type": "core/heading",
+            "settings": {
+              "text": "Let’s build something together",
+              "level": "h2",
+              "fontSize": 36
+            }
+          },
+          {
+            "id": "cta-copy",
+            "type": "core/paragraph",
+            "settings": {
+              "html": "Add an invitation that makes the next step clear."
+            }
+          },
+          {
+            "id": "cta-button",
+            "type": "core/button",
+            "settings": {
+              "text": "Get in touch",
+              "href": "#",
+              "background": "#246b50",
+              "color": "#ffffff"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

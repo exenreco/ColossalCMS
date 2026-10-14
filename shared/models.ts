@@ -34,6 +34,7 @@ export interface Content {
   views30Days?: number;
 }
 export interface Plugin {
+  patterns?: import("./block-patterns").BlockPattern[];
   id: string;
   name: string;
   version: string;

@@ -13,6 +13,18 @@ export function isGlasseyTheme(id) {
 export function migrateGlasseyDocument(document) {
   if (!isGlasseyTheme(document?.manifest?.id)) return document;
   document.manifest = migrateGlasseyManifest(document.manifest);
+  // Glossy's base colors and typography are scoped to its real HTML body.
+  // Preserve authored template classes when a replacement root lost this class.
+  for (const root of Object.values(document.templates || {})) {
+    if (!root?.settings) continue;
+    const classes = String(root.settings.classes || "")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!classes.includes("c27-body")) {
+      root.settings.classes = ["c27-body", ...classes].join(" ");
+      delete document.compiled;
+    }
+  }
   const visit = (node) => {
     if (
       ["core/rich-text", "core/paragraph"].includes(node?.type) &&
@@ -36,6 +48,7 @@ export function migrateGlasseyDocument(document) {
   upgradeGlossyHeader(document);
   upgradeGlossyBrandLayout(document);
   upgradeGlossyBrandSize(document);
+  alignGlossyHeroWidth(document);
   return document;
 }
 
@@ -238,6 +251,24 @@ function upgradeGlossyBrandSize(document) {
 ${marker}
 .theme-root .c27-brand .theme-site-tagline{font-size:12px;letter-spacing:.8px}
 @media(max-width:600px){.theme-root .c27-brand .theme-site-tagline{font-size:10px;letter-spacing:.4px}}
+`;
+  delete document.compiled;
+}
+
+/** Keep the full-width scene while aligning its copy with content sections. */
+function alignGlossyHeroWidth(document) {
+  if (!document.css || document.css.includes("/* Glossy aligned hero copy */"))
+    return;
+  const widths = [
+    ...document.css.matchAll(
+      /\.theme-root \.c27-section\s*\{[^}]*?max-width:\s*(\d+)px/g,
+    ),
+  ];
+  const width = Number(widths.at(-1)?.[1] || 1184);
+  document.css += `
+/* Glossy aligned hero copy */
+.theme-root .c27-hero.c27-hero-world{padding-left:0;padding-right:0}
+.theme-root .c27-hero-world .c27-hero-copy{width:100%;max-width:${width}px;margin:0 auto;padding-left:24px;padding-right:24px;box-sizing:border-box}
 `;
   delete document.compiled;
 }

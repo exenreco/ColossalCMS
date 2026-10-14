@@ -1,7 +1,13 @@
 describe("Post and page HTML editing", () => {
   const headers = { Origin: "http://127.0.0.1:4201" };
   const control = (name) =>
-    cy.get(`.shared-editor button[aria-label="${name}"]`).filter(":visible");
+    cy
+      .get(
+        name === "Save draft"
+          ? ".shared-editor .editor-save"
+          : `.shared-editor button[aria-label="${name}"]`,
+      )
+      .filter(":visible");
   const openOutline = () => {
     control("Outline").then(($button) => {
       if ($button.attr("aria-pressed") !== "true") cy.wrap($button).click();

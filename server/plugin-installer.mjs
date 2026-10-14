@@ -1,3 +1,4 @@
+import { validateBlockPatterns } from "../shared/block-patterns.ts";
 import { unzipSync } from "fflate";
 import semver from "semver";
 import { catalog } from "./catalog.mjs";
@@ -135,6 +136,7 @@ export function inspectZip(
   return { files: unpacked, manifest };
 }
 export function validateManifest(m) {
+  validateBlockPatterns(m?.patterns);
   if (
     !m ||
     typeof m !== "object" ||

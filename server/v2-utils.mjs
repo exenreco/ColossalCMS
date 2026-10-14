@@ -524,7 +524,7 @@ export async function repairRouting(db) {
         .prepare("SELECT * FROM content WHERE id=? AND kind='page'")
         .bind(settings[key])
         .first();
-      if (!page || page.status !== "published") {
+      if (!page) {
         settings[key] = "";
         statements.push(
           db
@@ -533,7 +533,7 @@ export async function repairRouting(db) {
             )
             .bind(
               crypto.randomUUID(),
-              `The ${label} page assignment was cleared because '${page?.title || label}' was deleted or unpublished.`,
+              `The ${label} page assignment was cleared because '${page?.title || label}' was deleted.`,
               now(),
             ),
         );
@@ -556,7 +556,7 @@ export async function repairRouting(db) {
       .prepare("SELECT * FROM content WHERE id=? AND kind='page'")
       .bind(settings.postsPageId || "")
       .first();
-    if (!page || !published(page)) {
+    if (!page) {
       settings.postRouting = "home";
       settings.postsPageId = "";
       await db.batch([
@@ -567,7 +567,7 @@ export async function repairRouting(db) {
           .prepare("INSERT INTO notices (id,message,created_at) VALUES (?,?,?)")
           .bind(
             crypto.randomUUID(),
-            "Posts are back on the home page because the selected posts page was deleted or unpublished.",
+            "Posts are back on the home page because the selected posts page was deleted.",
             now(),
           ),
       ]);

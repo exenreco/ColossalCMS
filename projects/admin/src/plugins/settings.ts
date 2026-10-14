@@ -222,8 +222,9 @@ import {
                 <div class="panel-heading"><h2>Pages &amp; Routing</h2></div>
                 <div class="form-content">
                   <p class="field-note">
-                    Only published pages are selectable. Draft and scheduled
-                    pages are excluded.
+                    New assignments require published pages. Existing selections
+                    stay assigned during edits and unpublishing; unpublished
+                    pages remain private.
                   </p>
                   <label
                     >Home page<select
@@ -233,7 +234,12 @@ import {
                     >
                       <option value="">Latest posts</option>
                       @for (page of publishedPages; track page.id) {
-                        <option [value]="page.id">{{ page.title }}</option>
+                        <option [value]="page.id">
+                          {{ page.title
+                          }}{{
+                            page.status !== "published" ? " (unpublished)" : ""
+                          }}
+                        </option>
                       }
                     </select></label
                   >
@@ -247,7 +253,14 @@ import {
                       <option value="">None</option>
                       @for (page of publishedPages; track page.id) {
                         @if (page.id !== settings.homePageId) {
-                          <option [value]="page.id">{{ page.title }}</option>
+                          <option [value]="page.id">
+                            {{ page.title
+                            }}{{
+                              page.status !== "published"
+                                ? " (unpublished)"
+                                : ""
+                            }}
+                          </option>
                         }
                       }
                     </select></label
@@ -260,7 +273,12 @@ import {
                     >
                       <option value="">Theme 404 template</option>
                       @for (page of publishedPages; track page.id) {
-                        <option [value]="page.id">{{ page.title }}</option>
+                        <option [value]="page.id">
+                          {{ page.title
+                          }}{{
+                            page.status !== "published" ? " (unpublished)" : ""
+                          }}
+                        </option>
                       }
                     </select></label
                   >
@@ -582,7 +600,16 @@ export class SettingsComponent {
   get publishedPages() {
     return this.api
       .state()!
-      .content.filter((c) => c.kind === "page" && c.status === "published");
+      .content.filter(
+        (c) =>
+          c.kind === "page" &&
+          (c.status === "published" ||
+            [
+              this.api.state()!.settings.homePageId,
+              this.api.state()!.settings.postsPageId,
+              this.api.state()!.settings.notFoundPageId,
+            ].includes(c.id)),
+      );
   }
   async chooseIcon() {
     const [item] = await this.mediaSelection.open({

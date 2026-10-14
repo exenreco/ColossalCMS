@@ -1,3 +1,7 @@
+import {
+  collectBlockPatterns,
+  renderPatternPreview,
+} from "./block-patterns.mjs";
 import { validatePreview } from "./editor-automation.mjs";
 import { pluginRuntime } from "./plugin-runtime.mjs";
 import {
@@ -617,6 +621,20 @@ export default {
       }
       if (path === "/api/admin/state" && request.method === "GET")
         return json(await state(db, user));
+      if (path === "/api/admin/editor/patterns" && request.method === "GET") {
+        const themeId = url.searchParams.get("themeId");
+        const row = themeId
+          ? await db
+              .prepare("SELECT published,draft FROM themes WHERE id=?")
+              .bind(themeId)
+              .first()
+          : null;
+        const theme = row
+          ? parse(row.draft || row.published)
+          : await activeTheme(db);
+        const current = await state(db, user);
+        return json({ patterns: collectBlockPatterns(theme, current.plugins) });
+      }
       let body = {};
       if (!["GET", "DELETE"].includes(request.method)) {
         const text = await request.text();
@@ -626,6 +644,23 @@ export default {
         } catch {
           fail("Invalid JSON.");
         }
+      }
+      if (
+        path === "/api/admin/editor/patterns/preview" &&
+        request.method === "POST"
+      ) {
+        const row =
+          typeof body.themeId === "string"
+            ? await db
+                .prepare("SELECT published,draft FROM themes WHERE id=?")
+                .bind(body.themeId)
+                .first()
+            : null;
+        const theme = row
+          ? parse(row.draft || row.published)
+          : await activeTheme(db);
+        const context = await themeContext(db, "/");
+        return json(renderPatternPreview(body.pattern, theme, context));
       }
       if (path === "/api/admin/content/render" && request.method === "POST") {
         const draft = body.content || {};
@@ -980,13 +1015,18 @@ export default {
           );
           if (new Set(assigned).size !== assigned.length)
             fail("A page may hold at most one routing role.");
-          for (const id of assigned) {
+          for (const [key, id] of [
+            ["homePageId", homePageId],
+            ["postsPageId", postsPageId],
+            ["notFoundPageId", notFoundPageId],
+          ]) {
+            if (!id) continue;
             const page = await db
               .prepare("SELECT * FROM content WHERE id=? AND kind='page'")
               .bind(id)
               .first();
-            if (!page || page.status !== "published")
-              fail("Only published pages may be assigned a routing role.");
+            if (!page || (page.status !== "published" && prior[key] !== id))
+              fail("Only published pages may be assigned a new routing role.");
           }
         }
         if (postRouting === "page" && (routingVersion !== 2 || postsPageId)) {
@@ -994,7 +1034,11 @@ export default {
             .prepare("SELECT * FROM content WHERE id=? AND kind='page'")
             .bind(postsPageId)
             .first();
-          if (!page || !isPublished(rowToContent(page)))
+          if (
+            !page ||
+            (!isPublished(rowToContent(page)) &&
+              prior.postsPageId !== postsPageId)
+          )
             fail("Choose a published page for your posts.");
           if (homePageId === postsPageId)
             fail("Home and posts must use different pages.");
@@ -1004,7 +1048,11 @@ export default {
             .prepare("SELECT * FROM content WHERE id=? AND kind='page'")
             .bind(homePageId)
             .first();
-          if (!home || !isPublished(rowToContent(home)))
+          if (
+            !home ||
+            (!isPublished(rowToContent(home)) &&
+              prior.homePageId !== homePageId)
+          )
             fail("Choose a published home page.");
         }
         if (

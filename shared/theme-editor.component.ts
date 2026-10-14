@@ -1,3 +1,4 @@
+import { PatternLibraryComponent } from "./pattern-library.component";
 import {
   Component,
   ElementRef,
@@ -57,6 +58,7 @@ import {
     FormsModule,
     BlockListDrawerComponent,
     BlockLibraryDrawerComponent,
+    PatternLibraryComponent,
     EditorShellComponent,
     EditorDialogComponent,
     BlockIconComponent,

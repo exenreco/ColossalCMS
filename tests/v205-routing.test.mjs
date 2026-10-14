@@ -106,3 +106,59 @@ test("Home, Posts and 404 roles drive routes and template scopes", async () => {
   assert.equal(state.settings.postsPageId, "");
   assert.ok(state.notices.some((n) => n.message.includes("Home v205")));
 });
+
+test("routing choices persist through revisions and unpublishing without exposing drafts", async () => {
+  const pages = [];
+  for (const role of ["home", "posts", "404"]) {
+    const made = await call("/admin/content", "POST", {
+      kind: "page",
+      title: "Stable " + role,
+      slug: "stable-" + role,
+      body: "Private draft payload " + role,
+      status: "published",
+    });
+    assert.equal(made.status, 200);
+    pages.push(made.data.id);
+  }
+  const assignment = {
+    routingVersion: 2,
+    homePageId: pages[0],
+    postsPageId: pages[1],
+    notFoundPageId: pages[2],
+    postRouting: "page",
+  };
+  assert.equal((await call("/admin/settings", "POST", assignment)).status, 200);
+  for (const id of pages) {
+    const entry = (await call("/admin/state")).data.content.find(
+      (c) => c.id === id,
+    );
+    assert.equal(
+      (await call("/admin/content", "POST", { ...entry, status: "draft" }))
+        .status,
+      200,
+    );
+  }
+  let state = (await call("/admin/state")).data;
+  for (const key of ["homePageId", "postsPageId", "notFoundPageId"])
+    assert.equal(state.settings[key], assignment[key]);
+  assert.equal(
+    (await call("/admin/settings", "POST", assignment)).status,
+    200,
+    "unchanged unpublished assignments remain saveable",
+  );
+  const publicState = (await call("/public")).data;
+  assert.ok(!publicState.content.some((c) => pages.includes(c.id)));
+  const homepage = (await call("/themes/render?path=/")).data;
+  assert.doesNotMatch(homepage.html, /Private draft payload/);
+  for (const id of pages) {
+    const entry = state.content.find((c) => c.id === id);
+    assert.equal(
+      (await call("/admin/content", "POST", { ...entry, status: "published" }))
+        .status,
+      200,
+    );
+  }
+  state = (await call("/admin/state")).data;
+  for (const key of ["homePageId", "postsPageId", "notFoundPageId"])
+    assert.equal(state.settings[key], assignment[key]);
+});

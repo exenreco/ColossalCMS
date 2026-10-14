@@ -1,3 +1,6 @@
+import { MAX_BLOCK_DEPTH } from "./block-limits";
+import { BlockPattern, clonePatternBlocks } from "./block-patterns";
+import { applyOutlineCommand } from "./outline-document";
 import { ApiService } from "./api.service";
 import { Injectable, signal, inject } from "@angular/core";
 import { BlockDefinition, BlockNode, ThemeDocument } from "./theme-models";
@@ -85,7 +88,7 @@ export class ThemeEditorState {
           : ["core/columns", "core/post-list"].includes(source.type || "")
             ? 1
             : 0) <=
-      8
+      MAX_BLOCK_DEPTH
     );
   }
   dropBlock(parentId: string, index: number, source = this.dragSource) {
@@ -260,8 +263,8 @@ export class ThemeEditorState {
         throw Error(
           "Pagination must be inside a Post list or one of its layout blocks.",
         );
-      if (this.depth(this.root!) > 8)
-        throw Error("Blocks can be nested up to eight levels.");
+      if (this.depth(this.root!) > MAX_BLOCK_DEPTH)
+        throw Error(`Blocks can be nested up to ${MAX_BLOCK_DEPTH} levels.`);
     } catch (e) {
       this.document.set(JSON.parse(before));
       this.error = (e as Error).message;
@@ -346,6 +349,27 @@ export class ThemeEditorState {
         ? { children: b.children.map((c) => this.copyTree(c)) }
         : {}),
     };
+  }
+  insertPattern(pattern: BlockPattern) {
+    const selection = this.selected();
+    this.commit(() => {
+      let parent = this.node;
+      if (!parent?.children)
+        parent = parent ? this.parent(parent.id) : this.root;
+      if (!parent?.children)
+        throw Error("Choose a layout block for this pattern.");
+      const blocks = clonePatternBlocks(pattern);
+      parent.children.push(
+        ...blocks.map((block) => this.forParent(block, parent!)),
+      );
+      applyOutlineCommand(
+        this.root!,
+        { type: "update", id: this.root!.id, settings: {} },
+        this.blocks,
+      );
+      this.selected.set(blocks[0].id);
+    });
+    if (this.error) this.selected.set(selection);
   }
   insert(type: string, parentId?: string, index?: number) {
     this.commit(() => {

@@ -1,3 +1,4 @@
+import { PatternLibraryComponent } from "./pattern-library.component";
 import { contentTemplateScope } from "./content-template-scope";
 import {
   Component,
@@ -65,6 +66,7 @@ import { SeoPanelComponent } from "./seo-panel.component";
     IconComponent,
     BlockListDrawerComponent,
     BlockLibraryDrawerComponent,
+    PatternLibraryComponent,
     EditorShellComponent,
     EditorDialogComponent,
     BlockIconComponent,
@@ -87,11 +89,12 @@ import { SeoPanelComponent } from "./seo-panel.component";
         [templateName]="selectedTemplateName"
         [status]="dirty ? 'Unsaved changes' : savedLabel"
         [busy]="busy()"
+        [saveLabel]="entry.status === 'draft' ? 'Save draft' : 'Save changes'"
         [width]="previewWidth"
         [canUndo]="!!themeState.past.length"
         [canRedo]="!!themeState.future.length"
         (leave)="close()"
-        (save)="save('draft')"
+        (save)="save(entry.status)"
         (preview)="previewContent()"
         (undo)="themeState.undo()"
         (redo)="themeState.redo()"
@@ -112,6 +115,12 @@ import { SeoPanelComponent } from "./seo-panel.component";
             (choose)="insertThemeBlock($event)"
             (pointerStart)="libraryPointerStart($event)"
             (dismiss)="toggleLibrary(false)"
+          />
+        </div>
+        <div editor-patterns>
+          <cl-pattern-library
+            [open]="editorShell.sidebarOpen && editorShell.panel === 'patterns'"
+            [document]="themeState.document()"
           />
         </div>
         <div
@@ -2040,9 +2049,14 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
       }
   }
   restore(snapshot: Content) {
-    const id = this.entry.id,
-      updatedAt = this.entry.updatedAt;
-    this.entry = { ...structuredClone(snapshot), id, updatedAt };
+    const { id, updatedAt, status, publishAt } = this.entry;
+    this.entry = {
+      ...structuredClone(snapshot),
+      id,
+      updatedAt,
+      status,
+      publishAt,
+    };
     this.entry.details ??= {};
     this.entry.details.panelData ??= {};
     this.categories = (this.entry.details.categories || []).join(", ");
@@ -2164,7 +2178,7 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
       return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
       event.preventDefault();
-      this.save("draft");
+      this.save(this.entry.status);
     }
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();

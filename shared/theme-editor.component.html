@@ -62,6 +62,12 @@
           (dismiss)="setBlockLibrary(false)"
         />
       </div>
+      <div editor-patterns>
+        <cl-pattern-library
+          [open]="editorShell.sidebarOpen && editorShell.panel === 'patterns'"
+          [document]="state.document()"
+        />
+      </div>
       <div
         editor-structure
         id="block-list-drawer"

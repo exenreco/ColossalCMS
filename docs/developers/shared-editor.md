@@ -76,7 +76,7 @@ The server derives the member ID from the session; requests cannot choose anothe
 | Ctrl/Cmd+Shift+O     | Open Outline in the sidebar                                               |
 | Ctrl/Cmd+Shift+C     | Close the sidebar; keep canvas visible                                    |
 | Ctrl/Cmd+1 / 2 / 3   | Desktop / Tablet / Mobile                                                 |
-| Ctrl/Cmd+S           | Save draft                                                                |
+| Ctrl/Cmd+S           | Save with the current content status (theme saves remain drafts)          |
 | Ctrl/Cmd+Z / Shift+Z | Undo / Redo                                                               |
 
 ## Local verification

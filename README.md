@@ -472,12 +472,16 @@ Create at `/admin/posts/new` or `/admin/pages/new`. Edit at `/admin/posts/edit/:
         <tr><td>Published</td><td>Visible immediately</td></tr>
         <tr><td>Scheduled</td><td>Visible when its future timestamp becomes due</td></tr>
         <tr><td>Published-entry autosave</td><td>Private revision; live entry stays unchanged</td></tr>
-        <tr><td>Explicit Save draft on published content</td><td>Unpublishes the entry</td></tr>
+        <tr><td>Save or Ctrl/Cmd+S</td><td>Preserves the selected status; published entries update live and create a revision</td></tr>
         <tr><td>Restore revision</td><td>Loads editor state; save/publish to apply it</td></tr>
     </tbody>
 </table>
 
 Dirty content autosaves every 60 seconds. Manual updates use `expectedUpdatedAt` to reject stale changes. Leaving with unsaved work prompts for confirmation. Deleting content removes its revisions and repairs assigned page roles.
+
+### Block patterns
+
+Open **Patterns** from the editor’s compact left rail or sidebar dropdown. Each pattern has a name, category and rendered preview; search/filter the library and choose a card to insert editable native blocks with one Undo step. Core, theme and active plugin patterns use a shared declarative registry. See [registration, previews and editor API](docs/developers/block-patterns.md).
 
 ### Admin tables and bulk actions
 

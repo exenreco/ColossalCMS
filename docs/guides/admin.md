@@ -6,7 +6,7 @@ Choose Pages or Posts, then Create. The secondary toolbar has a **Blocks** butto
 
 Canvas links stay inside the unsaved preview. Shared site header and footer blocks are edited in the Theme Editor; clicking one shows a note without leaving the Canvas.
 
-Save draft keeps the entry private; Pending review marks work awaiting review. Publish makes it visible. Scheduled accepts a future local date/time. Ctrl/Cmd+S saves a draft; Ctrl/Cmd+Enter publishes. Dirty entries autosave every 60 seconds. Published entries autosave to private revision history until you explicitly publish. Restoring a revision populates the editor; save to apply it.
+Saving preserves the selected status; drafts stay private and published entries update live. Select Draft explicitly to unpublish; Pending review marks work awaiting review. Publish makes it visible. Scheduled accepts a future local date/time. Ctrl/Cmd+S saves with the current status; Ctrl/Cmd+Enter publishes. Dirty entries autosave every 60 seconds. Published entries autosave to private revision history until you explicitly publish. Restoring a revision populates the editor without changing the current publication status; save to apply it.
 
 Changing an existing published entry to Draft removes it from the public site. Unsaved changes prompt before closing. Server updates reject stale writes when another edit has already been saved.
 
@@ -26,9 +26,9 @@ Settings → General → Select site icon opens the shared image library. Choose
 
 ## Assign page roles
 
-In Settings → General → Pages & Routing, choose a published Home page or keep Latest posts at `/`. Once Home is a page, you can assign a different published Posts page for the post index. The 404 selector uses a published page for unmatched routes; its content appears in the theme's 404 template, and it is excluded from navigation and ordinary page routing. A page can hold one role; the Pages list shows role badges and supports a role filter. Only published pages appear in the selectors.
+In Settings → Reading → Pages & Routing, choose a published Home page or keep Latest posts at `/`. Once Home is a page, you can assign a different published Posts page for the post index. The 404 selector uses a published page for unmatched routes; its content appears in the theme's 404 template, and it is excluded from navigation and ordinary page routing. A page can hold one role; the Pages list shows role badges and supports a role filter. Only published pages can receive new assignments; existing unpublished assignments remain selectable and labeled.
 
-Unpublishing or deleting an assigned page clears its role and creates a dashboard notice. The page editor's Template panel offers Home templates for the Home page, page templates for ordinary pages, post-index templates for the Posts page, and 404 templates for the 404 page.
+Routing assignments are tied to page IDs and persist through edits, revisions and temporary unpublishing. Unpublished pages remain private. Deleting an assigned page clears its role and creates a dashboard notice. The page editor's Template panel offers Home templates for the Home page, page templates for ordinary pages, post-index templates for the Posts page, and 404 templates for the 404 page.
 
 ## Install plugins
 

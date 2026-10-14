@@ -18,7 +18,8 @@ import { UiSurfaceComponent } from "./ui-surface.component";
 import { EditorPreferencesService } from "./editor-preferences.service";
 import { syncEditorCanvasAppearance } from "./editor-canvas-appearance";
 
-export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
+export type EditorPanel =
+  "inspector" | "blocks" | "patterns" | "list" | "outline";
 @Component({
   selector: "cl-editor-shell",
   standalone: true,
@@ -57,6 +58,15 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
             (click)="togglePanel('blocks')"
           >
             <cl-editor-icon name="plus" />
+          </button>
+          <button
+            class="patterns-trigger editor-tool"
+            aria-label="Patterns"
+            title="Block patterns"
+            [attr.aria-pressed]="sidebarOpen && panel === 'patterns'"
+            (click)="togglePanel('patterns')"
+          >
+            <cl-editor-icon name="brick" />
           </button>
           <button
             class="block-list-trigger editor-tool"
@@ -114,6 +124,13 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
             [attr.inert]="panel === 'blocks' ? null : ''"
           >
             <ng-content select="[editor-blocks]" />
+          </div>
+          <div
+            class="editor-panel-content"
+            [hidden]="panel !== 'patterns'"
+            [attr.inert]="panel === 'patterns' ? null : ''"
+          >
+            <ng-content select="[editor-patterns]" />
           </div>
           <div
             class="editor-panel-content"
@@ -230,7 +247,7 @@ export type EditorPanel = "inspector" | "blocks" | "list" | "outline";
           <button
             class="editor-save"
             data-tour="save"
-            aria-label="Save draft"
+            [attr.aria-label]="saveLabel"
             [disabled]="busy"
             (click)="save.emit()"
           >
@@ -503,6 +520,7 @@ export class EditorShellComponent implements OnInit {
   @Input() canUndo = false;
   @Input() canRedo = false;
   @Input() busy = false;
+  @Input() saveLabel = "Save draft";
   @Output() leave = new EventEmitter<void>();
   @Output() save = new EventEmitter<void>();
   @Output() preview = new EventEmitter<void>();
@@ -524,6 +542,7 @@ export class EditorShellComponent implements OnInit {
   panelLabels = {
     inspector: "Inspector",
     blocks: "Blocks",
+    patterns: "Patterns",
     list: "List view",
     outline: "Outline",
   };
@@ -534,6 +553,7 @@ export class EditorShellComponent implements OnInit {
     shortcut?: string;
   }[] = [
     { id: "blocks", label: "Blocks", icon: "plus", shortcut: "Ctrl B" },
+    { id: "patterns", label: "Patterns", icon: "brick" },
     { id: "list", label: "List view", icon: "list", shortcut: "Ctrl ⇧ L" },
     { id: "outline", label: "Outline", icon: "outline", shortcut: "Ctrl ⇧ O" },
   ];

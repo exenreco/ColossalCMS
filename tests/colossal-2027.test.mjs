@@ -137,9 +137,9 @@ test("Glossy header has logo and stacked live site name/tagline in two editable 
   const html = render({
     title: "Live portfolio",
     tagline: "Ideas into experiences",
-    logo: "/logo.svg",
+    siteLogoId: "site-logo",
   });
-  assert.match(html, /class="theme-site-logo" src="\/logo.svg"/);
+  assert.match(html, /class="theme-site-logo" src="\/api\/media\/site-logo\/file"/);
   assert.match(html, /class="theme-site-name"[^>]*>Live portfolio<\/span>/);
   assert.match(
     html,
@@ -1030,4 +1030,44 @@ test("scene tint preserves optional hex alpha and rejects unsupported colors", (
   assert.deepEqual(sceneTint("#00000000"), { color: "#000000", alpha: 0 });
   assert.deepEqual(sceneTint("#aabbcc"), { color: "#aabbcc", alpha: 1 });
   assert.deepEqual(sceneTint("red;bad()"), sceneTint(undefined));
+});
+
+test("Glossy restores its required body class without replacing content-only templates", () => {
+  const document = colossal2027Theme();
+  document.templates.home = {
+    id: "custom-home",
+    type: "core/container",
+    settings: { classes: "c27-section custom-home", background: "#123456" },
+    children: [
+      {
+        id: "custom-copy",
+        type: "core/paragraph",
+        settings: { html: "Keep this authored content" },
+      },
+    ],
+  };
+  const originalChildren = structuredClone(document.templates.home.children);
+  migrateGlasseyDocument(document);
+  assert.equal(
+    document.templates.home.settings.classes,
+    "c27-body c27-section custom-home",
+  );
+  assert.equal(document.templates.home.settings.background, "#123456");
+  assert.deepEqual(document.templates.home.children, originalChildren);
+  const once = JSON.stringify(document);
+  migrateGlasseyDocument(document);
+  assert.equal(JSON.stringify(document), once);
+  const rendered = renderTheme(
+    validateDocument(document, false),
+    {
+      kind: "home",
+      settings: {},
+      allContent: [],
+      media: [],
+      content: { title: "Home", details: {} },
+    },
+    "home",
+  );
+  assert.ok(rendered.body.className.split(/\s+/).includes("c27-body"));
+  assert.match(rendered.css, /\.theme-root\.c27-body/);
 });

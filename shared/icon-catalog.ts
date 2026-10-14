@@ -174,6 +174,8 @@ export const APP_ICON_PATHS: Record<string, string> = {
 };
 
 export const EDITOR_ICON_PATHS: Record<string, string> = {
+  brick:
+    "M4 9h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zM6 9V5h4v4M14 9V5h4v4",
   ai: "M12 3v3M10 3h4M7 6h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM4 12H2v4h2M20 12h2v4h-2M8 11v2M16 11v2M9 17h6",
   sparkles:
     "M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3M20 2v4M18 4h4",

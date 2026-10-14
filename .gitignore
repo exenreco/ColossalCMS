@@ -43,3 +43,6 @@ node_modules
 
 # Separate nested clone; application source lives at this repository root
 /ColossalCMS/
+
+# Standalone portfolio export and its separate repository
+/portfolio-site/
