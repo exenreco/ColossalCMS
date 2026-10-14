@@ -51,6 +51,10 @@ export function migrateGlasseyDocument(document) {
   alignGlossyHeroWidth(document);
   registerGlossyHomePatterns(document);
   alignGlossyHomeContent(document);
+  alignGlossyPageWidths(document);
+  expandGlossyFooter(document);
+  expandGlossyCopyright(document);
+  glassGlossyFooter(document);
   for (const node of document.templates?.home?.children || []) {
     if (
       String(node.settings?.classes || "")
@@ -376,6 +380,57 @@ function alignGlossyHomeContent(document) {
   document.css += `
 /* Glossy aligned home content */
 .theme-root .c27-section.c27-home-content{width:100%;max-width:${width}px;margin:0 auto;padding-left:24px;padding-right:24px;box-sizing:border-box}
+`;
+  delete document.compiled;
+}
+
+/** Give hero copy, page content and footer a single responsive content grid. */
+function alignGlossyPageWidths(document) {
+  const marker = "/* Glossy shared page width */";
+  if (!document.css || document.css.includes(marker)) return;
+  document.css += `
+${marker}
+.theme-root .c27-hero-world .c27-hero-copy,.theme-root .c27-section.c27-home-content,.theme-root .theme-part-footer{width:100%;max-width:1280px;margin:0 auto;padding-left:48px;padding-right:48px;box-sizing:border-box}
+@media(max-width:600px){.theme-root .c27-hero-world .c27-hero-copy,.theme-root .c27-section.c27-home-content,.theme-root .theme-part-footer{padding-left:24px;padding-right:24px}}
+`;
+  delete document.compiled;
+}
+
+/** Full-width footer surface with a centered, constrained column grid. */
+function expandGlossyFooter(document) {
+  const marker = "/* Glossy full width footer */";
+  if (!document.css || document.css.includes(marker)) return;
+  document.css += `
+${marker}
+.theme-root .theme-part-footer{width:100%;max-width:none;margin:0;padding-left:0;padding-right:0}
+.theme-root .c27-footer-grid,.theme-root .c27-footer-bottom{width:100%;max-width:1280px;margin-left:auto;margin-right:auto;padding-left:48px;padding-right:48px;box-sizing:border-box}
+@media(max-width:600px){.theme-root .c27-footer-grid,.theme-root .c27-footer-bottom{padding-left:24px;padding-right:24px}}
+`;
+  delete document.compiled;
+}
+
+/** Stretch the copyright divider while keeping its text on the column grid. */
+function expandGlossyCopyright(document) {
+  const marker = "/* Glossy full width copyright */";
+  if (!document.css || document.css.includes(marker)) return;
+  document.css += `
+${marker}
+.theme-root .c27-footer-bottom{width:100%;max-width:none;margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+.theme-root .c27-footer-bottom p{width:100%;max-width:1280px;margin:0 auto;padding-left:48px;padding-right:48px;box-sizing:border-box}
+@media(max-width:600px){.theme-root .c27-footer-bottom p{padding-left:24px;padding-right:24px}}
+`;
+  delete document.compiled;
+}
+
+/** One continuous glass surface behind the columns and copyright row. */
+function glassGlossyFooter(document) {
+  const marker = "/* Glossy full footer glass */";
+  if (!document.css || document.css.includes(marker)) return;
+  document.css += `
+${marker}
+.theme-root .theme-part-footer{background-color:#17191bc9;background-image:linear-gradient(135deg,#ffffff08,transparent);backdrop-filter:blur(20px) saturate(115%);border-top:1px solid #ffffff18}
+.theme-root .theme-part-footer .c27-footer{background-color:transparent;background-image:none;border-top:0}
+.theme-root .theme-part-footer .c27-footer-bottom{background-color:transparent;background-image:none}
 `;
   delete document.compiled;
 }
