@@ -49,6 +49,21 @@ export function migrateGlasseyDocument(document) {
   upgradeGlossyBrandLayout(document);
   upgradeGlossyBrandSize(document);
   alignGlossyHeroWidth(document);
+  registerGlossyHomePatterns(document);
+  alignGlossyHomeContent(document);
+  for (const node of document.templates?.home?.children || []) {
+    if (
+      String(node.settings?.classes || "")
+        .split(/\s+/)
+        .includes("c27-home-content") &&
+      node.settings.position === undefined &&
+      node.settings.zIndex === undefined
+    ) {
+      node.settings.position = "relative";
+      node.settings.zIndex = 2;
+      delete document.compiled;
+    }
+  }
   return document;
 }
 
@@ -269,6 +284,98 @@ function alignGlossyHeroWidth(document) {
 /* Glossy aligned hero copy */
 .theme-root .c27-hero.c27-hero-world{padding-left:0;padding-right:0}
 .theme-root .c27-hero-world .c27-hero-copy{width:100%;max-width:${width}px;margin:0 auto;padding-left:24px;padding-right:24px;box-sizing:border-box}
+`;
+  delete document.compiled;
+}
+
+/** Move the authored Home sections into reusable, theme-owned patterns once. */
+function registerGlossyHomePatterns(document) {
+  const home = document.templates?.home;
+  if (
+    !home?.children ||
+    document.manifest.patterns?.some((p) => p.id === "glossy-home-work")
+  )
+    return;
+  const boundary = home.children.findIndex((n) =>
+    String(n.settings?.classes || "")
+      .split(/\s+/)
+      .includes("c27-intro-line"),
+  );
+  if (boundary < 0) return;
+  const definitions = [
+    ["c27-work", "glossy-home-work", "Glossy · Selected work"],
+    ["c27-about", "glossy-home-about", "Glossy · About"],
+    [
+      "c27-resume",
+      "glossy-home-resume",
+      "Glossy · Background and capabilities",
+    ],
+    ["c27-contact", "glossy-home-contact", "Glossy · Contact"],
+  ];
+  const sections = home.children.slice(boundary + 1).filter((n) =>
+    definitions.some(([cls]) =>
+      String(n.settings?.classes || "")
+        .split(/\s+/)
+        .includes(cls),
+    ),
+  );
+  if (!sections.length) return;
+  const patterns = document.manifest.patterns || [];
+  for (const section of sections) {
+    const [, id, name] = definitions.find(([cls]) =>
+      String(section.settings?.classes || "")
+        .split(/\s+/)
+        .includes(cls),
+    );
+    if (!patterns.some((p) => p.id === id))
+      patterns.push({
+        id,
+        name,
+        category: "Theme",
+        description: "Reusable section from the Glossy Home design.",
+        blocks: [structuredClone(section)],
+      });
+  }
+  document.manifest.patterns = patterns;
+  const usedIds = new Set();
+  const visit = (n) => {
+    usedIds.add(n.id);
+    n.children?.forEach(visit);
+  };
+  [
+    ...Object.values(document.templates),
+    ...Object.values(document.parts || {}),
+  ].forEach(visit);
+  let contentId = "glossy-home-page-content";
+  while (usedIds.has(contentId)) contentId += "-new";
+  home.children = home.children.filter((n) => !sections.includes(n));
+  home.children.splice(boundary + 1, 0, {
+    id: contentId,
+    type: "core/post-content",
+    settings: {
+      classes: "c27-section c27-home-content",
+      position: "relative",
+      zIndex: 2,
+    },
+  });
+  delete document.compiled;
+}
+
+/** Match the content wrapper to the hero, including narrower editor viewports. */
+function alignGlossyHomeContent(document) {
+  if (
+    !document.css ||
+    document.css.includes("/* Glossy aligned home content */")
+  )
+    return;
+  const width = Number(
+    document.css.match(
+      /\.c27-hero-world \.c27-hero-copy\{width:100%;max-width:(\d+)px/,
+    )?.[1] || 1184,
+  );
+  document.css += `
+/* Glossy aligned home content */
+.theme-root .c27-section.c27-home-content{width:100%;max-width:${width}px;margin:0 auto;padding-left:24px;padding-right:24px;box-sizing:border-box}
 `;
   delete document.compiled;
 }

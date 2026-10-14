@@ -128,13 +128,12 @@ async function ensureGlassey(db) {
   const changes = [];
   for (const row of await all(db, "SELECT * FROM themes")) {
     if (!isGlasseyTheme(row.id)) continue;
-    const manifest = migrateGlasseyManifest(parse(row.manifest));
     const published = parse(row.published);
     const draft = parse(row.draft, null);
     migrateGlasseyDocument(published);
     if (draft) migrateGlasseyDocument(draft);
     const values = [
-      JSON.stringify(manifest),
+      JSON.stringify(published.manifest),
       JSON.stringify(published),
       draft ? JSON.stringify(draft) : null,
     ];

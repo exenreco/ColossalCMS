@@ -107,7 +107,7 @@ test("Glossy uses native blocks for ordinary content and uses Site Identity and 
     allContent: [],
     media: [],
   });
-  assert.match(rendered.html, /src="\/themes\/colossal-2027\/project-cms.svg"/);
+  assert.match(JSON.stringify(document.manifest.patterns), /project-cms.svg/);
   assert.match(rendered.html, /theme-menu-link/);
 });
 
@@ -139,7 +139,10 @@ test("Glossy header has logo and stacked live site name/tagline in two editable 
     tagline: "Ideas into experiences",
     siteLogoId: "site-logo",
   });
-  assert.match(html, /class="theme-site-logo" src="\/api\/media\/site-logo\/file"/);
+  assert.match(
+    html,
+    /class="theme-site-logo" src="\/api\/media\/site-logo\/file"/,
+  );
   assert.match(html, /class="theme-site-name"[^>]*>Live portfolio<\/span>/);
   assert.match(
     html,
@@ -929,7 +932,7 @@ test("revision six thickens the former default lines and preserves custom scene 
 });
 
 test("revision five adds line opacity without replaying glass or overlay changes", () => {
-  const document = colossal2027Theme();
+  const document = legacySectionTheme();
   document.manifest.bundledRevision = 5;
   const scene = document.templates.home.children[1].children[1].children[0];
   delete scene.settings.sceneRainOpacity;
@@ -964,7 +967,7 @@ test("revision five adds line opacity without replaying glass or overlay changes
 });
 
 test("glass card and rain upgrades style the requested IDs and project cards while retaining content and custom motion", () => {
-  const document = colossal2027Theme();
+  const document = legacySectionTheme();
   document.manifest.bundledRevision = 4;
   const scene = document.templates.home.children[1].children[1].children[0];
   scene.settings.sceneVeilOpacity = 0.5;
@@ -1070,4 +1073,84 @@ test("Glossy restores its required body class without replacing content-only tem
   );
   assert.ok(rendered.body.className.split(/\s+/).includes("c27-body"));
   assert.match(rendered.css, /\.theme-root\.c27-body/);
+});
+
+function legacySectionTheme() {
+  const d = colossal2027Theme();
+  d.templates.home.children.splice(
+    3,
+    1,
+    ...d.manifest.patterns
+      .filter((p) => p.id.startsWith("glossy-home-"))
+      .map((p) => structuredClone(p.blocks[0])),
+  );
+  return d;
+}
+
+test("Glossy Home registers its four sections as styled Theme patterns and renders actual page blocks", async () => {
+  const { collectBlockPatterns, renderPatternPreview } =
+    await import("../server/block-patterns.mjs");
+  const d = colossal2027Theme();
+  const patterns = collectBlockPatterns(d).filter(
+    (p) => p.source.kind === "theme",
+  );
+  assert.equal(patterns.length, 4);
+  assert.ok(
+    patterns.every(
+      (p) => p.category === "Theme" && p.name.startsWith("Glossy"),
+    ),
+  );
+  assert.deepEqual(
+    d.templates.home.children.map((n) => n.type),
+    [
+      "theme/part-header",
+      "core/container",
+      "core/container",
+      "core/post-content",
+      "theme/part-footer",
+    ],
+  );
+  const ctx = {
+    settings: {},
+    allContent: [],
+    media: [],
+    kind: "home",
+    content: {
+      id: "actual-home",
+      title: "My home",
+      details: {
+        contentBlocks: [
+          {
+            id: "my-home-paragraph",
+            type: "core/paragraph",
+            settings: { html: "Actual Home page copy" },
+          },
+        ],
+      },
+    },
+  };
+  const home = renderTheme(validateDocument(d, false), ctx, "home");
+  assert.match(home.html, /Actual Home page copy/);
+  assert.equal(d.templates.home.children[3].settings.position, "relative");
+  assert.equal(d.templates.home.children[3].settings.zIndex, 2);
+  assert.match(home.html, /c27-home-content[^>]*position:relative;z-index:2/);
+  assert.doesNotMatch(home.html, /project-cms.svg/);
+  const workPreview = renderPatternPreview(patterns[0], d, ctx);
+  assert.match(workPreview.html, /project-cms.svg/);
+  assert.match(workPreview.body.className, /c27-body/);
+  const once = JSON.stringify(d);
+  migrateGlasseyDocument(d);
+  assert.equal(JSON.stringify(d), once);
+  // Existing edited sections become the initial pattern, rather than stock replacements.
+  const installed = legacySectionTheme();
+  delete installed.manifest.patterns;
+  const work = installed.templates.home.children[3];
+  work.settings.editorLabel = "My authored work";
+  const before = structuredClone(work);
+  migrateGlasseyDocument(installed);
+  assert.deepEqual(
+    installed.manifest.patterns.find((p) => p.id === "glossy-home-work")
+      .blocks[0],
+    before,
+  );
 });

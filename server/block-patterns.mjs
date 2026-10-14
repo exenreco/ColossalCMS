@@ -35,7 +35,7 @@ export function renderPatternPreview(pattern, theme, context) {
   document.templates[template.id] = {
     id: "pattern-preview-root",
     type: "core/container",
-    settings: {},
+    settings: structuredClone(document.templates[template.id]?.settings || {}),
     children: structuredClone(pattern.blocks),
   };
   delete document.compiled;
