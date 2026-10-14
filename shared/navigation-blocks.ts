@@ -91,7 +91,7 @@ export function renderButton(settings: Record<string, any>): string {
         })
       : "";
   const text = `<span>${escape(settings.text ?? "Button")}</span>`;
-  return `<a class="theme-button" href="${escape(safeNavigationHref(settings.href) || "#")}" target="${settings.newTab ? "_blank" : "_self"}" rel="noopener noreferrer">${settings.iconPosition === "after" ? text + icon : icon + text}</a>`;
+  return `<a class="theme-button" aria-label="${escape(settings.ariaLabel || settings.text || "Button")}" href="${escape(safeNavigationHref(settings.href) || "#")}" target="${settings.newTab ? "_blank" : "_self"}" rel="noopener noreferrer">${settings.iconPosition === "after" ? text + icon : icon + text}</a>`;
 }
 export function renderMenuItem(
   settings: Record<string, any>,

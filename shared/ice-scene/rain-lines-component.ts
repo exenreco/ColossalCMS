@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { SceneComponent, SceneFrame } from "./scene-component";
 import { sceneTint } from "./scene-math";
 
-/** Thin, translucent 45-degree bands, drawn over the world and pixel veil. */
+/** Translucent diagonal bands with an optional perpendicular duplicate. */
 export class RainLinesComponent implements SceneComponent {
   object: any;
   constructor(
@@ -12,6 +12,7 @@ export class RainLinesComponent implements SceneComponent {
     speed: number,
     width: number,
     opacity: number,
+    crossed = false,
   ) {
     const tint = sceneTint(color);
     this.object = new THREE.Mesh(
@@ -28,24 +29,30 @@ export class RainLinesComponent implements SceneComponent {
           lineWidth: { value: width },
           resolution: { value: new THREE.Vector2(1, 1) },
           time: { value: 0 },
+          crossed: { value: crossed },
         },
         vertexShader: `varying vec2 vUv; void main(){vUv=uv; gl_Position=vec4(position.xy,0.,1.);}`,
-        fragmentShader: `uniform vec3 tint; uniform float opacity; uniform float density; uniform float speed; uniform float lineWidth; uniform vec2 resolution; uniform float time; varying vec2 vUv;
+        fragmentShader: `uniform vec3 tint; uniform float opacity; uniform float density; uniform float speed; uniform float lineWidth; uniform vec2 resolution; uniform float time; uniform bool crossed; varying vec2 vUv;
           float hash(float p){return fract(sin(p*127.1+311.7)*43758.5453);}
-          void main(){
-            if(density<=0.) discard;
+          float band(vec2 p, vec2 direction, float motion){
             float rows=max(1.,round(resolution.y/900.*density));
             float cellHeight=resolution.y/rows;
             // Rotate in pixels so the angle stays 45 degrees at every aspect ratio.
-            vec2 p=vUv*resolution;
-            float diagonal=dot(p,vec2(.70710678));
-            float fall=mod(diagonal+time*speed*65.,resolution.y);
+            float diagonal=dot(p,direction);
+            float fall=mod(diagonal+time*speed*65.*motion,resolution.y);
             float row=floor(fall/cellHeight);
             float seed=hash(row);
             float center=cellHeight*(.15+hash(row+13.)*.7);
             float distance=abs(mod(fall,cellHeight)-center);
             float line=1.-smoothstep(lineWidth*.5,lineWidth*.5+.55,distance);
-            float alpha=line*opacity*(.55+seed*.45);
+            return line*(.55+seed*.45);
+          }
+          void main(){
+            if(density<=0.) discard;
+            vec2 p=vUv*resolution;
+            float line=band(p,vec2(.70710678,.70710678),1.);
+            if(crossed) line=max(line,band(p,vec2(.70710678,-.70710678),-1.));
+            float alpha=line*opacity;
             if(alpha<.005) discard;
             gl_FragColor=vec4(tint,alpha);
             #include <colorspace_fragment>

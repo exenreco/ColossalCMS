@@ -150,9 +150,12 @@ function safeSettings(
 }
 function accepts(parent: BlockNode, child: BlockNode) {
   if (["core/menu", "core/menu-item"].includes(parent.type))
-    return ["core/button", "core/menu-item", "core/custom-link"].includes(
-      child.type,
-    );
+    return [
+      "core/button",
+      "core/menu-item",
+      "core/custom-link",
+      "core/search",
+    ].includes(child.type);
   if (child.type === "core/menu-item") return false;
   if (parent.type === "core/slider") return child.type === "core/slide";
   if (child.type === "core/slide") return false;

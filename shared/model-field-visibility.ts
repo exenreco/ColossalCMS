@@ -27,11 +27,13 @@ export function modelFieldVisible(
       "backgroundZoom",
       "sceneVeilEnabled",
       "sceneVeilOpacity",
+      "sceneVeilMobileGradient",
       "sceneVeilColor",
       "sceneRainEnabled",
       "sceneRainDensity",
       "sceneRainSpeed",
       "sceneRainWidth",
+      "sceneRainCrossEnabled",
       "sceneRainOpacity",
       "scenePixelsEnabled",
       "scenePixelSize",
@@ -49,6 +51,7 @@ export function modelFieldVisible(
         "sceneRainDensity",
         "sceneRainSpeed",
         "sceneRainWidth",
+        "sceneRainCrossEnabled",
         "sceneRainOpacity",
       ].includes(key)
     )
@@ -59,7 +62,12 @@ export function modelFieldVisible(
         settings["sceneRainEnabled"] !== false
       );
     if (
-      ["sceneVeilOpacity", "scenePixelsEnabled", "scenePixelSize"].includes(key)
+      [
+        "sceneVeilOpacity",
+        "sceneVeilMobileGradient",
+        "scenePixelsEnabled",
+        "scenePixelSize",
+      ].includes(key)
     ) {
       if (settings["sceneVeilEnabled"] === false) return false;
       if (key === "scenePixelSize")

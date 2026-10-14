@@ -1,3 +1,4 @@
+import { hydrateSearch } from "./search-host";
 const hydrated = new WeakSet<Document>();
 const editorSelections = new WeakMap<Document, Element | null>();
 /** Reveal the selected menu branch without overriding subsequent manual toggles. */
@@ -34,6 +35,7 @@ export function revealEditorMenu(doc: Document, selected: Element | null) {
 }
 /** Host-side listeners also work inside the editor's script-free canvas. */
 export function hydrateMenus(doc: Document) {
+  hydrateSearch(doc);
   if (hydrated.has(doc)) return;
   hydrated.add(doc);
   doc.addEventListener("click", (event) => {

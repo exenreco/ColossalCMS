@@ -254,7 +254,7 @@ test("Menu and Button reject unsafe links, duplicate menu IDs and invalid childr
           },
         ]),
       ),
-    /Button blocks only/,
+    /Button, and Search blocks only/,
   );
   await assert.rejects(
     validateDetails(

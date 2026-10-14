@@ -273,9 +273,13 @@ export function sanitizeTemplate(
         "data-scene-speed",
         "data-background-zoom",
         "data-scene-veil-enabled",
+        "data-search-mode",
+        "data-search-open",
         "data-scene-veil-opacity",
+        "data-scene-veil-mobile-gradient",
         "data-scene-veil-color",
         "data-scene-rain-enabled",
+        "data-scene-rain-cross-enabled",
         "data-scene-rain-density",
         "data-scene-rain-speed",
         "data-scene-rain-width",
@@ -351,9 +355,20 @@ export function sanitizeTemplate(
           rel: "noopener noreferrer",
         },
       }),
-      form: () => ({
+      form: (tag, a) => ({
         tagName: "form",
-        attribs: { action: "/search", method: "get", role: "search" },
+        attribs: {
+          ...(rendered
+            ? {
+                class: a.class || "",
+                "data-search-mode":
+                  a["data-search-mode"] === "inline" ? "inline" : "expand",
+              }
+            : {}),
+          action: "/search",
+          method: "get",
+          role: "search",
+        },
       }),
       input: (tag, a) =>
         a.type === "hidden" && a.name === "themePreview"
@@ -503,7 +518,7 @@ export function sanitizeCss(css, report = []) {
     if (
       !allowed.has(d.prop.toLowerCase()) ||
       (d.prop.toLowerCase() === "position" &&
-        !["relative", "sticky"].includes(d.value)) ||
+        !["relative", "absolute", "sticky"].includes(d.value)) ||
       /[{}<>\\]|url\s*\(|expression\s*\(|@|javascript|behavior|var\s*\(/i.test(
         d.value,
       )
@@ -952,13 +967,16 @@ export function validateDocument(input, core = false) {
       ["core/menu", "core/menu-item"].includes(node.type) &&
       node.children?.some(
         (child) =>
-          !["core/button", "core/menu-item", "core/custom-link"].includes(
-            child.type,
-          ),
+          ![
+            "core/button",
+            "core/menu-item",
+            "core/custom-link",
+            "core/search",
+          ].includes(child.type),
       )
     )
       fail(
-        "Menus and Menu Items accept Menu Item, Custom Link, and Button blocks only.",
+        "Menus and Menu Items accept Menu Item, Custom Link, Button, and Search blocks only.",
       );
     if (
       node.type === "core/menu-item" &&
@@ -1423,7 +1441,40 @@ export function compileBlock(
       num(s.height || 48, 0, 400) +
       (["px", "vh", "rem"].includes(s.unit) ? s.unit : "px") +
       '"></div>';
-  else if (type === "core/heading") {
+  else if (type === "core/divider") {
+    const lineStyle = ["solid", "dashed", "dotted", "double"].includes(
+      s.lineStyle,
+    )
+      ? s.lineStyle
+      : "solid";
+    const spacing = num(s.spacing ?? 16, 0, 96);
+    const left =
+      s.align === "right" || s.align === "center" || !s.align ? "auto" : "0px";
+    const right =
+      s.align === "left" || s.align === "center" || !s.align ? "auto" : "0px";
+    d._gen?.push(
+      '[data-block-id="' +
+        esc(b.id) +
+        '"] > .theme-divider{width:' +
+        num(s.dividerWidth ?? 100, 10, 100) +
+        "%;border:0;border-top:" +
+        num(s.thickness ?? 1, 1, 12) +
+        "px " +
+        lineStyle +
+        " " +
+        (color(s.lineColor) || "#74846a") +
+        ";margin:" +
+        spacing +
+        "px " +
+        right +
+        " " +
+        spacing +
+        "px " +
+        left +
+        ";}",
+    );
+    html = '<hr class="theme-divider">';
+  } else if (type === "core/heading") {
     const level = /^h[1-6]$/.test(s.level) ? s.level : "h2";
     html =
       "<" +
@@ -1768,7 +1819,7 @@ function dynamic(type, s, ctx, children) {
         ? String(s.sceneVeilColor)
         : "#17191bc9";
       const worldData = world
-        ? ` data-full-viewport="${s.fullViewport === true}" data-moon-enabled="${s.moonEnabled !== false}" data-moon-placement="${s.moonPlacement === "center" ? "center" : "top-left"}" data-moon-size="${num(s.moonSize ?? 4.5, 1, 7)}" data-moon-elevation="${num(s.moonElevation ?? 0, -4, 5)}" data-moon-tint="${color(s.moonTint) || "#b9dcef"}" data-terrain-enabled="${s.terrainEnabled !== false}" data-snow-enabled="${s.snowEnabled !== false}" data-snow-density="${Math.round(num(s.snowDensity ?? 160, 0, 1800))}" data-snow-size="${num(s.snowSize ?? 1.2, 0.3, 2)}" data-snow-speed="${num(s.snowSpeed ?? 1.4, 0.25, 3)}" data-snow-flutter="${num(s.snowFlutter ?? 1.3, 0, 3)}" data-wind-enabled="${s.windEnabled !== false}" data-wind-strength="${num(s.windStrength ?? 1, 0, 3)}" data-scene-speed="${num(s.sceneSpeed ?? 1.35, 0.25, 3)}" data-background-zoom="${num(s.backgroundZoom ?? 0.1, 0, 0.25)}" data-scene-veil-enabled="${s.sceneVeilEnabled !== false}" data-scene-veil-opacity="${num(s.sceneVeilOpacity ?? 0.75, 0, 0.85)}" data-scene-veil-color="${veilColor}" data-scene-rain-enabled="${s.sceneRainEnabled !== false}" data-scene-rain-density="${Math.round(num(s.sceneRainDensity ?? 36, 0, 96))}" data-scene-rain-speed="${num(s.sceneRainSpeed ?? 1, 0.25, 3)}" data-scene-rain-width="${num(s.sceneRainWidth ?? 2, 0.3, 4)}" data-scene-rain-opacity="${num(s.sceneRainOpacity ?? 0.35, 0, 1)}" data-scene-pixels-enabled="${s.scenePixelsEnabled !== false}" data-scene-pixel-size="${num(s.scenePixelSize ?? 3, 1, 8)}"`
+        ? ` data-full-viewport="${s.fullViewport === true}" data-moon-enabled="${s.moonEnabled !== false}" data-moon-placement="${s.moonPlacement === "center" ? "center" : "top-left"}" data-moon-size="${num(s.moonSize ?? 4.5, 1, 7)}" data-moon-elevation="${num(s.moonElevation ?? 0, -4, 5)}" data-moon-tint="${color(s.moonTint) || "#b9dcef"}" data-terrain-enabled="${s.terrainEnabled !== false}" data-snow-enabled="${s.snowEnabled !== false}" data-snow-density="${Math.round(num(s.snowDensity ?? 160, 0, 1800))}" data-snow-size="${num(s.snowSize ?? 1.2, 0.3, 2)}" data-snow-speed="${num(s.snowSpeed ?? 1.4, 0.25, 3)}" data-snow-flutter="${num(s.snowFlutter ?? 1.3, 0, 3)}" data-wind-enabled="${s.windEnabled !== false}" data-wind-strength="${num(s.windStrength ?? 1, 0, 3)}" data-scene-speed="${num(s.sceneSpeed ?? 1.35, 0.25, 3)}" data-background-zoom="${num(s.backgroundZoom ?? 0.1, 0, 0.25)}" data-scene-veil-enabled="${s.sceneVeilEnabled !== false}" data-scene-veil-mobile-gradient="${s.sceneVeilMobileGradient === true}" data-scene-veil-opacity="${num(s.sceneVeilOpacity ?? 0.75, 0, 1)}" data-scene-veil-color="${veilColor}" data-scene-rain-enabled="${s.sceneRainEnabled !== false}" data-scene-rain-cross-enabled="${s.sceneRainCrossEnabled === true}" data-scene-rain-density="${Math.round(num(s.sceneRainDensity ?? 36, 0, 96))}" data-scene-rain-speed="${num(s.sceneRainSpeed ?? 1, 0.25, 3)}" data-scene-rain-width="${num(s.sceneRainWidth ?? 2, 0.3, 4)}" data-scene-rain-opacity="${num(s.sceneRainOpacity ?? 0.35, 0, 1)}" data-scene-pixels-enabled="${s.scenePixelsEnabled !== false}" data-scene-pixel-size="${num(s.scenePixelSize ?? 3, 1, 8)}"`
         : "";
       return `<div class="gltf-viewer cl-portrait-scene${world ? " cl-ice-world" : ""}" tabindex="0" aria-label="${esc(s.ariaLabel || s.alt || "Interactive crystal portrait")}" ${url && safe ? `data-portrait-url="${esc(url)}"` : ""} data-scene-preset="${world ? "ice-world" : "portrait"}"${worldData} data-fragment-count="${num(s.fragmentCount ?? 18, 0, 40)}" data-pointer-interactive="${s.pointerInteractive !== false}" data-motion-strength="${num(s.motionStrength ?? 0.6, 0, 2)}" data-ice-tint="${color(s.iceTint) || "#c5e5ff"}" data-light-intensity="${num(s.lightIntensity ?? 2, 0, 5)}" data-scroll-interactive="${s.scrollInteractive !== false}" data-scroll-strength="${num(s.scrollStrength ?? 1, 0, 4)}" data-camera-zoom="${num(s.cameraZoom ?? 1, 0.5, 3)}" data-lazy-load="${s.lazyLoad !== false}" style="${world && s.fullViewport === true ? "position:fixed;top:0px;right:0px;bottom:0px;left:0px;width:auto!important;height:auto!important;min-height:0px;max-height:none;max-width:none;margin:0px 0px 0px 0px!important;padding:0px 0px 0px 0px;border-radius:0px;z-index:0;pointer-events:none" : `height:${num(s.height || 680, 100, 1600)}px${world ? "!important" : ""}`}">${url && safe ? `<img src="${esc(url)}" alt="${esc(s.alt)}" class="cl-portrait-fallback">` : "<p>Choose a transparent portrait in the Inspector.</p>"}</div>`;
     }
@@ -1995,16 +2046,31 @@ function dynamic(type, s, ctx, children) {
       renderDynamicMarkup(s.childMarkup || "", ctx),
     );
   }
-  if (type === "core/search")
+  if (type === "core/search") {
+    const mode = s.presentation === "inline" ? "inline" : "expand";
+    const searchStyle = ["dark", "light-outline"].includes(s.searchStyle)
+      ? s.searchStyle
+      : "glass";
+    const icon =
+      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0"/><path d="m16 16 5 5"/></svg>';
     return (
-      '<form action="/search" method="get" role="search"><input type="search" name="q" value="' +
+      '<form class="theme-search theme-search-' +
+      searchStyle +
+      '" data-search-mode="' +
+      mode +
+      '" action="/search" method="get" role="search"><button class="theme-search-toggle" type="button" aria-label="' +
+      esc(s.buttonLabel || "Open search") +
+      '" aria-expanded="' +
+      (mode === "inline") +
+      '">' +
+      icon +
+      '</button><input type="search" name="q" value="' +
       esc(ctx.query || "") +
       '" placeholder="' +
-      esc(s.placeholder || "Search stories…") +
-      '" aria-label="Search content"><button type="submit">' +
-      esc(s.buttonLabel || "Search") +
-      "</button></form>"
+      esc(s.placeholder || "Search…") +
+      '" aria-label="Search content"><button class="theme-search-clear" type="button" aria-label="Clear search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></form>'
     );
+  }
   if (type === "core/post-list") {
     const limit = num(s.limit || 6, 1, 50),
       page = num(ctx.page || 1, 1, 10000),
@@ -2298,6 +2364,7 @@ export function renderTheme(d, ctx, override, options = {}) {
     },
     css:
       BASE_THEME_CSS +
+      SEARCH_THEME_CSS +
       ADS_THEME_CSS +
       PICKER_THEME_CSS +
       SLIDER_THEME_CSS +
@@ -2364,6 +2431,7 @@ export function renderContentCanvas(d, ctx, rootId) {
     },
     css:
       BASE_THEME_CSS +
+      SEARCH_THEME_CSS +
       ADS_THEME_CSS +
       ".content-main{min-height:120px}" +
       PICKER_THEME_CSS +
@@ -2373,3 +2441,26 @@ export function renderContentCanvas(d, ctx, rootId) {
       d.css,
   };
 }
+
+const SEARCH_THEME_CSS = `
+.theme-root .theme-search{display:flex;align-items:center;gap:0;width:44px;max-width:100%;min-height:44px;margin:0;border:1px solid #ffffff30;border-radius:999px;background:linear-gradient(135deg,#ffffff14,#ffffff05);backdrop-filter:blur(24px) saturate(130%);box-shadow:inset 0 1px 0 #ffffff14,0 8px 24px #0002;color:inherit;overflow:hidden;transition:width .28s cubic-bezier(.2,.8,.2,1),background .2s}
+.theme-root .theme-search button{display:flex;align-items:center;justify-content:center;width:42px;height:42px;min-width:42px;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;cursor:pointer}
+.theme-root .theme-search button:hover{background:#ffffff14}
+.theme-root .theme-search input{width:0;min-width:0;flex:0;opacity:0;padding:0;border:0;outline:none;background:transparent;color:inherit;font:inherit;font-size:14px;transition:opacity .18s}
+.theme-root .theme-search input::placeholder{color:inherit;opacity:.65}
+.theme-root .theme-search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.theme-root .theme-search .theme-search-clear{width:28px;min-width:28px;height:28px;order:2;visibility:hidden;pointer-events:none}
+.theme-root .theme-search:has(input:not(:placeholder-shown)) .theme-search-clear{visibility:visible;pointer-events:auto}
+.theme-root .theme-search[data-search-open],.theme-root .theme-search:has(input:focus){width:240px}
+.theme-root .theme-search[data-search-mode=inline],.theme-root .theme-search[data-search-mode=inline]:has(input:focus),.theme-root .theme-search[data-search-mode=inline][data-search-open]{width:100%}
+.theme-root .theme-search[data-search-open] input,.theme-root .theme-search:has(input:focus) input,.theme-root .theme-search[data-search-mode=inline] input{width:100%;flex:1;opacity:1;padding:0 8px}
+@media(max-width:768px){.theme-root .theme-menu-items .theme-search{width:100%}.theme-root .theme-menu-items .theme-search input{width:100%;flex:1;opacity:1;padding:0 8px}}
+@media(max-width:1024px){.theme-root .theme-menu-breakpoint-1024 .theme-search input{flex:1}}
+.theme-root .theme-search-dark{background:#4b4b4b;color:#fff;border-color:#4b4b4b;backdrop-filter:none;box-shadow:none}
+.theme-root .theme-search-light-outline{background:#fff;color:#4b4b4b;border:2px solid #4b4b4b;backdrop-filter:none;box-shadow:none}
+.theme-root .theme-search-dark .theme-search-toggle,.theme-root .theme-search-light-outline .theme-search-toggle{order:3}
+.theme-root .theme-search-dark input,.theme-root .theme-search-light-outline input{order:1}
+.theme-root .theme-search-dark[data-search-mode=inline],.theme-root .theme-search-light-outline[data-search-mode=inline]{min-height:52px;padding-left:16px;padding-right:6px}
+.theme-root .theme-search-dark input::placeholder,.theme-root .theme-search-light-outline input::placeholder{opacity:1}
+@media(prefers-reduced-motion:reduce){.theme-root .theme-search,.theme-root .theme-search input{transition:none}}
+`;

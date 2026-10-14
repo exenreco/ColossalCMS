@@ -186,10 +186,11 @@ export async function mountIceWorld(host: HTMLElement) {
       host.dataset["sceneVeilEnabled"] !== "false"
         ? add(
             new GlassVeilComponent(
-              clamp(Number(host.dataset["sceneVeilOpacity"] ?? 0.75), 0, 0.85),
+              clamp(Number(host.dataset["sceneVeilOpacity"] ?? 0.75), 0, 1),
               host.dataset["scenePixelsEnabled"] !== "false",
               clamp(Number(host.dataset["scenePixelSize"] ?? 3), 1, 8),
               host.dataset["sceneVeilColor"] || "#17191bc9",
+              host.dataset["sceneVeilMobileGradient"] === "true",
             ),
           )
         : null;
@@ -204,6 +205,7 @@ export async function mountIceWorld(host: HTMLElement) {
               clamp(Number(host.dataset["sceneRainSpeed"] ?? 1), 0.25, 3),
               clamp(Number(host.dataset["sceneRainWidth"] ?? 2), 0.3, 4),
               clamp(Number(host.dataset["sceneRainOpacity"] ?? 0.35), 0, 1),
+              host.dataset["sceneRainCrossEnabled"] === "true",
             ),
           )
         : null;
@@ -370,6 +372,7 @@ export async function mountIceWorld(host: HTMLElement) {
         : easeTo(camera.position.z, distance * (1 - zoomAmount), delta, 8);
       host.dataset["sceneZoom"] = (distance / camera.position.z).toFixed(3);
       moon?.resize(camera.aspect, camera.position.z);
+      veil?.setScrollOffset(Math.max(0, view.scrollY || 0));
       const frame: SceneFrame = {
         time: elapsed,
         delta: delta * speed,

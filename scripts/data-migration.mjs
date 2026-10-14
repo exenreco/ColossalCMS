@@ -158,7 +158,8 @@ async function canonicalSnapshot() {
   }
 }
 function equalRow(a, b, columns, builtIn = false) {
-  const blockId = /blk_[a-f0-9-]{36}/gi;
+  const blockId =
+    /\b(?:blk_|glossy-[a-z-]+-)[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi;
   const themeSnapshot = (text, depth = 0) =>
     text
       .replace(/{{block:([A-Za-z0-9+/=]+)}}/g, (token, payload) => {
@@ -175,7 +176,7 @@ function equalRow(a, b, columns, builtIn = false) {
   const value = (row, column) =>
     builtIn &&
     typeof row[column] === "string" &&
-    ["published", "draft"].includes(column)
+    ["published", "draft", "manifest"].includes(column)
       ? themeSnapshot(row[column])
       : row[column];
   return columns.every(

@@ -165,6 +165,61 @@
     "toolbar": ["height", "unit"]
   },
   {
+    "type": "core/divider",
+    "label": "Divider",
+    "category": "Layout",
+    "icon": "fas fa-minus",
+    "description": "A horizontal separator with adjustable color, thickness, style and width",
+    "container": false,
+    "fields": [
+      {
+        "key": "lineColor",
+        "label": "Line color",
+        "type": "text",
+        "default": "#74846a"
+      },
+      {
+        "key": "thickness",
+        "label": "Thickness (px)",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 12
+      },
+      {
+        "key": "lineStyle",
+        "label": "Line style",
+        "type": "select",
+        "default": "solid",
+        "options": ["solid", "dashed", "dotted", "double"]
+      },
+      {
+        "key": "dividerWidth",
+        "label": "Width (%)",
+        "type": "number",
+        "default": 100,
+        "min": 10,
+        "max": 100
+      },
+      {
+        "key": "align",
+        "label": "Alignment",
+        "type": "select",
+        "default": "center",
+        "options": ["left", "center", "right"]
+      },
+      {
+        "key": "spacing",
+        "label": "Vertical spacing (px)",
+        "type": "number",
+        "default": 16,
+        "min": 0,
+        "max": 96
+      }
+    ],
+    "toolbar": ["lineStyle", "thickness", "dividerWidth", "align"]
+  },
+  {
     "type": "core/heading",
     "label": "Heading",
     "category": "Content",
@@ -740,14 +795,28 @@
     "container": false,
     "fields": [
       {
+        "key": "searchStyle",
+        "label": "Search style",
+        "type": "select",
+        "default": "glass",
+        "options": ["glass", "dark", "light-outline"]
+      },
+      {
+        "key": "presentation",
+        "label": "Presentation",
+        "type": "select",
+        "default": "expand",
+        "options": ["expand", "inline"]
+      },
+      {
         "key": "placeholder",
         "label": "Placeholder",
         "type": "text",
-        "default": "Search stories\u2026"
+        "default": "Search stories…"
       },
       {
         "key": "buttonLabel",
-        "label": "Button label",
+        "label": "Search icon label",
         "type": "text",
         "default": ""
       },
@@ -759,7 +828,13 @@
         "options": ["left", "center", "right"]
       }
     ],
-    "toolbar": ["placeholder", "buttonLabel", "align"]
+    "toolbar": [
+      "searchStyle",
+      "presentation",
+      "placeholder",
+      "buttonLabel",
+      "align"
+    ]
   },
   {
     "type": "core/post-list",
@@ -866,7 +941,7 @@
       {
         "key": "separator",
         "label": "Separator",
-        "type": " \u00b7 ",
+        "type": " · ",
         "default": ""
       }
     ],
@@ -1263,7 +1338,7 @@
       },
       {
         "key": "moonSize",
-        "label": "Moon size (1\u20137)",
+        "label": "Moon size (1–7)",
         "type": "number",
         "default": 4.5
       },
@@ -1276,7 +1351,7 @@
       },
       {
         "key": "moonElevation",
-        "label": "Moon elevation (\u22124\u20135)",
+        "label": "Moon elevation (−4–5)",
         "type": "number",
         "default": 0
       },
@@ -1300,25 +1375,25 @@
       },
       {
         "key": "snowDensity",
-        "label": "Snow density (0\u20131800)",
+        "label": "Snow density (0–1800)",
         "type": "number",
         "default": 160
       },
       {
         "key": "snowSize",
-        "label": "Snowflake size (0.3\u20132)",
+        "label": "Snowflake size (0.3–2)",
         "type": "number",
         "default": 1.2
       },
       {
         "key": "snowSpeed",
-        "label": "Snowfall speed (0.25\u20133)",
+        "label": "Snowfall speed (0.25–3)",
         "type": "number",
         "default": 1.4
       },
       {
         "key": "snowFlutter",
-        "label": "Snowflake flutter (0\u20133)",
+        "label": "Snowflake flutter (0–3)",
         "type": "number",
         "default": 1.3
       },
@@ -1330,19 +1405,19 @@
       },
       {
         "key": "windStrength",
-        "label": "Wind strength (0\u20133)",
+        "label": "Wind strength (0–3)",
         "type": "number",
         "default": 1
       },
       {
         "key": "sceneSpeed",
-        "label": "Scene animation speed (0.25\u20133)",
+        "label": "Scene animation speed (0.25–3)",
         "type": "number",
         "default": 1.35
       },
       {
         "key": "backgroundZoom",
-        "label": "Background zoom amount (0\u20130.25)",
+        "label": "Background zoom amount (0–0.25)",
         "type": "number",
         "default": 0.1
       },
@@ -1354,9 +1429,15 @@
       },
       {
         "key": "sceneVeilOpacity",
-        "label": "Glass overlay opacity (0\u20130.85)",
+        "label": "Glass overlay opacity (0–1)",
         "type": "number",
         "default": 0.75
+      },
+      {
+        "key": "sceneVeilMobileGradient",
+        "label": "Mobile overlay gradient (0.77 to 0.96)",
+        "type": "checkbox",
+        "default": false
       },
       {
         "key": "sceneVeilColor",
@@ -1371,26 +1452,32 @@
         "default": true
       },
       {
+        "key": "sceneRainCrossEnabled",
+        "label": "Crossed rain lines",
+        "type": "checkbox",
+        "default": false
+      },
+      {
         "key": "sceneRainDensity",
-        "label": "Rain line density (0\u201396)",
+        "label": "Rain line density (0–96)",
         "type": "number",
         "default": 36
       },
       {
         "key": "sceneRainSpeed",
-        "label": "Rain line speed (0.25\u20133)",
+        "label": "Rain line speed (0.25–3)",
         "type": "number",
         "default": 1
       },
       {
         "key": "sceneRainWidth",
-        "label": "Rain line width (0.3\u20134 px)",
+        "label": "Rain line width (0.3–4 px)",
         "type": "number",
         "default": 2
       },
       {
         "key": "sceneRainOpacity",
-        "label": "Rain line opacity (0\u20131)",
+        "label": "Rain line opacity (0–1)",
         "type": "number",
         "default": 0.35
       },
@@ -1402,13 +1489,13 @@
       },
       {
         "key": "scenePixelSize",
-        "label": "Pixel texture size (1\u20138)",
+        "label": "Pixel texture size (1–8)",
         "type": "number",
         "default": 3
       },
       {
         "key": "fragmentCount",
-        "label": "Crystal fragments (0\u201340)",
+        "label": "Crystal fragments (0–40)",
         "type": "number",
         "default": 18
       },
@@ -1420,7 +1507,7 @@
       },
       {
         "key": "motionStrength",
-        "label": "Pointer motion strength (0\u20132)",
+        "label": "Pointer motion strength (0–2)",
         "type": "number",
         "default": 0.6
       },
@@ -1432,7 +1519,7 @@
       },
       {
         "key": "lightIntensity",
-        "label": "Light intensity (0\u20135)",
+        "label": "Light intensity (0–5)",
         "type": "number",
         "default": 2
       },

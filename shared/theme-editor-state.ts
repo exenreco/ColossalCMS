@@ -553,9 +553,12 @@ export class ThemeEditorState {
   }
   private accepts(parentType: string, childType: string) {
     if (["core/menu", "core/menu-item"].includes(parentType))
-      return ["core/button", "core/menu-item", "core/custom-link"].includes(
-        childType,
-      );
+      return [
+        "core/button",
+        "core/menu-item",
+        "core/custom-link",
+        "core/search",
+      ].includes(childType);
     if (childType === "core/menu-item") return false;
     if (parentType === "core/slider") return childType === "core/slide";
     if (childType === "core/slide") return false;

@@ -1,5 +1,22 @@
 /** Bundled SVG drawings shared by the editor, icon picker, and public renderer. */
 export const BLOCK_ICON_PATHS: Record<string, string[]> = {
+  minus: ["M4 12h16"],
+  github: [
+    "M9 22v-3.5c-4 .8-4-2-6-2.5M15 22v-3.8c0-1-.3-1.6-.8-2 3-.4 6-1.5 6-6.5a5 5 0 0 0-1.4-3.5c.2-.9.2-2.2-.4-3.5-1.4 0-2.8.8-3.7 1.5a13 13 0 0 0-7.4 0C6.4 3.5 5 2.7 3.6 2.7c-.6 1.3-.6 2.6-.4 3.5a5 5 0 0 0-1.4 3.5c0 5 3 6.1 6 6.5-.5.4-.8 1-.8 2V22",
+  ],
+  facebook: [
+    "M14 21v-8h3l.5-4H14V7c0-1 .5-1.5 1.5-1.5H18V2h-3c-3 0-5 2-5 5v2H7v4h3v8",
+  ],
+  instagram: [
+    "M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z",
+    "M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
+    "M17.5 6.5h.01",
+  ],
+  linkedin: [
+    "M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z",
+    "M7 10v7M7 7h.01",
+    "M11 17v-7M11 13a3 3 0 0 1 6 0v4",
+  ],
   comment: [
     "M21 11a8 8 0 0 1-8 8H7l-4 3v-7a8 8 0 0 1 8-12h2a8 8 0 0 1 8 8z",
     "M7 9h10M7 13h6",

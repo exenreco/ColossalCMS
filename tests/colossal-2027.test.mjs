@@ -433,9 +433,10 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.match(home.html, /data-scene-veil-enabled="true"/);
     assert.match(home.html, /data-scene-pixels-enabled="true"/);
     assert.match(home.html, /data-scene-veil-color="#17191bc9"/);
-    assert.match(home.html, /data-scene-veil-opacity="0.75"/);
+    assert.match(home.html, /data-scene-veil-opacity="0.92"/);
     assert.match(home.html, /data-scene-rain-enabled="true"/);
-    assert.match(home.html, /data-scene-rain-width="2"/);
+    assert.match(home.html, /data-scene-rain-width="3.5"/);
+    assert.match(home.html, /data-scene-rain-cross-enabled="true"/);
     assert.match(home.html, /data-scene-rain-opacity="0.35"/);
     assert.match(home.html, /data-snow-enabled="true"/);
     assert.match(home.html, /data-wind-enabled="true"/);
@@ -523,7 +524,7 @@ test("portrait controls clamp values, retain fallback artwork, and track image r
   assert.match(result.html, /data-wind-strength="0"/);
   assert.match(result.html, /data-scene-speed="3"/);
   assert.match(result.html, /data-background-zoom="0.25"/);
-  assert.match(result.html, /data-scene-veil-opacity="0.85"/);
+  assert.match(result.html, /data-scene-veil-opacity="1"/);
   assert.match(result.html, /data-scene-veil-color="#17191bc9"/);
   assert.match(result.html, /data-scene-rain-density="96"/);
   assert.match(result.html, /data-scene-rain-speed="3"/);
@@ -1153,4 +1154,107 @@ test("Glossy Home registers its four sections as styled Theme patterns and rende
       .blocks[0],
     before,
   );
+});
+
+test("Glossy Single renders native post blocks with a shared sidebar in responsive columns", () => {
+  const d = colossal2027Theme();
+  const layout = d.templates["post-single"].children[1];
+  assert.equal(layout.type, "core/columns");
+  assert.equal(layout.settings.stackOnMobile, true);
+  assert.deepEqual(
+    layout.children[0].children.map((n) => n.type),
+    ["core/title", "core/featured-image", "core/post-content"],
+  );
+  assert.equal(layout.children[1].children[0].type, "theme/part-sidebar");
+  const ctx = {
+    kind: "post",
+    settings: {},
+    allContent: [],
+    media: [{ id: "featured", type: "image", url: "/photo.png" }],
+    content: {
+      id: "example",
+      title: "A real post",
+      body: "The actual article body",
+      details: { featuredImageId: "featured" },
+    },
+  };
+  const rendered = renderTheme(validateDocument(d, false), ctx, "post-single");
+  assert.match(rendered.html, /A real post/);
+  assert.match(rendered.html, /The actual article body/);
+  assert.match(rendered.html, /<img[^>]*src="\/photo.png"/);
+  assert.match(rendered.html, /theme-part-sidebar/);
+  const once = JSON.stringify(d);
+  migrateGlasseyDocument(d);
+  assert.equal(JSON.stringify(d), once);
+});
+
+test("theme CSS retains scoped absolute mobile dropdowns while rejecting fixed overlays", async () => {
+  const { sanitizeCss } = await import("../server/theme-engine.mjs");
+  const css = sanitizeCss(
+    ".menu-panel{position:absolute;right:0}.unsafe{position:fixed}",
+  );
+  assert.match(css, /\.theme-root \.menu-panel\{position:absolute;right:0\}/);
+  assert.doesNotMatch(css, /position:fixed/);
+  const d = colossal2027Theme();
+  const rendered = renderTheme(
+    validateDocument(d, false),
+    { settings: {}, allContent: [], media: [], kind: "home" },
+    "home",
+  );
+  assert.match(
+    rendered.css,
+    /\.theme-menu \.theme-menu-items\{position:absolute/,
+  );
+});
+
+test("Glossy repairs the imported content-only Posts archive with shared chrome and native listing blocks", () => {
+  const d = colossal2027Theme();
+  d.css = d.css.replace("/* Glossy restored posts archive */", "");
+  d.templates["post-archive"] = {
+    id: "imported-archive",
+    type: "core/container",
+    settings: { classes: "c27-section" },
+    children: [
+      { id: "archive-title", type: "core/title", settings: { level: "h1" } },
+      { id: "archive-excerpt", type: "core/excerpt", settings: {} },
+      { id: "archive-content", type: "core/post-content", settings: {} },
+    ],
+  };
+  migrateGlasseyDocument(d);
+  validateDocument(d, false);
+  const root = d.templates["post-archive"];
+  assert.equal(root.id, "imported-archive");
+  assert.deepEqual(
+    root.children.map((n) => n.type),
+    ["theme/part-header", "core/container", "theme/part-footer"],
+  );
+  assert.equal(root.children[1].children[2].type, "core/post-list");
+  assert.equal(root.children[1].children[2].settings.columns, 2);
+  assert.equal(root.settings.classes, "c27-body");
+  const once = JSON.stringify(d);
+  migrateGlasseyDocument(d);
+  assert.equal(JSON.stringify(d), once);
+  const result = renderTheme(
+    d,
+    {
+      kind: "post-index",
+      settings: {},
+      allContent: [
+        {
+          id: "post-one",
+          kind: "post",
+          title: "An actual post",
+          slug: "actual-post",
+          body: "Body",
+          details: {},
+        },
+      ],
+      content: { title: "Projects", details: {} },
+      media: [],
+    },
+    "post-archive",
+  );
+  assert.match(result.html, /An actual post/);
+  assert.match(result.html, /theme-part-header/);
+  assert.match(result.html, /theme-part-footer/);
 });
