@@ -35,6 +35,7 @@ import {
 } from "../shared/context-blocks.ts";
 import { fail } from "./v2-utils.mjs";
 import { pluginBlocks } from "./plugin-blocks.mjs";
+import { renderTableBlock, TABLE_BLOCK_CSS } from "./table-block.mjs";
 import {
   renderProjectDetails,
   renderTableOfContents,
@@ -140,8 +141,10 @@ const tags = [
   "video",
   "source",
   "table",
+  "caption",
   "thead",
   "tbody",
+  "tfoot",
   "tr",
   "td",
   "th",
@@ -158,7 +161,9 @@ const styles = {
     "font-style": [/^(normal|italic)$/],
     "line-height": [new RegExp(`^${positiveLengthCssPattern}$`)],
     "text-indent": [new RegExp(`^${positiveLengthCssPattern}$`)],
-    "text-decoration": [/^(none|underline|line-through|underline line-through)$/],
+    "text-decoration": [
+      /^(none|underline|line-through|underline line-through)$/,
+    ],
     color: [/^#[a-f0-9]{3,8}$/i],
     "background-color": [/^#[a-f0-9]{3,8}$/i],
     "text-align": [/^(left|center|right|justify)$/],
@@ -339,6 +344,7 @@ export function sanitizeTemplate(
         "tabindex",
       ],
       a: ["href", "target", "rel"],
+      th: ["scope"],
       img: ["src", "alt", "width", "height", "loading"],
       audio: ["src", "controls", "preload", "autoplay", "loop", "muted"],
       video: [
@@ -1513,6 +1519,10 @@ export function compileBlock(
       "</" +
       level +
       ">";
+  } else if (type === "core/table") {
+    const rendered = renderTableBlock(s, b.id, esc, typographyAttributes);
+    html = rendered.html;
+    d._gen?.push(rendered.css);
   } else if (type === "core/paragraph")
     html = "<p>" + sanitizeParagraph(s.html ?? esc(s.text)) + "</p>";
   else if (type === "core/rich-text" || type === "core/html")
@@ -2295,6 +2305,7 @@ function renderListExcerpt(excerpt, settings) {
   );
 }
 export const BASE_THEME_CSS =
+  TABLE_BLOCK_CSS +
   MENU_CSS +
   SIDEBAR_BLOCK_CSS +
   PROTECTED_FILE_CSS +

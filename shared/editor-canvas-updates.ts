@@ -56,6 +56,26 @@ export class EditorCanvasUpdates {
       );
       this.bind(rendered, paragraph);
     }
+    for (const cell of Array.from(
+      document.querySelectorAll<HTMLTableCellElement>(
+        "[data-inline-table-editor]",
+      ),
+    )) {
+      const id = cell.dataset["inlineTableEditor"];
+      const block = Array.from(next.querySelectorAll("[data-block-id]")).find(
+        (element) => element.getAttribute("data-block-id") === id,
+      );
+      const table = block?.querySelector<HTMLTableElement>(".cl-data-table");
+      const row = cell.parentElement as HTMLTableRowElement;
+      const rendered = table?.rows[row.rowIndex]?.cells[cell.cellIndex];
+      if (!rendered || rendered.innerHTML === cell.innerHTML) continue;
+      cell.replaceChildren(
+        ...Array.from(rendered.childNodes).map((child) =>
+          document.importNode(child, true),
+        ),
+      );
+      this.bind(rendered, cell);
+    }
     this.previous = next;
     this.source = source;
     return true;

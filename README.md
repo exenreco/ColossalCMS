@@ -578,6 +578,10 @@ Desktop Menu controls set orientation and alignment. Mobile controls set the bre
 
 Existing custom item arrays migrate to nested Menu Item blocks. Older automatic navigation is converted to page-link blocks using the site's current pages. New menus start with editable Menu Item blocks for the current published site pages, excluding the designated 404 page; existing menus are not repopulated. Links accept relative site paths, anchors, HTTP(S), email, and telephone destinations; executable and protocol-relative links are rejected. The editor's normal nesting and block-count limits apply.
 
+### Table block
+
+Add **Table** from the Content category in theme, maintenance, page or post editors. Edit plain-text cells directly in the canvas or in the Inspector grid. Add/remove rows and columns and move rows up/down. The Inspector controls the header row, first-column row headers, footer row, caption, independent odd/even row colors, header/footer backgrounds, header text color, cell borders, padding, alignment and equal column widths. Shared Typography and appearance controls also apply. Wide tables scroll horizontally without widening the page. Tables support up to 50 rows, 12 columns and 1,000 characters per cell, subject to the editor's total block-settings limit. Content and presentation save with normal drafts, revisions and publishing.
+
 ### Password-protected file block
 
 Add **Password-protected file** from the editor's Content category. In its Inspector, enter the button label, choose a Media Library file, set a password and click **Create protected copy**. Publish the page/template to display the button. Visitors enter the password before downloading; the original media file remains unchanged. Passwords are hashed on the server, with download-attempt limits and private attachment responses. See [configuration, storage and API details](docs/developers/protected-files.md).

@@ -1,5 +1,6 @@
 import { PatternLibraryComponent } from "./pattern-library.component";
 import { ProtectedFilePickerComponent } from "./protected-file-picker.component";
+import { TableSettingsComponent } from "./table-settings.component";
 import {
   Component,
   ElementRef,
@@ -56,6 +57,7 @@ import {
   standalone: true,
   imports: [
     ProtectedFilePickerComponent,
+    TableSettingsComponent,
     ContextualBlockToolbarComponent,
     FormsModule,
     BlockListDrawerComponent,
@@ -625,7 +627,7 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
       const el = this.editableCanvasBlock(e.target as HTMLElement);
       if (
         !(e.target as HTMLElement)?.closest?.(
-          "[data-inline-text-editor],[data-html-editor]",
+          "[data-inline-text-editor],[data-inline-table-editor],[data-html-editor]",
         )
       )
         e.preventDefault();
@@ -1481,7 +1483,11 @@ export class ThemeEditorComponent implements OnInit, OnDestroy {
   }
   private finishCanvasEditing() {
     const active = this.enhanced?.activeElement as HTMLElement | null;
-    if (active?.matches("[data-inline-text-editor],[data-html-editor]"))
+    if (
+      active?.matches(
+        "[data-inline-text-editor],[data-inline-table-editor],[data-html-editor]",
+      )
+    )
       active.blur();
   }
   @HostListener("window:dragend")

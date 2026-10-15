@@ -119,6 +119,7 @@ export class AppearancePickerPanelComponent {
       "core/menu-item",
       "core/custom-link",
       "core/heading",
+      "core/table",
       "core/paragraph",
       "core/title",
       "core/tagline",

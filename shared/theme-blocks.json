@@ -1,5 +1,46 @@
 [
   {
+    "type": "core/table",
+    "label": "Table",
+    "category": "Content",
+    "description": "Editable data table with headers, alternating row colors and responsive scrolling",
+    "icon": "fas fa-table",
+    "container": false,
+    "fields": [
+      { "key": "caption", "label": "Caption", "type": "text", "default": "" },
+      {
+        "key": "tableData",
+        "label": "Table settings",
+        "type": "table",
+        "default": {
+          "rows": [
+            ["Header 1", "Header 2", "Header 3"],
+            ["Cell 1", "Cell 2", "Cell 3"],
+            ["Cell 4", "Cell 5", "Cell 6"]
+          ],
+          "headerRow": true,
+          "headerColumn": false,
+          "footerRow": false,
+          "striped": true,
+          "headerBackground": "#80808020",
+          "headerColor": "",
+          "oddColor": "#8080800d",
+          "evenColor": "#80808000",
+          "footerBackground": "#80808020",
+          "borderColor": "#80808040",
+          "borders": true,
+          "borderWidth": 1,
+          "borderStyle": "solid",
+          "cellPadding": 12,
+          "align": "left",
+          "verticalAlign": "top",
+          "fixedLayout": false
+        }
+      }
+    ],
+    "toolbar": ["caption"]
+  },
+  {
     "type": "core/protected-file",
     "label": "Password-protected file",
     "category": "Content",

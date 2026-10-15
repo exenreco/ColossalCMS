@@ -1,5 +1,6 @@
 /** Bundled SVG drawings shared by the editor, icon picker, and public renderer. */
 export const BLOCK_ICON_PATHS: Record<string, string[]> = {
+  table: ["M3 3h18v18H3z", "M3 9h18M3 15h18M9 3v18M15 3v18"],
   envelope: ["M3 5h18v14H3z", "M3 5l9 7 9-7"],
   "question-circle": [
     "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",

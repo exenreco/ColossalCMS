@@ -1,5 +1,6 @@
 import { PatternLibraryComponent } from "./pattern-library.component";
 import { ProtectedFilePickerComponent } from "./protected-file-picker.component";
+import { TableSettingsComponent } from "./table-settings.component";
 import { contentTemplateScope } from "./content-template-scope";
 import {
   Component,
@@ -61,6 +62,7 @@ import { SeoPanelComponent } from "./seo-panel.component";
   standalone: true,
   imports: [
     ProtectedFilePickerComponent,
+    TableSettingsComponent,
     SeoPanelComponent,
     FormsModule,
     DatePipe,
@@ -163,7 +165,18 @@ import { SeoPanelComponent } from "./seo-panel.component";
                 {{ themeState.label(themeState.node) }}
               </h3>
               @for (field of selectedBlockFields; track field.key) {
-                @if (field.type === "protected-file") {
+                @if (field.type === "table") {
+                  <div
+                    class="theme-field block-setting-field block-setting-source"
+                  >
+                    <span class="block-setting-label">{{ field.label }}</span>
+                    <span class="block-setting-control"
+                      ><cl-table-settings
+                        [value]="themeState.node.settings[field.key]"
+                        (valueChange)="themeState.set(field.key, $event)"
+                    /></span>
+                  </div>
+                } @else if (field.type === "protected-file") {
                   <div
                     class="theme-field block-setting-field block-setting-source"
                   >
@@ -1590,7 +1603,7 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
         // Theme links belong to the preview, never navigate its iframe away from the draft.
         if (
           !(event.target as Element)?.closest?.(
-            "[data-inline-text-editor],[data-html-editor]",
+            "[data-inline-text-editor],[data-inline-table-editor],[data-html-editor]",
           )
         )
           event.preventDefault();

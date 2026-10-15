@@ -101,7 +101,16 @@
             </p>
           }
           @for (f of fields; track f.key) {
-            @if (f.type === "protected-file") {
+            @if (f.type === "table") {
+              <div class="theme-field block-setting-field block-setting-source">
+                <span class="block-setting-label">{{ f.label }}</span>
+                <span class="block-setting-control"
+                  ><cl-table-settings
+                    [value]="node.settings[f.key]"
+                    (valueChange)="state.set(f.key, $event)"
+                /></span>
+              </div>
+            } @else if (f.type === "protected-file") {
               <div class="theme-field block-setting-field block-setting-source">
                 <span class="block-setting-label">{{ f.label }}</span>
                 <span class="block-setting-control"

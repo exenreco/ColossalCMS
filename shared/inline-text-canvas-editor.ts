@@ -1,6 +1,7 @@
 import type { ThemeEditorState } from "./theme-editor-state";
 import { canvasBlockId } from "./context-blocks";
 import { CanvasBlockSearch } from "./canvas-block-search";
+import { normalizeTableData } from "./table-block";
 
 /** Inline heading and paragraph authoring shared by all editor canvases. */
 export class InlineTextCanvasEditor {
@@ -25,6 +26,11 @@ export class InlineTextCanvasEditor {
   ) {}
   get editing() {
     const active = this.document?.activeElement as HTMLElement | null;
+    if (active?.matches("[data-inline-table-editor]"))
+      return (
+        this.state.find(active.dataset["inlineTableEditor"] || "")?.type ===
+        "core/table"
+      );
     return (
       !!active?.matches("[data-inline-text-editor]") &&
       ["core/paragraph", "core/heading"].includes(
@@ -38,7 +44,9 @@ export class InlineTextCanvasEditor {
     const previous = this.document;
     this.destroy();
     for (const paragraph of Array.from(
-      previous.querySelectorAll<HTMLElement>("[data-inline-text-editor]"),
+      previous.querySelectorAll<HTMLElement>(
+        "[data-inline-text-editor],[data-inline-table-editor]",
+      ),
     )) {
       paragraph.blur();
       for (const attribute of [
@@ -46,6 +54,7 @@ export class InlineTextCanvasEditor {
         "data-paragraph-editor",
         "data-heading-editor",
         "data-inline-text-editor",
+        "data-inline-table-editor",
         "data-empty",
         "data-placeholder",
         "role",
@@ -79,6 +88,7 @@ export class InlineTextCanvasEditor {
     style.id = "cl-inline-text-styles";
     style.textContent = `
       [data-inline-text-editor]{min-height:1.5em;cursor:text;outline:none;overflow-wrap:anywhere}
+      [data-inline-table-editor]{cursor:text;outline:none;min-width:60px}
       [data-inline-text-editor][data-empty="true"]::before{content:attr(data-placeholder);opacity:.45;pointer-events:none;position:absolute}
     `;
     document.head.append(style);
@@ -87,6 +97,10 @@ export class InlineTextCanvasEditor {
     )) {
       const id = canvasBlockId(block);
       const type = this.state.find(id)?.type;
+      if (type === "core/table") {
+        this.attachTable(block, id, options);
+        continue;
+      }
       if (!["core/paragraph", "core/heading"].includes(type || "")) continue;
       const heading = type === "core/heading";
       const paragraph = block.querySelector<HTMLElement>(
@@ -222,6 +236,101 @@ export class InlineTextCanvasEditor {
     paragraph.dataset["empty"] = String(
       !paragraph.textContent?.replace(/\u200b/g, "").trim(),
     );
+  }
+  private attachTable(
+    block: HTMLElement,
+    id: string,
+    options: AddEventListenerOptions,
+  ) {
+    const table = block.querySelector<HTMLTableElement>(".cl-data-table");
+    if (!table) return;
+    for (const row of Array.from(table.rows)) {
+      for (const cell of Array.from(row.cells)) {
+        cell.contentEditable = "plaintext-only";
+        cell.tabIndex = 0;
+        cell.dataset["inlineTableEditor"] = id;
+        cell.setAttribute(
+          "aria-label",
+          `Row ${row.rowIndex + 1}, column ${cell.cellIndex + 1}`,
+        );
+        cell.addEventListener(
+          "focus",
+          () => {
+            this.options.focus();
+            this.options.select(id);
+          },
+          options,
+        );
+        cell.addEventListener(
+          "blur",
+          () => {
+            this.lastInput.id = "";
+            const signal = this.events!.signal;
+            queueMicrotask(() => {
+              if (!signal.aborted && !this.editing) this.options.edited();
+            });
+          },
+          options,
+        );
+        cell.addEventListener(
+          "input",
+          () => {
+            const node = this.state.find(id);
+            if (node?.type !== "core/table") return;
+            const data = normalizeTableData(node.settings["tableData"]);
+            if (
+              !data.rows[row.rowIndex] ||
+              cell.cellIndex >= data.rows[row.rowIndex].length
+            )
+              return;
+            data.rows[row.rowIndex][cell.cellIndex] = cell.innerText.slice(
+              0,
+              1000,
+            );
+            if (JSON.stringify(data).length > 85000) return;
+            const before = JSON.stringify(this.state.document());
+            const key = `${id}:${row.rowIndex}:${cell.cellIndex}`;
+            const group =
+              this.lastInput.id === key &&
+              this.lastInput.snapshot === before &&
+              Date.now() - this.lastInput.at < 1000;
+            this.state.commit(() => {
+              node.settings["tableData"] = data;
+            });
+            if (
+              group &&
+              this.state.past.length > 1 &&
+              JSON.stringify(this.state.document()) !== before
+            )
+              this.state.past.pop();
+            this.lastInput = {
+              id: key,
+              at: Date.now(),
+              snapshot: JSON.stringify(this.state.document()),
+            };
+          },
+          options,
+        );
+        cell.addEventListener(
+          "keydown",
+          (event) => {
+            if (
+              (event.ctrlKey || event.metaKey) &&
+              ["z", "y"].includes(event.key.toLowerCase())
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              cell.blur();
+              if (event.key.toLowerCase() === "y" || event.shiftKey)
+                this.state.redo();
+              else this.state.undo();
+              this.options.edited();
+            }
+          },
+          options,
+        );
+      }
+    }
   }
   private input(paragraph: HTMLElement) {
     const id = paragraph.dataset["inlineTextEditor"]!;
