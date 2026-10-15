@@ -220,6 +220,8 @@ function referencedFiles(snapshot) {
     const metadata = JSON.parse(media.metadata);
     if (metadata.posterStorageKey) keys.add(metadata.posterStorageKey);
   }
+  for (const copy of snapshot.protected_files || [])
+    if (copy.storage_key) keys.add(copy.storage_key);
   for (const version of snapshot.plugin_versions)
     for (const key of JSON.parse(version.files)) keys.add(key);
   for (const theme of snapshot.themes) {

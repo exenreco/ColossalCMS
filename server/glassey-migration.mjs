@@ -2,6 +2,7 @@
 import { upgradeGlasseyNativeBlocks } from "./glassey-native-blocks.mjs";
 import { upgradeGlossyNotFound } from "./glossy-not-found.mjs";
 import { upgradeGlossyContact } from "./glossy-contact.mjs";
+import { alignGlossyTemplateHeadings } from "./glossy-template-headings.mjs";
 export const GLASSEY_THEME_ID = "com.colossal.theme.colossal-2027";
 
 export function isGlasseyTheme(id) {
@@ -95,6 +96,7 @@ export function migrateGlasseyDocument(document) {
   twoColumnGlossySearch(document);
   repairGlossyPostsArchive(document);
   refineGlossyPostsHeading(document);
+  alignGlossyTemplateHeadings(document);
   upgradeGlossyNotFound(document);
   for (const node of document.templates?.home?.children || []) {
     if (

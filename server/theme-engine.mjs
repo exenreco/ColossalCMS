@@ -1,5 +1,9 @@
 import { validateBlockPatterns } from "../shared/block-patterns.ts";
 import {
+  renderProtectedFile,
+  PROTECTED_FILE_CSS,
+} from "./protected-file-renderer.mjs";
+import {
   MAX_BLOCK_DEPTH,
   MAX_THEME_BLOCKS,
   MAX_RENDER_DEPTH,
@@ -265,6 +269,8 @@ export function sanitizeTemplate(
         "data-messaging-preview",
         "data-messaging-title",
         "data-messaging-description",
+        "data-protected-file",
+        "data-protected-preview",
         "data-source-block-id",
         "data-content-id",
         "data-theme-template",
@@ -349,7 +355,7 @@ export function sanitizeTemplate(
       ol: ["start"],
       form: ["action", "method", "role"],
       input: ["type", "name", "value", "placeholder", "aria-label"],
-      button: ["type"],
+      button: ["type", "disabled"],
       svg: rendered
         ? [
             "viewbox",
@@ -1760,6 +1766,7 @@ function mediaHtml(m, ctx) {
   );
 }
 function dynamic(type, s, ctx, children) {
+  if (type === "core/protected-file") return renderProtectedFile(s, ctx, esc);
   const extension = pluginBlocks.renderBlock(type, s, ctx, { esc });
   if (extension !== undefined) return extension;
   if (type === "core/slide-background") {
@@ -2281,6 +2288,7 @@ function renderListExcerpt(excerpt, settings) {
 export const BASE_THEME_CSS =
   MENU_CSS +
   SIDEBAR_BLOCK_CSS +
+  PROTECTED_FILE_CSS +
   pluginBlocks.styles +
   ".theme-root{min-height:100vh}.theme-root *{box-sizing:border-box}.theme-root img,.theme-root video{max-width:100%;height:auto}.theme-root audio{width:100%}.theme-root figure{margin:20px 0}.theme-root figcaption{font-size:13px;color:#74846a}.theme-menu{display:flex;gap:24px;flex-wrap:wrap}.theme-post-grid article{background:#ffffff;padding:24px;border:1px solid #e0e6da;border-radius:12px}.theme-post-grid a{text-decoration:none}.theme-post-grid h2{line-height:1.4}.theme-root pre{white-space:pre-wrap;background:#eaf0e1;padding:20px}.theme-root input,.theme-root button{font:inherit;padding:10px;border:1px solid #becdb4;border-radius:6px}.theme-pagination{display:flex;gap:24px;justify-content:center;padding:24px}@media(min-width:1025px){.theme-hide-desktop{display:none!important}}@media(min-width:641px) and (max-width:1024px){.theme-hide-tablet{display:none!important}.theme-post-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:640px){.theme-hide-mobile{display:none!important}.theme-columns,.theme-post-grid{grid-template-columns:1fr!important}}";
 export const PICKER_THEME_CSS =

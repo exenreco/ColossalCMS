@@ -101,108 +101,122 @@
             </p>
           }
           @for (f of fields; track f.key) {
-            <label
-              class="theme-field block-setting-field"
-              [class.block-setting-checkbox]="f.type === 'checkbox'"
-              [class.block-setting-source]="
-                (node.type === 'core/rich-text' || node.type === 'core/html') &&
-                f.key === 'html'
-              "
-            >
-              @if (f.type !== "checkbox") {
+            @if (f.type === "protected-file") {
+              <div class="theme-field block-setting-field block-setting-source">
                 <span class="block-setting-label">{{ f.label }}</span>
-              }
-              <span class="block-setting-control">
-                @switch (f.type) {
-                  @case ("menu-page") {
-                    <cl-menu-page-picker
-                      [value]="node.settings[f.key]"
-                      (valueChange)="state.set(f.key, $event)"
-                    />
-                  }
-                  @case ("icon") {
-                    <cl-icon-picker
-                      [suggestions]="
-                        f.key === 'mobileIcon'
-                          ? ['bars', 'list', 'grid', 'chevron-down']
-                          : []
-                      "
-                      [value]="node.settings[f.key] ?? f.default"
-                      (valueChange)="state.set(f.key, $event)"
-                    />
-                  }
-                  @case ("select") {
-                    <select
-                      [ngModel]="node.settings[f.key] ?? f.default"
-                      (ngModelChange)="state.set(f.key, $event)"
-                    >
-                      @for (option of f.options; track option) {
-                        <option [value]="option">{{ option }}</option>
-                      }
-                    </select>
-                  }
-                  @case ("textarea") {
-                    <textarea
-                      rows="5"
-                      [ngModel]="node.settings[f.key]"
-                      (ngModelChange)="state.set(f.key, $event)"
-                    ></textarea>
-                  }
-                  @case ("checkbox") {
-                    <input
-                      type="checkbox"
-                      [ngModel]="node.settings[f.key] ?? f.default"
-                      (ngModelChange)="state.set(f.key, $event)"
-                    />
-                    <span class="block-setting-label">{{ f.label }}</span>
-                  }
-                  @case ("image") {
-                    <button class="button" (click)="chooseMedia(f)">
-                      {{
-                        node.settings[f.key] ? "Change image" : "Choose image"
-                      }}
-                    </button>
-                    @if (node.settings[f.key]) {
-                      <button
-                        class="button small"
-                        (click)="state.set(f.key, '')"
+                <span class="block-setting-control"
+                  ><cl-protected-file-picker
+                    [blockId]="node.id"
+                    [value]="node.settings[f.key] || ''"
+                    (valueChange)="state.set(f.key, $event)"
+                /></span>
+              </div>
+            } @else {
+              <label
+                class="theme-field block-setting-field"
+                [class.block-setting-checkbox]="f.type === 'checkbox'"
+                [class.block-setting-source]="
+                  f.type === 'protected-file' ||
+                  ((node.type === 'core/rich-text' ||
+                    node.type === 'core/html') &&
+                    f.key === 'html')
+                "
+              >
+                @if (f.type !== "checkbox") {
+                  <span class="block-setting-label">{{ f.label }}</span>
+                }
+                <span class="block-setting-control">
+                  @switch (f.type) {
+                    @case ("menu-page") {
+                      <cl-menu-page-picker
+                        [value]="node.settings[f.key]"
+                        (valueChange)="state.set(f.key, $event)"
+                      />
+                    }
+                    @case ("icon") {
+                      <cl-icon-picker
+                        [suggestions]="
+                          f.key === 'mobileIcon'
+                            ? ['bars', 'list', 'grid', 'chevron-down']
+                            : []
+                        "
+                        [value]="node.settings[f.key] ?? f.default"
+                        (valueChange)="state.set(f.key, $event)"
+                      />
+                    }
+                    @case ("select") {
+                      <select
+                        [ngModel]="node.settings[f.key] ?? f.default"
+                        (ngModelChange)="state.set(f.key, $event)"
                       >
-                        Clear image
+                        @for (option of f.options; track option) {
+                          <option [value]="option">{{ option }}</option>
+                        }
+                      </select>
+                    }
+                    @case ("textarea") {
+                      <textarea
+                        rows="5"
+                        [ngModel]="node.settings[f.key]"
+                        (ngModelChange)="state.set(f.key, $event)"
+                      ></textarea>
+                    }
+                    @case ("checkbox") {
+                      <input
+                        type="checkbox"
+                        [ngModel]="node.settings[f.key] ?? f.default"
+                        (ngModelChange)="state.set(f.key, $event)"
+                      />
+                      <span class="block-setting-label">{{ f.label }}</span>
+                    }
+                    @case ("image") {
+                      <button class="button" (click)="chooseMedia(f)">
+                        {{
+                          node.settings[f.key] ? "Change image" : "Choose image"
+                        }}
+                      </button>
+                      @if (node.settings[f.key]) {
+                        <button
+                          class="button small"
+                          (click)="state.set(f.key, '')"
+                        >
+                          Clear image
+                        </button>
+                      }
+                    }
+                    @case ("media") {
+                      <button class="button" (click)="chooseMedia(f)">
+                        {{
+                          node.settings[f.key] ? "Change media" : "Choose media"
+                        }}
                       </button>
                     }
+                    @case ("model") {
+                      <button class="button" (click)="chooseMedia(f)">
+                        Choose model
+                      </button>
+                      <p class="field-note">
+                        External URLs require HTTPS and CORS permission. Preview
+                        to verify.
+                      </p>
+                    }
+                    @default {
+                      <input
+                        [type]="f.type === 'number' ? 'number' : 'text'"
+                        [attr.min]="f.min ?? null"
+                        [attr.max]="f.max ?? null"
+                        [attr.step]="f.step ?? null"
+                        [ngModel]="node.settings[f.key] ?? f.default"
+                        (ngModelChange)="state.set(f.key, $event)"
+                      />
+                    }
                   }
-                  @case ("media") {
-                    <button class="button" (click)="chooseMedia(f)">
-                      {{
-                        node.settings[f.key] ? "Change media" : "Choose media"
-                      }}
-                    </button>
-                  }
-                  @case ("model") {
-                    <button class="button" (click)="chooseMedia(f)">
-                      Choose model
-                    </button>
-                    <p class="field-note">
-                      External URLs require HTTPS and CORS permission. Preview
-                      to verify.
-                    </p>
-                  }
-                  @default {
-                    <input
-                      [type]="f.type === 'number' ? 'number' : 'text'"
-                      [attr.min]="f.min ?? null"
-                      [attr.max]="f.max ?? null"
-                      [attr.step]="f.step ?? null"
-                      [ngModel]="node.settings[f.key] ?? f.default"
-                      (ngModelChange)="state.set(f.key, $event)"
-                    />
-                  }
+                </span>
+                @if (f.help) {
+                  <span class="field-note">{{ f.help }}</span>
                 }
-              </span>
-              @if (f.help) {
-                <span class="field-note">{{ f.help }}</span>
-              }
-            </label>
+              </label>
+            }
           }
           <cl-appearance-picker-panel
             [settings]="node.settings"

@@ -1,0 +1,403 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Technical Systems</title>
+  <desc id="desc">An editorial illustration of server infrastructure connected through a network switch to cloud services, a workstation and a secure system. Cobalt blue, warm ivory and orange reflect a practical, connected technical practice.</desc>
+  <rect width="1600" height="1000" fill="#f3f1e8" />
+  <g>
+    <path d="M 104 64.0 v 872.0 M 144 64.0 v 872.0 M 184 64.0 v 872.0 M 224 64.0 v 872.0 M 264 64.0 v 872.0 M 304 64.0 v 872.0 M 344 64.0 v 872.0 M 384 64.0 v 872.0 M 424 64.0 v 872.0 M 464 64.0 v 872.0 M 504 64.0 v 872.0 M 544 64.0 v 872.0 M 584 64.0 v 872.0 M 624 64.0 v 872.0 M 664 64.0 v 872.0 M 704 64.0 v 872.0 M 744 64.0 v 872.0 M 784 64.0 v 872.0 M 824 64.0 v 872.0 M 864 64.0 v 872.0 M 904 64.0 v 872.0 M 944 64.0 v 872.0 M 984 64.0 v 872.0 M 1024 64.0 v 872.0 M 1064 64.0 v 872.0 M 1104 64.0 v 872.0 M 1144 64.0 v 872.0 M 1184 64.0 v 872.0 M 1224 64.0 v 872.0 M 1264 64.0 v 872.0 M 1304 64.0 v 872.0 M 1344 64.0 v 872.0 M 1384 64.0 v 872.0 M 1424 64.0 v 872.0 M 1464 64.0 v 872.0 M 1504 64.0 v 872.0 M 64.0 104 h 1472.0 M 64.0 144 h 1472.0 M 64.0 184 h 1472.0 M 64.0 224 h 1472.0 M 64.0 264 h 1472.0 M 64.0 304 h 1472.0 M 64.0 344 h 1472.0 M 64.0 384 h 1472.0 M 64.0 424 h 1472.0 M 64.0 464 h 1472.0 M 64.0 504 h 1472.0 M 64.0 544 h 1472.0 M 64.0 584 h 1472.0 M 64.0 624 h 1472.0 M 64.0 664 h 1472.0 M 64.0 704 h 1472.0 M 64.0 744 h 1472.0 M 64.0 784 h 1472.0 M 64.0 824 h 1472.0 M 64.0 864 h 1472.0 M 64.0 904 h 1472.0" fill="none" stroke="#627871" stroke-opacity=".09" />
+  </g>
+  <circle cx="814" cy="515" r="330" fill="none" stroke="#84988b" stroke-opacity=".13" stroke-width="1.5" />
+  <circle cx="814" cy="515" r="242" fill="none" stroke="#84988b" stroke-opacity=".14" stroke-dasharray="5 12" />
+  <g fill="none" stroke="#2848b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M580 480H690Q720 480 720 510V600" />
+    <path d="M855 600V358Q855 330 885 330H1046" />
+    <path d="M937 653H1078Q1108 653 1108 683V718" />
+    <path d="M792 708V798Q792 826 820 826H988" />
+  </g>
+  <g fill="none" stroke="#2848b8" stroke-opacity=".18" stroke-width="2" stroke-dasharray="5 10">
+    <path d="M338 272V209H816" />
+    <path d="M1261 378V509H1412V817" />
+    <path d="M304 630V797H606" />
+  </g>
+  <g>
+    <path d="M191 303L236 271H580L626 303V619L582 647H191Z" fill="#a4b2aa" />
+    <path d="M581 303L626 303V619L581 647Z" fill="#7e9186" />
+    <rect x="177" y="289" width="424" height="359" rx="20" fill="#d6ded7" stroke="#b1beb4" stroke-width="2" />
+    <g transform="translate(194 305)">
+      <g>
+        <rect width="390" height="86" rx="13" fill="#ccd5cd" stroke="#a6b3ac" />
+        <g>
+          <circle cx="28" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="63" r="2" fill="#52645d" opacity=".6" />
+        </g>
+        <path d="M253 19V67M268 19V67" stroke="#879a90" stroke-width="3" />
+        <rect x="288" y="28" width="42" height="9" rx="4" fill="#748a7f" />
+        <rect x="288" y="48" width="27" height="8" rx="4" fill="#a3b6a9" />
+        <circle cx="355" cy="43" r="10" fill="#e3ebe4" stroke="#728f7e" stroke-width="2" />
+        <circle cx="355" cy="43" r="4" fill="#4e9a74" />
+      </g>
+    </g>
+    <g transform="translate(194 386)">
+      <g>
+        <rect width="390" height="86" rx="13" fill="#ccd5cd" stroke="#a6b3ac" />
+        <g>
+          <circle cx="28" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="63" r="2" fill="#52645d" opacity=".6" />
+        </g>
+        <path d="M253 19V67M268 19V67" stroke="#879a90" stroke-width="3" />
+        <rect x="288" y="28" width="42" height="9" rx="4" fill="#748a7f" />
+        <rect x="288" y="48" width="27" height="8" rx="4" fill="#a3b6a9" />
+        <circle cx="355" cy="43" r="10" fill="#e3ebe4" stroke="#728f7e" stroke-width="2" />
+        <circle cx="355" cy="43" r="4" fill="#4e9a74" />
+      </g>
+    </g>
+    <g transform="translate(194 467)">
+      <g>
+        <rect width="390" height="86" rx="13" fill="#ccd5cd" stroke="#a6b3ac" />
+        <g>
+          <circle cx="28" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="63" r="2" fill="#52645d" opacity=".6" />
+        </g>
+        <path d="M253 19V67M268 19V67" stroke="#879a90" stroke-width="3" />
+        <rect x="288" y="28" width="42" height="9" rx="4" fill="#748a7f" />
+        <rect x="288" y="48" width="27" height="8" rx="4" fill="#a3b6a9" />
+        <circle cx="355" cy="43" r="10" fill="#e3ebe4" stroke="#728f7e" stroke-width="2" />
+        <circle cx="355" cy="43" r="4" fill="#4e9a74" />
+      </g>
+    </g>
+    <g transform="translate(194 548)">
+      <g>
+        <rect width="390" height="86" rx="13" fill="#ccd5cd" stroke="#a6b3ac" />
+        <g>
+          <circle cx="28" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="28" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="41" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="54" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="67" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="80" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="93" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="106" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="119" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="132" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="145" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="158" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="171" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="184" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="197" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="210" cy="63" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="24" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="37" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="50" r="2" fill="#52645d" opacity=".6" />
+          <circle cx="223" cy="63" r="2" fill="#52645d" opacity=".6" />
+        </g>
+        <path d="M253 19V67M268 19V67" stroke="#879a90" stroke-width="3" />
+        <rect x="288" y="28" width="42" height="9" rx="4" fill="#748a7f" />
+        <rect x="288" y="48" width="27" height="8" rx="4" fill="#a3b6a9" />
+        <circle cx="355" cy="43" r="10" fill="#e3ebe4" stroke="#728f7e" stroke-width="2" />
+        <circle cx="355" cy="43" r="4" fill="#4e9a74" />
+      </g>
+    </g>
+    <path d="M203 658H575" stroke="#8b9d92" stroke-width="10" stroke-linecap="round" />
+  </g>
+  <g>
+    <path d="M650 619L686 590H939V688L903 721H650Z" fill="#213d9a" />
+    <rect x="640" y="605" width="300" height="102" rx="16" fill="#3456c4" stroke="#5c7bdf" stroke-width="2" />
+    <g fill="#142b75" stroke="#91a9ff" stroke-width="2">
+      <rect x="662" y="634" width="33" height="29" rx="3" />
+      <rect x="706" y="634" width="33" height="29" rx="3" />
+      <rect x="750" y="634" width="33" height="29" rx="3" />
+      <rect x="794" y="634" width="33" height="29" rx="3" />
+      <rect x="838" y="634" width="33" height="29" rx="3" />
+    </g>
+    <g fill="#a9d6af">
+      <circle cx="677" cy="677" r="3" />
+      <circle cx="721" cy="677" r="3" />
+      <circle cx="765" cy="677" r="3" />
+      <circle cx="809" cy="677" r="3" />
+    </g>
+    <circle cx="905" cy="650" r="7" fill="#f4a36d" />
+  </g>
+  <g>
+    <rect x="1040" y="199" width="303" height="225" rx="34" fill="#f9faf5" stroke="#d5ddd3" stroke-width="2" />
+    <path d="M1111 350C1064 350 1061 283 1107 276C1117 218 1202 213 1225 267C1288 250 1312 350 1246 350Z" fill="#dbe4f8" stroke="#2848b8" stroke-width="5" stroke-linejoin="round" />
+    <path d="M1182 297V370M1167 355L1182 370L1197 355" fill="none" stroke="#2848b8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <g>
+    <rect x="1032" y="613" width="322" height="206" rx="19" fill="#aab9b0" />
+    <rect x="1043" y="623" width="300" height="178" rx="10" fill="#1d3038" />
+    <path d="M1071 654H1115M1126 654H1151" stroke="#8caba2" stroke-width="6" stroke-linecap="round" />
+    <path d="M1071 734H1108L1130 704L1156 760L1187 685L1213 734H1313" fill="none" stroke="#9dc9b5" stroke-width="5" stroke-linejoin="round" />
+    <path d="M1170 819V855H1218V819" fill="#8b9f92" />
+    <path d="M1136 862H1253" stroke="#849b8d" stroke-width="13" stroke-linecap="round" />
+  </g>
+  <g>
+    <rect x="693" y="137" width="139" height="139" rx="30" fill="#d45c2b" />
+    <path d="M762 164L802 180V211C802 234 782 249 762 258C742 249 722 234 722 211V180Z" fill="#f6d6b8" />
+    <path d="M744 209L757 222L782 193" fill="none" stroke="#a74422" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <g>
+    <g transform="translate(720 523)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+    <g transform="translate(855 447)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+    <g transform="translate(1021 653)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+    <g transform="translate(893 826)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+  </g>
+  <g fill="#d45c2b">
+    <circle cx="331" cy="209" r="6" />
+    <circle cx="1412" cy="817" r="6" />
+    <circle cx="606" cy="797" r="6" />
+  </g>
+  <g font-family="ui-monospace, Consolas, monospace" font-size="15" letter-spacing="3" fill="#536c5e">
+    <text x="177" y="720">INFRASTRUCTURE</text>
+    <text x="642" y="755">NETWORK</text>
+    <text x="1061" y="468">CONNECTED SERVICES</text>
+  </g>
+</svg>

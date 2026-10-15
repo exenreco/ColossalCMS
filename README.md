@@ -577,6 +577,10 @@ Desktop Menu controls set orientation and alignment. Mobile controls set the bre
 
 Existing custom item arrays migrate to nested Menu Item blocks. Older automatic navigation is converted to page-link blocks using the site's current pages. New menus start with editable Menu Item blocks for the current published site pages, excluding the designated 404 page; existing menus are not repopulated. Links accept relative site paths, anchors, HTTP(S), email, and telephone destinations; executable and protocol-relative links are rejected. The editor's normal nesting and block-count limits apply.
 
+### Password-protected file block
+
+Add **Password-protected file** from the editor's Content category. In its Inspector, enter the button label, choose a Media Library file, set a password and click **Create protected copy**. Publish the page/template to display the button. Visitors enter the password before downloading; the original media file remains unchanged. Passwords are hashed on the server, with download-attempt limits and private attachment responses. See [configuration, storage and API details](docs/developers/protected-files.md).
+
 ### Appearance controls
 
 Reusable popovers cover color, gradients, background, typography, layout, dimensions, margin, padding, border, link, animation, glass, and slide backgrounds. Color uses a custom drag wheel. Gradient stops slide along their track; clicking the track adds a stop. Applicable numeric controls expose units and `auto` values.

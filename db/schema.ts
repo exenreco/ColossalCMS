@@ -9,6 +9,25 @@ export {
   messagingMessages,
   messagingTokens,
 } from "../plugins/messaging/schema";
+export const protectedFiles = sqliteTable("protected_files", {
+  id: text("id").primaryKey(),
+  sourceMediaId: text("source_media_id").notNull(),
+  storageKey: text("storage_key").notNull(),
+  name: text("name").notNull(),
+  mime: text("mime").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+export const protectedFileAttempts = sqliteTable(
+  "protected_file_attempts",
+  {
+    id: text("id").primaryKey(),
+    attempts: integer("attempts").notNull().default(0),
+    expiresAt: text("expires_at").notNull(),
+  },
+  (table) => [index("idx_protected_file_attempts_expiry").on(table.expiresAt)],
+);
 export const content = sqliteTable(
   "content",
   {

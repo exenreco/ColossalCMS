@@ -289,6 +289,14 @@ export async function ensureThemes(db) {
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
+      "glossy-template-headings-dividers-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
       "glossy-contact-messaging-v1",
       migrateGlasseyDocument,
     ))

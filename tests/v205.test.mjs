@@ -14,7 +14,7 @@ test("every core block has a unique icon and mapped toolbar tools", () => {
   const catalog = definitions.filter(
     (b) => !b.legacy && b.type.startsWith("core/"),
   );
-  assert.equal(catalog.length, 34);
+  assert.equal(catalog.length, 35);
   assert.equal(new Set(catalog.map((b) => b.icon)).size, catalog.length);
   const actions = new Set([
     "bold",

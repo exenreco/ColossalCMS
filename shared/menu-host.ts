@@ -3,6 +3,7 @@ import { hydrateParticleText } from "./particle-text-host";
 import { hydrateTableOfContents } from "./table-of-contents-host";
 import { hydrateTrivia } from "../plugins/trivia/client";
 import { hydrateMessaging } from "../plugins/messaging/client";
+import { hydrateProtectedFiles } from "./protected-file-host";
 const hydrated = new WeakSet<Document>();
 const editorSelections = new WeakMap<Document, Element | null>();
 /** Reveal the selected menu branch without overriding subsequent manual toggles. */
@@ -44,6 +45,7 @@ export function hydrateMenus(doc: Document) {
   hydrateTableOfContents(doc);
   hydrateTrivia(doc);
   hydrateMessaging(doc);
+  hydrateProtectedFiles(doc);
   if (hydrated.has(doc)) return;
   hydrated.add(doc);
   doc.addEventListener("click", (event) => {

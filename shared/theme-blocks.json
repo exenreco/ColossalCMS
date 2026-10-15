@@ -1,5 +1,28 @@
 [
   {
+    "type": "core/protected-file",
+    "label": "Password-protected file",
+    "category": "Content",
+    "description": "Offer a password-protected copy of a media file",
+    "icon": "fas fa-lock",
+    "container": false,
+    "fields": [
+      {
+        "key": "label",
+        "label": "Button label",
+        "type": "text",
+        "default": "Download file"
+      },
+      {
+        "key": "downloadId",
+        "label": "Protected file",
+        "type": "protected-file",
+        "default": ""
+      }
+    ],
+    "toolbar": ["label"]
+  },
+  {
     "type": "google-ads/ad",
     "label": "Ads",
     "category": "Plugin",

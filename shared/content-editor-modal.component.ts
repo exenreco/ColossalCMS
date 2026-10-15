@@ -1,4 +1,5 @@
 import { PatternLibraryComponent } from "./pattern-library.component";
+import { ProtectedFilePickerComponent } from "./protected-file-picker.component";
 import { contentTemplateScope } from "./content-template-scope";
 import {
   Component,
@@ -59,6 +60,7 @@ import { SeoPanelComponent } from "./seo-panel.component";
   selector: "cl-content-editor-modal",
   standalone: true,
   imports: [
+    ProtectedFilePickerComponent,
     SeoPanelComponent,
     FormsModule,
     DatePipe,
@@ -161,115 +163,134 @@ import { SeoPanelComponent } from "./seo-panel.component";
                 {{ themeState.label(themeState.node) }}
               </h3>
               @for (field of selectedBlockFields; track field.key) {
-                <label
-                  class="theme-field block-setting-field"
-                  [class.block-setting-checkbox]="field.type === 'checkbox'"
-                  [class.block-setting-source]="
-                    (themeState.node.type === 'core/rich-text' ||
-                      themeState.node.type === 'core/html') &&
-                    field.key === 'html'
-                  "
-                >
-                  @if (field.type !== "checkbox") {
+                @if (field.type === "protected-file") {
+                  <div
+                    class="theme-field block-setting-field block-setting-source"
+                  >
                     <span class="block-setting-label">{{ field.label }}</span>
-                  }
-                  <span class="block-setting-control">
-                    @switch (field.type) {
-                      @case ("menu-page") {
-                        <cl-menu-page-picker
-                          [value]="themeState.node.settings[field.key]"
-                          (valueChange)="themeState.set(field.key, $event)"
-                        />
-                      }
-                      @case ("icon") {
-                        <cl-icon-picker
-                          [suggestions]="
-                            field.key === 'mobileIcon'
-                              ? ['bars', 'list', 'grid', 'chevron-down']
-                              : []
-                          "
-                          [value]="
-                            themeState.node.settings[field.key] ?? field.default
-                          "
-                          (valueChange)="themeState.set(field.key, $event)"
-                        />
-                      }
-                      @case ("select") {
-                        <select
-                          [ngModel]="
-                            themeState.node.settings[field.key] ?? field.default
-                          "
-                          (ngModelChange)="themeState.set(field.key, $event)"
-                        >
-                          @for (option of field.options || []; track option) {
-                            <option [value]="option">{{ option }}</option>
-                          }
-                        </select>
-                      }
-                      @case ("checkbox") {
-                        <input
-                          type="checkbox"
-                          [ngModel]="
-                            themeState.node.settings[field.key] ?? field.default
-                          "
-                          (ngModelChange)="themeState.set(field.key, $event)"
-                        />
-                        <span class="block-setting-label">{{
-                          field.label
-                        }}</span>
-                      }
-                      @case ("textarea") {
-                        <textarea
-                          rows="5"
-                          [ngModel]="themeState.node.settings[field.key]"
-                          (ngModelChange)="themeState.set(field.key, $event)"
-                        ></textarea>
-                      }
-                      @case ("image") {
-                        <button
-                          type="button"
-                          class="button"
-                          (click)="selectBlockMedia(field)"
-                        >
-                          Choose image
-                        </button>
-                      }
-                      @case ("media") {
-                        <button
-                          type="button"
-                          class="button"
-                          (click)="selectBlockMedia(field)"
-                        >
-                          Choose media
-                        </button>
-                      }
-                      @case ("model") {
-                        <button
-                          type="button"
-                          class="button"
-                          (click)="selectBlockMedia(field)"
-                        >
-                          Choose model
-                        </button>
-                      }
-                      @default {
-                        <input
-                          [type]="field.type === 'number' ? 'number' : 'text'"
-                          [attr.min]="field.min ?? null"
-                          [attr.max]="field.max ?? null"
-                          [attr.step]="field.step ?? null"
-                          [ngModel]="
-                            themeState.node.settings[field.key] ?? field.default
-                          "
-                          (ngModelChange)="themeState.set(field.key, $event)"
-                        />
-                      }
+                    <span class="block-setting-control"
+                      ><cl-protected-file-picker
+                        [blockId]="themeState.node.id"
+                        [value]="themeState.node.settings[field.key] || ''"
+                        (valueChange)="themeState.set(field.key, $event)"
+                    /></span>
+                  </div>
+                } @else {
+                  <label
+                    class="theme-field block-setting-field"
+                    [class.block-setting-checkbox]="field.type === 'checkbox'"
+                    [class.block-setting-source]="
+                      field.type === 'protected-file' ||
+                      ((themeState.node.type === 'core/rich-text' ||
+                        themeState.node.type === 'core/html') &&
+                        field.key === 'html')
+                    "
+                  >
+                    @if (field.type !== "checkbox") {
+                      <span class="block-setting-label">{{ field.label }}</span>
                     }
-                  </span>
-                  @if (field.help) {
-                    <span class="field-note">{{ field.help }}</span>
-                  }
-                </label>
+                    <span class="block-setting-control">
+                      @switch (field.type) {
+                        @case ("menu-page") {
+                          <cl-menu-page-picker
+                            [value]="themeState.node.settings[field.key]"
+                            (valueChange)="themeState.set(field.key, $event)"
+                          />
+                        }
+                        @case ("icon") {
+                          <cl-icon-picker
+                            [suggestions]="
+                              field.key === 'mobileIcon'
+                                ? ['bars', 'list', 'grid', 'chevron-down']
+                                : []
+                            "
+                            [value]="
+                              themeState.node.settings[field.key] ??
+                              field.default
+                            "
+                            (valueChange)="themeState.set(field.key, $event)"
+                          />
+                        }
+                        @case ("select") {
+                          <select
+                            [ngModel]="
+                              themeState.node.settings[field.key] ??
+                              field.default
+                            "
+                            (ngModelChange)="themeState.set(field.key, $event)"
+                          >
+                            @for (option of field.options || []; track option) {
+                              <option [value]="option">{{ option }}</option>
+                            }
+                          </select>
+                        }
+                        @case ("checkbox") {
+                          <input
+                            type="checkbox"
+                            [ngModel]="
+                              themeState.node.settings[field.key] ??
+                              field.default
+                            "
+                            (ngModelChange)="themeState.set(field.key, $event)"
+                          />
+                          <span class="block-setting-label">{{
+                            field.label
+                          }}</span>
+                        }
+                        @case ("textarea") {
+                          <textarea
+                            rows="5"
+                            [ngModel]="themeState.node.settings[field.key]"
+                            (ngModelChange)="themeState.set(field.key, $event)"
+                          ></textarea>
+                        }
+                        @case ("image") {
+                          <button
+                            type="button"
+                            class="button"
+                            (click)="selectBlockMedia(field)"
+                          >
+                            Choose image
+                          </button>
+                        }
+                        @case ("media") {
+                          <button
+                            type="button"
+                            class="button"
+                            (click)="selectBlockMedia(field)"
+                          >
+                            Choose media
+                          </button>
+                        }
+                        @case ("model") {
+                          <button
+                            type="button"
+                            class="button"
+                            (click)="selectBlockMedia(field)"
+                          >
+                            Choose model
+                          </button>
+                        }
+                        @default {
+                          <input
+                            [type]="field.type === 'number' ? 'number' : 'text'"
+                            [attr.min]="field.min ?? null"
+                            [attr.max]="field.max ?? null"
+                            [attr.step]="field.step ?? null"
+                            [ngModel]="
+                              themeState.node.settings[field.key] ??
+                              field.default
+                            "
+                            (ngModelChange)="themeState.set(field.key, $event)"
+                          />
+                        }
+                      }
+                    </span>
+                    @if (field.help) {
+                      <span class="field-note">{{ field.help }}</span>
+                    }
+                  </label>
+                }
               }
               <cl-appearance-picker-panel
                 [settings]="themeState.node.settings"

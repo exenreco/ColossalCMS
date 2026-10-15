@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Web Development</title>
+  <desc id="desc">An editorial illustration of a website browser, code editor, responsive mobile interface and reusable content blocks. Cobalt blue, warm ivory, sage and orange connect design and development.</desc>
+  <rect width="1600" height="1000" fill="#f3f1e8" />
+  <g>
+    <path d="M 104 64.0 v 872.0 M 144 64.0 v 872.0 M 184 64.0 v 872.0 M 224 64.0 v 872.0 M 264 64.0 v 872.0 M 304 64.0 v 872.0 M 344 64.0 v 872.0 M 384 64.0 v 872.0 M 424 64.0 v 872.0 M 464 64.0 v 872.0 M 504 64.0 v 872.0 M 544 64.0 v 872.0 M 584 64.0 v 872.0 M 624 64.0 v 872.0 M 664 64.0 v 872.0 M 704 64.0 v 872.0 M 744 64.0 v 872.0 M 784 64.0 v 872.0 M 824 64.0 v 872.0 M 864 64.0 v 872.0 M 904 64.0 v 872.0 M 944 64.0 v 872.0 M 984 64.0 v 872.0 M 1024 64.0 v 872.0 M 1064 64.0 v 872.0 M 1104 64.0 v 872.0 M 1144 64.0 v 872.0 M 1184 64.0 v 872.0 M 1224 64.0 v 872.0 M 1264 64.0 v 872.0 M 1304 64.0 v 872.0 M 1344 64.0 v 872.0 M 1384 64.0 v 872.0 M 1424 64.0 v 872.0 M 1464 64.0 v 872.0 M 1504 64.0 v 872.0 M 64.0 104 h 1472.0 M 64.0 144 h 1472.0 M 64.0 184 h 1472.0 M 64.0 224 h 1472.0 M 64.0 264 h 1472.0 M 64.0 304 h 1472.0 M 64.0 344 h 1472.0 M 64.0 384 h 1472.0 M 64.0 424 h 1472.0 M 64.0 464 h 1472.0 M 64.0 504 h 1472.0 M 64.0 544 h 1472.0 M 64.0 584 h 1472.0 M 64.0 624 h 1472.0 M 64.0 664 h 1472.0 M 64.0 704 h 1472.0 M 64.0 744 h 1472.0 M 64.0 784 h 1472.0 M 64.0 824 h 1472.0 M 64.0 864 h 1472.0 M 64.0 904 h 1472.0" fill="none" stroke="#627871" stroke-opacity=".09" />
+  </g>
+  <circle cx="813" cy="510" r="341" fill="none" stroke="#84988b" stroke-opacity=".13" stroke-width="1.5" />
+  <circle cx="813" cy="510" r="253" fill="none" stroke="#84988b" stroke-opacity=".14" stroke-dasharray="5 12" />
+  <g fill="none" stroke="#2848b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M492 695H715Q746 695 746 664V588" />
+    <path d="M1090 439H1195Q1225 439 1225 469V551" />
+    <path d="M1110 256H1230Q1260 256 1260 226V200" />
+  </g>
+  <g fill="none" stroke="#2848b8" stroke-opacity=".18" stroke-width="2" stroke-dasharray="5 10">
+    <path d="M185 414V240H287" />
+    <path d="M846 805V859H1080" />
+    <path d="M1390 573H1450V323" />
+  </g>
+  <g>
+    <rect x="348" y="213" width="778" height="440" rx="22" fill="#a9b7af" />
+    <rect x="332" y="198" width="778" height="440" rx="22" fill="#fbfcf7" stroke="#bbc8be" stroke-width="2" />
+    <path d="M354 198H1088Q1110 198 1110 220V258H332V220Q332 198 354 198Z" fill="#ccd5cd" />
+    <g>
+      <circle cx="362" cy="228" r="6" fill="#d45c2b" />
+      <circle cx="385" cy="228" r="6" fill="#b1a16c" />
+      <circle cx="408" cy="228" r="6" fill="#73957f" />
+    </g>
+    <rect x="470" y="214" width="469" height="27" rx="9" fill="#f4f6f0" />
+    <path d="M492 228H671" stroke="#c1cdc4" stroke-width="5" stroke-linecap="round" />
+    <path d="M377 294H448" stroke="#263f36" stroke-width="12" stroke-linecap="round" />
+    <path d="M854 294H895M922 294H963M990 294H1054" stroke="#93a79a" stroke-width="6" stroke-linecap="round" />
+    <rect x="369" y="332" width="704" height="194" rx="14" fill="#e6ebdf" />
+    <path d="M404 376H639M404 399H596" stroke="#263f36" stroke-width="13" stroke-linecap="round" />
+    <path d="M404 431H615M404 447H570" stroke="#8ca291" stroke-width="5" stroke-linecap="round" />
+    <rect x="401" y="471" width="119" height="28" rx="7" fill="#2848b8" />
+    <g transform="translate(843 428)">
+      <path d="M0-69L91-19L0 35L-91-19Z" fill="#6f8bf0" />
+      <path d="M-91-19L0 35V98L-91 43Z" fill="#2848b8" />
+      <path d="M0 35L91-19V43L0 98Z" fill="#1b3694" />
+      <path d="M0-69V-10L-91 43M0-10L91 43" fill="none" stroke="#a4b8ff" stroke-width="2" opacity=".55" />
+    </g>
+    <g fill="#e7ece2">
+      <rect x="370" y="549" width="218" height="58" rx="8" />
+      <rect x="612" y="549" width="218" height="58" rx="8" />
+      <rect x="854" y="549" width="218" height="58" rx="8" />
+    </g>
+    <g stroke="#9aaf9f" stroke-width="5" stroke-linecap="round">
+      <path d="M390 568H498M390 586H553" />
+      <path d="M632 568H740M632 586H795" />
+      <path d="M874 568H982M874 586H1037" />
+    </g>
+  </g>
+  <g>
+    <rect x="175" y="510" width="393" height="312" rx="20" fill="#101f28" />
+    <rect x="164" y="499" width="393" height="312" rx="20" fill="#1d3038" stroke="#4f6867" stroke-width="2" />
+    <path d="M185 499H536Q557 499 557 520V544H164V520Q164 499 185 499Z" fill="#344b4e" />
+    <g fill="#839c95">
+      <circle cx="187" cy="522" r="4" />
+      <circle cx="203" cy="522" r="4" />
+      <circle cx="219" cy="522" r="4" />
+    </g>
+    <path d="M252 522H321" stroke="#a3b8ae" stroke-width="4" stroke-linecap="round" />
+    <g fill="none" stroke-width="4" stroke-linecap="round">
+      <path d="M196 571H204M196 597H204M196 623H204M196 649H204M196 675H204M196 701H204M196 727H204M196 753H204" stroke="#526c68" />
+      <path d="M230 571H314M246 597H292M261 623H359M261 675H328M246 727H291" stroke="#8aa8f6" />
+      <path d="M328 571H387M304 597H418M341 675H453M230 753H315" stroke="#a9c9b2" />
+      <path d="M372 623H464M276 649H423M276 701H394M304 727H412" stroke="#e6a67b" />
+    </g>
+    <g fill="none" stroke="#d8e9dd" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M462 563L448 577L462 591M498 563L512 577L498 591M487 557L474 597" />
+    </g>
+  </g>
+  <g>
+    <rect x="1153" y="514" width="203" height="329" rx="31" fill="#6c8176" />
+    <rect x="1142" y="504" width="203" height="329" rx="31" fill="#c2cec3" stroke="#9dad9e" stroke-width="2" />
+    <rect x="1154" y="517" width="179" height="303" rx="23" fill="#fbfcf7" />
+    <rect x="1211" y="526" width="66" height="9" rx="5" fill="#94a799" />
+    <path d="M1172 559H1210M1297 554H1312M1297 560H1312M1297 566H1312" stroke="#496558" stroke-width="4" stroke-linecap="round" />
+    <rect x="1169" y="584" width="149" height="106" rx="8" fill="#3456c4" />
+    <path d="M1186 609H1288M1186 627H1262" stroke="#dce5ff" stroke-width="6" stroke-linecap="round" />
+    <rect x="1183" y="653" width="66" height="18" rx="5" fill="#e7b18b" />
+    <rect x="1169" y="706" width="149" height="39" rx="6" fill="#e6ebdf" />
+    <rect x="1169" y="756" width="149" height="39" rx="6" fill="#e6ebdf" />
+    <path d="M1183 720H1266M1183 733H1297M1183 770H1266M1183 783H1297" stroke="#a3b5a5" stroke-width="4" stroke-linecap="round" />
+  </g>
+  <g transform="translate(1199 139)">
+    <rect width="132" height="132" rx="29" fill="#d45c2b" />
+    <g fill="#f7dbbf">
+      <rect x="27" y="27" width="32" height="32" rx="5" />
+      <rect x="73" y="27" width="32" height="32" rx="5" />
+      <rect x="27" y="73" width="32" height="32" rx="5" />
+    </g>
+    <rect x="73" y="73" width="32" height="32" rx="5" fill="none" stroke="#f7dbbf" stroke-width="3" />
+  </g>
+  <g>
+    <g transform="translate(635 695)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+    <g transform="translate(1179 439)">
+      <g>
+        <circle r="10" fill="#f6f3ec" stroke="#2848b8" stroke-width="4" />
+        <circle r="3" fill="#2848b8" />
+      </g>
+    </g>
+  </g>
+  <g fill="#d45c2b">
+    <circle cx="185" cy="240" r="6" />
+    <circle cx="1080" cy="859" r="6" />
+    <circle cx="1450" cy="323" r="6" />
+  </g>
+  <g font-family="ui-monospace, Consolas, monospace" font-size="15" letter-spacing="3" fill="#536c5e">
+    <text x="165" y="865">CODE</text>
+    <text x="656" y="762">BUILD &amp; CONNECT</text>
+    <text x="1142" y="881">RESPONSIVE WEB</text>
+  </g>
+</svg>

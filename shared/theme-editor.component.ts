@@ -1,4 +1,5 @@
 import { PatternLibraryComponent } from "./pattern-library.component";
+import { ProtectedFilePickerComponent } from "./protected-file-picker.component";
 import {
   Component,
   ElementRef,
@@ -54,6 +55,7 @@ import {
   selector: "cl-theme-editor",
   standalone: true,
   imports: [
+    ProtectedFilePickerComponent,
     ContextualBlockToolbarComponent,
     FormsModule,
     BlockListDrawerComponent,

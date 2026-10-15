@@ -30,6 +30,7 @@ test("legacy icon migration preserves core, copied themes, drafts and history an
           "core/paragraph",
           "core/icon",
           "core/button",
+          "core/protected-file",
           "core/menu-item",
           "core/custom-link",
           "core/divider",

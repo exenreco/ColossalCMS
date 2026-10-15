@@ -3,6 +3,10 @@ import {
   renderPatternPreview,
 } from "./block-patterns.mjs";
 import { validatePreview } from "./editor-automation.mjs";
+import {
+  protectedFileAdmin,
+  protectedFileDownload,
+} from "./protected-files.mjs";
 import { pluginRuntime } from "./plugin-runtime.mjs";
 import {
   ensureThemes,
@@ -418,6 +422,15 @@ export default {
         });
       }
       const db = database(env);
+      const protectedDownload = path.match(
+        /^\/api\/protected-files\/([^/]+)\/download$/,
+      );
+      if (protectedDownload)
+        return await protectedFileDownload(
+          request,
+          { ...env, DB: db },
+          protectedDownload[1],
+        );
       if (path === "/api/themes/render" && request.method === "GET") {
         return await publicThemeRender(request, env);
       }
@@ -547,6 +560,16 @@ export default {
         return json({ user, passwordAuth: env.PASSWORD_AUTH === true });
       }
       const user = await identity(request, db);
+      const protectedAdmin = path.match(
+        /^\/api\/admin\/protected-files(?:\/([^/]+))?$/,
+      );
+      if (protectedAdmin)
+        return await protectedFileAdmin(
+          request,
+          { ...env, DB: db },
+          user,
+          protectedAdmin[1] || "",
+        );
       if (path === "/api/admin/analytics/views" && request.method === "GET") {
         if (user.role !== "admin")
           fail("Administrator access is required.", 403);
