@@ -4,6 +4,7 @@ import { hydrateTableOfContents } from "./table-of-contents-host";
 import { hydrateTrivia } from "../plugins/trivia/client";
 import { hydrateMessaging } from "../plugins/messaging/client";
 import { hydrateProtectedFiles } from "./protected-file-host";
+import { hydrateFrontendPlugins } from "./frontend-plugin-registry";
 const hydrated = new WeakSet<Document>();
 const editorSelections = new WeakMap<Document, Element | null>();
 /** Reveal the selected menu branch without overriding subsequent manual toggles. */
@@ -40,6 +41,7 @@ export function revealEditorMenu(doc: Document, selected: Element | null) {
 }
 /** Host-side listeners also work inside the editor's script-free canvas. */
 export function hydrateMenus(doc: Document) {
+  hydrateFrontendPlugins(doc);
   hydrateSearch(doc);
   hydrateParticleText(doc);
   hydrateTableOfContents(doc);

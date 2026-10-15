@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.lazy-load",
+  "name": "Lazy Load",
+  "description": "Lazy-load site images and show a configurable spinner while they load, without changing theme layouts.",
+  "isCore": false,
+  "version": "0.0.3",
+  "author": "Colossal Core Team",
+  "icon": "media",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.3", "plugins": [] },
+  "admin": {
+    "entryComponent": "LazyLoadComponent",
+    "menu": {
+      "label": "Lazy Load",
+      "icon": "media",
+      "path": "/admin/lazy-load",
+      "order": 980,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

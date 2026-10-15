@@ -12,7 +12,6 @@ import {
   ensureThemes,
   activeTheme,
   handleThemes,
-  publicThemeRender,
   publicThemeRenderData,
   serveThemeAsset,
   previewAllowsMedia,
@@ -317,7 +316,23 @@ export default {
         path,
         database: () => database(env),
       });
-      if (pluginPublicResponse) return pluginPublicResponse;
+      if (pluginPublicResponse) {
+        if (
+          path === "/api/themes/render" &&
+          request.method === "GET" &&
+          pluginPublicResponse.ok
+        ) {
+          const rendered = await pluginRuntime.transformRender(
+            await pluginPublicResponse.json(),
+            {
+              request,
+              database: () => database(env),
+            },
+          );
+          return json(rendered);
+        }
+        return pluginPublicResponse;
+      }
       if (!path.startsWith("/api/")) {
         if (path === "/admin")
           return Response.redirect(url.origin + "/admin/", 302);
@@ -358,6 +373,13 @@ export default {
               database: () => database(env),
             });
             if (override) {
+              override.rendered = await pluginRuntime.transformRender(
+                override.rendered,
+                {
+                  request,
+                  database: () => database(env),
+                },
+              );
               headers.delete("Content-Length");
               headers.delete("ETag");
               for (const [key, value] of Object.entries(override.headers || {}))
@@ -370,7 +392,7 @@ export default {
               return new Response(
                 request.method === "HEAD"
                   ? null
-                  : override.html(await response.text()),
+                  : override.html(await response.text(), override.rendered),
                 { status: override.status, headers },
               );
             }
@@ -384,6 +406,10 @@ export default {
               new Request(renderUrl, request),
               env,
             );
+            rendered = await pluginRuntime.transformRender(rendered, {
+              request,
+              database: () => database(env),
+            });
             pluginMetadata = await pluginRuntime.metadata({
               request,
               env,
@@ -432,7 +458,15 @@ export default {
           protectedDownload[1],
         );
       if (path === "/api/themes/render" && request.method === "GET") {
-        return await publicThemeRender(request, env);
+        return json(
+          await pluginRuntime.transformRender(
+            await publicThemeRenderData(request, env),
+            {
+              request,
+              database: () => database(env),
+            },
+          ),
+        );
       }
       const themeAsset = path.match(/^\/api\/themes\/([^/]+)\/assets\/(.+)$/);
       if (themeAsset && request.method === "GET")

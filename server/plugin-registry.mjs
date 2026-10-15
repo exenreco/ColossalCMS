@@ -98,6 +98,13 @@ export function createPluginRegistry(contributions) {
       }
       return null;
     },
+    async transformRender(rendered, context) {
+      for (const contribution of contributions) {
+        if (contribution.transformRender)
+          rendered = await contribution.transformRender(rendered, context);
+      }
+      return rendered;
+    },
     async metadata(context) {
       const fragments = [];
       for (const hook of metadata) {

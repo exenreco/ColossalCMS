@@ -16,7 +16,9 @@ import seo from "../plugins/seo/plugin.manifest.json";
 import aiAssistant from "../plugins/ai-assistant/plugin.manifest.json";
 import trivia from "../plugins/trivia/plugin.manifest.json";
 import messaging from "../plugins/messaging/plugin.manifest.json";
+import lazyLoad from "../plugins/lazy-load/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
+  lazyLoad,
   messaging,
   trivia,
   aiAssistant,
@@ -37,6 +39,8 @@ export const PLUGIN_MANIFESTS = [
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  LazyLoadComponent: () =>
+    import("../plugins/lazy-load/admin").then((m) => m.LazyLoadComponent),
   MessagingComponent: () =>
     import("../plugins/messaging/admin").then((m) => m.MessagingComponent),
   TriviaComponent: () =>

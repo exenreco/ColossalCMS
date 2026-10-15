@@ -15,7 +15,9 @@ import seo from "./seo/plugin.manifest.json" with { type: "json" };
 import aiAssistant from "./ai-assistant/plugin.manifest.json" with { type: "json" };
 import trivia from "./trivia/plugin.manifest.json" with { type: "json" };
 import messaging from "./messaging/plugin.manifest.json" with { type: "json" };
+import lazyLoad from "./lazy-load/plugin.manifest.json" with { type: "json" };
 export const manifests = [
+  lazyLoad,
   messaging,
   trivia,
   aiAssistant,

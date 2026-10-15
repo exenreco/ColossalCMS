@@ -289,6 +289,22 @@ export async function ensureThemes(db) {
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
+      "glossy-restored-card-featured-images-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-featured-image-shared-sidebar-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
       "glossy-template-headings-dividers-v1",
       migrateGlasseyDocument,
     ))

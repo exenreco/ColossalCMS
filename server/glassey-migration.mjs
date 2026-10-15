@@ -3,6 +3,10 @@ import { upgradeGlasseyNativeBlocks } from "./glassey-native-blocks.mjs";
 import { upgradeGlossyNotFound } from "./glossy-not-found.mjs";
 import { upgradeGlossyContact } from "./glossy-contact.mjs";
 import { alignGlossyTemplateHeadings } from "./glossy-template-headings.mjs";
+import {
+  moveGlossyFeaturedImageToSidebar,
+  restoreGlossyCardFeaturedImages,
+} from "./glossy-sidebar-featured-image.mjs";
 export const GLASSEY_THEME_ID = "com.colossal.theme.colossal-2027";
 
 export function isGlasseyTheme(id) {
@@ -98,6 +102,8 @@ export function migrateGlasseyDocument(document) {
   refineGlossyPostsHeading(document);
   alignGlossyTemplateHeadings(document);
   upgradeGlossyNotFound(document);
+  moveGlossyFeaturedImageToSidebar(document);
+  restoreGlossyCardFeaturedImages(document);
   for (const node of document.templates?.home?.children || []) {
     if (
       String(node.settings?.classes || "")

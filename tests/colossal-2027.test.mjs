@@ -1168,7 +1168,7 @@ test("Glossy Single renders native post blocks with a shared sidebar in responsi
   assert.equal(layout.settings.stackOnMobile, true);
   assert.deepEqual(
     layout.children[0].children.map((n) => n.type),
-    ["core/title", "core/divider", "core/featured-image", "core/post-content"],
+    ["core/title", "core/divider", "core/post-content"],
   );
   assert.equal(layout.children[1].children[0].type, "theme/part-sidebar");
   const ctx = {

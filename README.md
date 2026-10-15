@@ -33,6 +33,7 @@ All application files live at the **repository root**. Run commands in the direc
 - [Plugins and extensions](#plugins-and-extensions)
   - [Maintenance](#maintenance)
   - [Google Ads](#google-ads)
+  - [Lazy Load](#lazy-load)
   - [Trivia](#trivia)
   - [Messaging](#messaging)
   - [Advanced SEO](#advanced-seo)
@@ -983,6 +984,10 @@ The extension integrates **AdSense display ads**, not campaign management or Goo
 Configure verification from **Google Ads → Site verification**: independently enable the meta tag and `/ads.txt`, inspect their previews, and optionally enter custom plain-text ads.txt content. Leave custom content blank to generate Google's entry from the Publisher ID; custom content replaces the entire file. Save to publish. These controls work independently of live ads and default to enabled for existing installations.
 
 On public pages, valid visible units load the validated asynchronous AdSense script once and initialize each unit once. Previews use placeholders. Deactivation suppresses live rendering but retains settings. Account approval and ad availability are outside the CMS.
+
+### Lazy Load
+
+Install and activate **Lazy Load** in Plugins, then open its settings page to enable image lazy loading and configure the spinner color and size. Images display a spinner while loading, which clears on success or failure. The first content image loads eagerly by default; logos, header images and 3D scene artwork retain their original loading behavior. Add the `no-lazy` CSS class to an image block or its parent to exclude it. Theme previews and editor canvases are unaffected. No environment variables are required. See [Lazy Load behavior, settings and APIs](docs/developers/lazy-load.md).
 
 ### Trivia
 

@@ -61,7 +61,8 @@ export default {
         "Retry-After": String(state.settings.retryAfter),
         "X-Robots-Tag": "noindex",
       },
-      html: (shell) => maintenanceHtml(shell, rendered),
+      html: (shell, transformed = rendered) =>
+        maintenanceHtml(shell, transformed),
     };
   },
 };
