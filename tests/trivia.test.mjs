@@ -10,6 +10,7 @@ import {
 import trivia from "../plugins/trivia/server.mjs";
 import { createPluginRegistry } from "../server/plugin-registry.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
+import { parseSql } from "../scripts/mongo-database.mjs";
 import {
   renderTheme,
   defaultTheme,
@@ -84,6 +85,36 @@ test("Trivia uses published content, supports native/rich HTML text and keeps co
 });
 test("Trivia routes enforce activation, validate answers, exclude 404 sources and invalidate changed or unpublished questions", async () => {
   const db = localDatabase();
+  // Execute against SQLite while enforcing the production MongoDB SQL grammar.
+  const productionDb = {
+    prepare(sql) {
+      const statement = (args = []) => ({
+        bind: (...values) => statement(values),
+        first: async () => {
+          parseSql(sql, args);
+          return db
+            .prepare(sql)
+            .bind(...args)
+            .first();
+        },
+        all: async () => {
+          parseSql(sql, args);
+          return db
+            .prepare(sql)
+            .bind(...args)
+            .all();
+        },
+        run: async () => {
+          parseSql(sql, args);
+          return db
+            .prepare(sql)
+            .bind(...args)
+            .run();
+        },
+      });
+      return statement();
+    },
+  };
   try {
     await db
       .prepare(
@@ -124,7 +155,7 @@ test("Trivia routes enforce activation, validate answers, exclude 404 sources an
               }
             : {},
         ),
-        database: () => db,
+        database: () => productionDb,
       });
     await assert.rejects(request("/api/trivia/questions"), /unavailable/);
     await db.prepare("UPDATE plugins SET active=1,installed=1").run();
@@ -132,6 +163,13 @@ test("Trivia routes enforce activation, validate answers, exclude 404 sources an
     const payload = await response.json();
     assert.ok(payload.questions.length);
     assert.ok(payload.questions.every((q) => q.source.id === "article"));
+    const adminPreview = await registry.dispatch("admin", {
+      path: "/api/admin/trivia",
+      request: new Request("https://cms.test/api/admin/trivia"),
+      db: productionDb,
+      user: { role: "admin" },
+    });
+    assert.ok((await adminPreview.json()).available > 0);
     const bank = await generateQuestions([
       content("article", { slug: "article" }),
     ]);

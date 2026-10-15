@@ -30,7 +30,7 @@ async function bankFor(db, query, admin = false) {
   );
   const rows = await all(
     db,
-    "SELECT id,kind,title,slug,body,excerpt,status,publish_at,details FROM content WHERE status IN ('published','scheduled') ORDER BY updated_at DESC LIMIT 200",
+    "SELECT id,kind,title,slug,body,excerpt,status,publish_at,details FROM content WHERE (status='published' OR status='scheduled') ORDER BY updated_at DESC LIMIT 200",
   );
   const requested = query.get("scope") || "default";
   if (!["default", "all", "pages", "posts", "current"].includes(requested))
