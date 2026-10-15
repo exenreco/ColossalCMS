@@ -6,6 +6,76 @@ import {
   validateDocument,
 } from "../server/theme-engine.mjs";
 
+test("heading typography targets every heading element, overriding theme defaults in canvas and public output", () => {
+  for (const level of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
+    const document = defaultTheme();
+    document.templates.default.children.splice(1, 0, {
+      id: "typography-heading",
+      type: "core/heading",
+      settings: {
+        level,
+        text: "Editable heading",
+        fontFamily: "Georgia",
+        fontSize: "2rem",
+        lineHeight: "3rem",
+        color: "#123456",
+        align: "right",
+        textIndent: 12,
+        bold: true,
+        italic: true,
+        underline: true,
+        strike: true,
+      },
+    });
+    for (const preview of [false, true]) {
+      const rendered = renderTheme(validateDocument(document, true), {
+        kind: "page",
+        preview,
+        content: { title: "Test", body: "" },
+        settings: { title: "Site", tagline: "" },
+        allContent: [],
+        media: [],
+      });
+      const style = rendered.html.match(
+        new RegExp(`<${level} style="([^"]+)">Editable heading</${level}>`),
+      )?.[1];
+      assert.ok(style, `${level} must carry its own typography`);
+      for (const css of [
+        "font-family:'Georgia'",
+        "font-size:2rem",
+        "line-height:3rem",
+        "color:#123456",
+        "text-align:right",
+        "text-indent:12px",
+        "font-weight:700",
+        "font-style:italic",
+        "text-decoration:underline line-through",
+      ])
+        assert.ok(style.includes(css), css);
+    }
+    const settings = document.templates.default.children[1].settings;
+    Object.assign(settings, {
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
+    });
+    const rendered = renderTheme(validateDocument(document, true), {
+      kind: "page",
+      content: { title: "Test", body: "" },
+      settings: {},
+      allContent: [],
+      media: [],
+    });
+    const style = rendered.html.match(
+      new RegExp(`<${level} style="([^"]+)">Editable heading</${level}>`),
+    )?.[1];
+    assert.match(style, /font-weight:400/);
+    assert.match(style, /font-style:normal/);
+    assert.match(style, /text-decoration:none/);
+  }
+});
+
 test("appearance picker settings compile into safe canvas and public styles", () => {
   const document = defaultTheme();
   document.templates.default.children.splice(1, 0, {

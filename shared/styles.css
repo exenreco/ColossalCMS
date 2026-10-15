@@ -483,7 +483,7 @@ select:focus-visible {
 .mobile-menu {
   display: none;
 }
-main {
+.main-shell > main {
   padding: 35px 38px 0;
   flex: 1;
   min-width: 0;
@@ -1918,7 +1918,7 @@ td:last-child {
 }
 /* Responsive layouts retain the working surface without sideways page scrolling. */
 @media (min-width: 1550px) {
-  main {
+  .main-shell > main {
     max-width: 1550px;
     width: 100%;
     margin: 0 auto;
@@ -1969,7 +1969,7 @@ td:last-child {
   .main-shell {
     margin-left: 215px;
   }
-  main {
+  .main-shell > main {
     padding: 28px 25px 0;
   }
   .topbar {
@@ -2139,7 +2139,7 @@ td:last-child {
   .breadcrumbs > cl-icon {
     display: none;
   }
-  main {
+  .main-shell > main {
     padding: 25px 20px 0;
   }
   .page-heading {

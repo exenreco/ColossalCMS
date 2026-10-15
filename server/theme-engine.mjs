@@ -154,11 +154,11 @@ const styles = {
       /^(monospace|'(?:Arial|Georgia|system-ui|Times New Roman|monospace)')$/,
     ],
     "font-size": [new RegExp(`^${positiveLengthCssPattern}$`)],
-    "font-weight": [/^700$/],
-    "font-style": [/^italic$/],
+    "font-weight": [/^(400|700)$/],
+    "font-style": [/^(normal|italic)$/],
     "line-height": [new RegExp(`^${positiveLengthCssPattern}$`)],
     "text-indent": [new RegExp(`^${positiveLengthCssPattern}$`)],
-    "text-decoration": [/^(underline|line-through|underline line-through)$/],
+    "text-decoration": [/^(none|underline|line-through|underline line-through)$/],
     color: [/^#[a-f0-9]{3,8}$/i],
     "background-color": [/^#[a-f0-9]{3,8}$/i],
     "text-align": [/^(left|center|right|justify)$/],
@@ -1507,6 +1507,7 @@ export function compileBlock(
     html =
       "<" +
       level +
+      typographyAttributes(s) +
       ">" +
       (s.html ? sanitizeTemplate(s.html) : esc(s.text)) +
       "</" +
@@ -2249,7 +2250,7 @@ function renderDynamicMarkup(html, ctx) {
   });
 }
 function typographyAttributes(settings) {
-  const css = styleSettings(
+  let css = styleSettings(
     Object.fromEntries(
       [
         "color",
@@ -2266,6 +2267,14 @@ function typographyAttributes(settings) {
       ].map((key) => [key, settings[key]]),
     ),
   );
+  // Explicitly disabled formatting must also override the theme's heading rules.
+  if (settings.bold === false) css += "font-weight:400;";
+  if (settings.italic === false) css += "font-style:normal;";
+  if (
+    (settings.underline === false && !settings.strike) ||
+    (settings.strike === false && !settings.underline)
+  )
+    css += "text-decoration:none;";
   return css ? ' style="' + esc(css) + '"' : "";
 }
 function renderListExcerpt(excerpt, settings) {
