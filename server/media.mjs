@@ -82,7 +82,7 @@ export function inspectMedia(bytes, filename, mime) {
   if (ext === "svg") {
     const svg = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     if (
-      /<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<\s*(script|foreignObject|iframe|object|embed|animate|set)\b|\bon\w+\s*=|javascript\s*:|data\s*:|url\s*\(/i.test(
+      /<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<\s*(script|foreignObject|iframe|object|embed|animate|set)\b|\bon\w+\s*=|javascript\s*:|data\s*:/i.test(
         svg,
       )
     )
@@ -93,7 +93,8 @@ export function inspectMedia(bytes, filename, mime) {
     const tree = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
-      processEntities: false,
+      processEntities: true,
+      htmlEntities: true,
     }).parse(svg);
     if (!tree.svg) fail("This SVG has no root element.");
     const tags = new Set([
@@ -123,11 +124,20 @@ export function inspectMedia(bytes, filename, mime) {
         if (key === "?xml" || key === "#text") continue;
         if (key.startsWith("@_")) {
           const attr = key.slice(2);
+          const value = String(val);
+          // Gradients and clipping paths may reference IDs within this SVG only.
+          // Decode XML entities above and reject CSS escapes/comments so an
+          // external URL cannot disguise its function name or destination.
+          const localUrl =
+            /^url\(\s*(?:#[\w:.-]+|"#[\w:.-]+"|'#[\w:.-]+')\s*\)$/i;
           if (
             /^on/i.test(attr) ||
             attr === "style" ||
+            attr === "xml:base" ||
+            /\\|\/\*/.test(value) ||
+            (/url\s*\(/i.test(value) && !localUrl.test(value)) ||
             ((attr === "href" || attr === "xlink:href") &&
-              !String(val).startsWith("#"))
+              !value.startsWith("#"))
           )
             fail(
               "SVG files must not contain active content or external references.",
