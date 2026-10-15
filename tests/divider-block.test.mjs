@@ -5,7 +5,6 @@ import {
   validateDocument,
   renderTheme,
 } from "../server/theme-engine.mjs";
-import { colossal2027Theme } from "../server/colossal-2027.mjs";
 const ctx = {
   kind: "home",
   settings: {},
@@ -41,20 +40,4 @@ test("Divider renders a semantic separator and safe configurable line geometry",
   const safe = renderTheme(validateDocument(d, true), ctx, id);
   assert.doesNotMatch(safe.css, /bad.test/);
   assert.match(safe.css, /border-top:12px dashed #74846a/);
-});
-test("Glossy Projects has a reasonable heading and an editable divider directly below it", () => {
-  const d = colossal2027Theme();
-  const children = d.templates.projects.children;
-  const index = children.findIndex((n) => n.type === "core/title");
-  assert.ok(index >= 0);
-  assert.equal(children[index].settings.fontSize, 36);
-  assert.equal(children[index].settings.lineHeight, 44);
-  assert.equal(children[index + 1].type, "core/divider");
-  const r = renderTheme(
-    validateDocument(d, false),
-    { ...ctx, kind: "page" },
-    "projects",
-  );
-  assert.match(r.html, />Projects<\/h1>/);
-  assert.match(r.html, /<hr class="theme-divider"/);
 });

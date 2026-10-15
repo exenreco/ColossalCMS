@@ -47,30 +47,6 @@ import { PluginViewState } from "../plugin-view-state";
       background: color-mix(in srgb, var(--green) 10%, var(--surface));
       color: var(--green);
     }
-    .plugin-table-wrap {
-      overflow-x: auto;
-    }
-    .plugin-table {
-      min-width: 720px;
-    }
-    .plugin-table tbody tr:nth-child(odd) {
-      background: color-mix(in srgb, var(--green) 3%, var(--surface));
-    }
-    .plugin-table tbody tr:nth-child(even) {
-      background: var(--surface);
-    }
-    .plugin-table tbody tr:hover {
-      background: color-mix(in srgb, var(--green) 5%, var(--surface));
-    }
-    .plugin-table tbody tr.row-selected {
-      background: color-mix(in srgb, var(--green) 10%, var(--surface));
-    }
-    .plugin-table th,
-    .plugin-table td {
-      white-space: normal;
-      vertical-align: middle;
-      padding: 12px 16px;
-    }
     .plugin-table .plugin-name {
       display: flex;
       align-items: center;

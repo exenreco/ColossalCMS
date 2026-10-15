@@ -289,6 +289,86 @@ export async function ensureThemes(db) {
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
+      "glossy-contact-messaging-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-sidebar-natural-height-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-page-sidebars-trivia-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-restore-page-templates-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-sidebar-border-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-sidebar-widgets-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-desktop-sidebar-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-particle-404-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-posts-heading-divider-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
+      "glossy-remove-projects-resume-v1",
+      migrateGlasseyDocument,
+    ))
+  )
+    return;
+  if (
+    !(await ensureThemeDocumentUpgrade(
+      db,
       "glossy-identity-menu-v1",
       (document) => {
         if (isGlasseyTheme(document.manifest?.id))

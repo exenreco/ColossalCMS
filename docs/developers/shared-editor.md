@@ -102,3 +102,17 @@ General > Site Logo (`siteLogoId`) supplies Site Identity images. General > Site
 The native Search block submits a GET request to `/search?q=…`. Its Inspector offers **Glass**, **Dark**, and **Light Outline** styles and **Expand** or **Inline** presentation. Expand opens from the search icon; Inline stays at its configured width while focused. Enter/Return submits, the thin clear control empties the field, and Escape closes an expanded search. Search blocks can also be children of Menu and Menu Item blocks.
 
 The Divider block renders a semantic `<hr>`. Its controls configure line color, thickness, solid/dashed/dotted/double style, percentage width, alignment, and vertical spacing. It supports the same shared appearance controls and block actions as other native blocks.
+
+## Glossy particle 404
+
+Glossy's 404 template uses a full viewport canvas and native blocks for the site name, message, and home link. Its theme-registered `glossy/particle-text` block exposes text, particle color, interaction radius, and interaction strength in the Inspector. Pointer movement repels particles; clicking or tapping scatters nearby particles, which return to their text positions.
+
+`hydrateParticleText` runs in the trusted frontend/editor host, so template markup needs no scripts or iframe sandbox changes. A semantic heading supplies the accessible and JavaScript-free fallback. Reduced motion displays static particles. The renderer caps particle count and device pixel ratio, pauses in hidden tabs, and releases animation frames, observers, and event listeners when removed. The one-time migration updates published and draft Glossy documents and preserves subsequent template edits.
+
+## Sidebar content blocks
+
+**On this page** (`core/table-of-contents`) builds navigation from headings inside the current post/page Content block. Inspector controls set the label, first/last heading levels, numbering, active-section highlighting, and scroll offset. The trusted host creates unique heading anchors, preserves authored IDs, updates navigation after editor changes, and respects reduced motion. Template titles, sidebar headings, and post-list cards are excluded. Section navigation requires the frontend/editor host JavaScript.
+
+**Project details** (`core/project-details`) reads the current entry's `details.panelData` by default. In the post/page editor, expand **Project details** to configure `projectType`, `projectYear`, `projectTechnologies` (comma separated), `projectLiveUrl`, and `projectRepositoryUrl`. An existing `projectCategory` supplies the type when `projectType` is empty. Alternatively select **custom** in the block Inspector and enter block-specific values. Controls hide/show type, year, technologies, and links and choose whether links open in a new tab. Empty values are omitted; entirely empty details produce no panel. Public links accept HTTP/HTTPS URLs without embedded credentials.
+
+Glossy adds these blocks beneath Search in its shared Sidebar once. Desktop sidebars remain sticky within their column and stop before the footer. They grow naturally with content and use the page scrollbar instead of an inner scrollbar. Tablet/mobile layouts stack beneath the post content. Subsequent authored block changes are preserved by the migration.

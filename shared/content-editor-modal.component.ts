@@ -316,6 +316,27 @@ import { SeoPanelComponent } from "./seo-panel.component";
               </div>
             </details>
           }
+          <details class="editor-option-panel">
+            <summary>Project details<cl-icon name="chevron" /></summary>
+            <div class="editor-option-content">
+              @for (field of projectDetailFields; track field.key) {
+                <label
+                  >{{ field.label
+                  }}<input
+                    [ngModel]="entry.details!.panelData?.[field.key] || ''"
+                    (ngModelChange)="
+                      setPanel(field.key, $event); scheduleCanvas()
+                    "
+                    [placeholder]="field.placeholder"
+                    [attr.maxlength]="field.maxlength"
+                /></label>
+              }
+              <p class="field-note">
+                Displayed by Project details blocks using this page or post's
+                content.
+              </p>
+            </div>
+          </details>
           @for (panel of panels.panels(); track panel.id) {
             @if (panel.id === "template") {
               <h3 class="editor-inspector-section-label">Template</h3>
@@ -835,6 +856,33 @@ export class ContentEditorModalComponent implements AfterViewInit, OnDestroy {
   router = inject(Router);
   media = inject(MediaSelectionService);
   panels = inject(ContentEditorPanelRegistry);
+  readonly projectDetailFields = [
+    {
+      key: "projectType",
+      label: "Project type",
+      placeholder: "Website, application, or case study",
+      maxlength: 200,
+    },
+    { key: "projectYear", label: "Year", placeholder: "2026", maxlength: 40 },
+    {
+      key: "projectTechnologies",
+      label: "Technologies",
+      placeholder: "Angular, TypeScript, MongoDB",
+      maxlength: 1000,
+    },
+    {
+      key: "projectLiveUrl",
+      label: "Live site URL",
+      placeholder: "https://example.com",
+      maxlength: 2000,
+    },
+    {
+      key: "projectRepositoryUrl",
+      label: "Repository URL",
+      placeholder: "https://github.com/owner/project",
+      maxlength: 2000,
+    },
+  ];
   context = inject(ContentEditorContext);
   themeState = inject(ThemeEditorState);
   automation = inject(EditorAutomationApi);

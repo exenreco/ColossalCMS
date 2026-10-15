@@ -1,5 +1,7 @@
 // Keep the installed identity and asset URLs stable for existing sites and exports.
 import { upgradeGlasseyNativeBlocks } from "./glassey-native-blocks.mjs";
+import { upgradeGlossyNotFound } from "./glossy-not-found.mjs";
+import { upgradeGlossyContact } from "./glossy-contact.mjs";
 export const GLASSEY_THEME_ID = "com.colossal.theme.colossal-2027";
 
 export function isGlasseyTheme(id) {
@@ -13,6 +15,12 @@ export function isGlasseyTheme(id) {
 export function migrateGlasseyDocument(document) {
   if (!isGlasseyTheme(document?.manifest?.id)) return document;
   document.manifest = migrateGlasseyManifest(document.manifest);
+  for (const id of ["projects", "resume"]) {
+    if (!document.templates?.[id]) continue;
+    delete document.templates[id];
+    delete document.html?.[`templates/${id}.html`];
+    delete document.compiled;
+  }
   // Glossy's base colors and typography are scoped to its real HTML body.
   // Preserve authored template classes when a replacement root lost this class.
   for (const root of Object.values(document.templates || {})) {
@@ -56,6 +64,14 @@ export function migrateGlasseyDocument(document) {
   expandGlossyCopyright(document);
   glassGlossyFooter(document);
   upgradeGlossySingleColumns(document);
+  repairGlossyPageTemplates(document);
+  upgradeGlossySidebar(document);
+  addGlossySidebarWidgets(document);
+  addGlossySidebarBorder(document);
+  addGlossySidebarTrivia(document);
+  addGlossyPageSidebars(document);
+  removeGlossySidebarScroll(document);
+  upgradeGlossyContact(document);
   upgradeGlossyCrossedLines(document);
   darkenGlossyOverlay(document);
   gradientGlossyMobileOverlay(document);
@@ -78,7 +94,8 @@ export function migrateGlasseyDocument(document) {
   fillGlossySearchCardHeight(document);
   twoColumnGlossySearch(document);
   repairGlossyPostsArchive(document);
-  refineGlossyProjectsHeading(document);
+  refineGlossyPostsHeading(document);
+  upgradeGlossyNotFound(document);
   for (const node of document.templates?.home?.children || []) {
     if (
       String(node.settings?.classes || "")
@@ -103,6 +120,9 @@ export function migrateGlasseyManifest(manifest) {
       ? "Glossy"
       : manifest.name,
     isCore: false,
+    templates: (manifest.templates || []).filter(
+      (template) => !["projects", "resume"].includes(template.id),
+    ),
   };
 }
 
@@ -542,6 +562,285 @@ ${marker}
 .theme-root .c27-single-main,.theme-root .c27-single-sidebar{min-width:0}
 .theme-root .c27-single-main h1{font-size:clamp(36px,4vw,64px);letter-spacing:-2px}
 @media(max-width:600px){.theme-root .c27-single-layout{padding:0 24px;margin:40px auto}}
+`;
+  delete document.compiled;
+}
+
+/** Restore only the content-only Page layouts produced by the portfolio import. */
+function repairGlossyPageTemplates(document) {
+  const marker = "/* Glossy restored page template chrome */";
+  if (document.css?.includes(marker)) return;
+  for (const id of ["default", "full-width"]) {
+    const root = document.templates?.[id];
+    if (
+      !root?.id?.startsWith("blk_portfolio_") ||
+      !root.children?.every((node) =>
+        ["core/title", "core/excerpt", "core/post-content"].includes(node.type),
+      )
+    )
+      continue;
+    const make = (type, settings = {}, children) => ({
+      id: "glossy-page-" + crypto.randomUUID(),
+      type,
+      settings,
+      ...(children ? { children } : {}),
+    });
+    const title =
+      root.children.find((node) => node.type === "core/title") ||
+      make("core/title", { level: "h1" });
+    title.settings = {
+      ...title.settings,
+      fontSize: 36,
+      lineHeight: 44,
+      classes: [title.settings?.classes, "c27-page-title"]
+        .filter(Boolean)
+        .join(" "),
+    };
+    const content =
+      root.children.find((node) => node.type === "core/post-content") ||
+      make("core/post-content");
+    root.settings ||= {};
+    root.settings.classes = String(root.settings.classes || "")
+      .split(/\s+/)
+      .filter((value) => value && value !== "c27-section")
+      .join(" ");
+    root.children = [
+      make("theme/part-header"),
+      make(
+        "core/container",
+        {
+          classes: "c27-article c27-page-main",
+          maxWidth: id === "full-width" ? 1600 : 1280,
+        },
+        [title, content],
+      ),
+      make("theme/part-footer"),
+    ];
+  }
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-page-main{width:100%;padding:40px 48px;box-sizing:border-box}
+.theme-root .c27-page-title h1{font-size:inherit;line-height:inherit;letter-spacing:-1px}
+@media(max-width:600px){.theme-root .c27-page-main{padding:32px 24px}}
+`;
+  delete document.compiled;
+}
+
+/** Keep one configurable Trivia block in the shared sidebar. */
+function addGlossySidebarTrivia(document) {
+  const marker = "/* Glossy shared sidebar trivia */";
+  const sidebar = document.parts?.sidebar;
+  if (!sidebar || document.css?.includes(marker)) return;
+  sidebar.children ||= [];
+  const contains = (node) =>
+    node.type === "trivia/quiz" || node.children?.some(contains);
+  if (!contains(sidebar))
+    sidebar.children.push({
+      id: "glossy-sidebar-trivia-" + crypto.randomUUID(),
+      type: "trivia/quiz",
+      settings: {
+        title: "Quick trivia",
+        description: "Test your knowledge of this content.",
+        scope: "current",
+        questionCount: 0,
+        answerStyle: "multiple-choice",
+        classes: "c27-sidebar-trivia",
+      },
+    });
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-sidebar-trivia{margin-top:28px}
+.theme-root .c27-sidebar-trivia:empty{display:none}
+.theme-root .theme-part-sidebar .cl-trivia{padding:20px;border-radius:16px;background-color:#17191bc9;border-color:#ffffff20;backdrop-filter:blur(20px)}
+.theme-root .theme-part-sidebar .cl-trivia h3{font-size:18px;line-height:26px;letter-spacing:-0.4px}
+.theme-root .theme-part-sidebar .cl-trivia-options{grid-template-columns:1fr}
+.theme-root .theme-part-sidebar .cl-trivia p{font-size:13px;line-height:21px}
+.theme-root .theme-part-sidebar .cl-trivia .cl-trivia-prompt{font-size:14px;line-height:22px}
+`;
+  delete document.compiled;
+}
+
+/** Add the shared sidebar to page layouts without copying or replacing their content. */
+function addGlossyPageSidebars(document) {
+  const marker = "/* Glossy page templates with shared sidebar */";
+  if (document.css?.includes(marker)) return;
+  const contains = (node) =>
+    node.type === "theme/part-sidebar" || node.children?.some(contains);
+  const make = (type, settings = {}, children) => ({
+    id: "glossy-page-sidebar-" + crypto.randomUUID(),
+    type,
+    settings,
+    ...(children ? { children } : {}),
+  });
+  for (const template of document.manifest.templates || []) {
+    if (!template.appliesTo?.includes("page")) continue;
+    const root = document.templates?.[template.id];
+    if (!root || contains(root)) continue;
+    const header =
+      root.children?.filter((node) => node.type === "theme/part-header") || [];
+    const footer =
+      root.children?.filter((node) => node.type === "theme/part-footer") || [];
+    const content =
+      root.children?.filter(
+        (node) =>
+          !["theme/part-header", "theme/part-footer"].includes(node.type),
+      ) || [];
+    let main;
+    if (
+      content.length === 1 &&
+      content[0].type === "core/container" &&
+      String(content[0].settings?.classes || "")
+        .split(/\s+/)
+        .includes("c27-article")
+    ) {
+      main = content[0];
+      main.type = "core/column";
+      main.settings ||= {};
+      main.settings.classes = String(main.settings.classes || "")
+        .split(/\s+/)
+        .filter(
+          (value) => value && !["c27-article", "c27-page-main"].includes(value),
+        )
+        .concat("c27-single-main c27-page-column")
+        .join(" ");
+      main.settings.width = "2fr";
+      for (const key of ["padding", "margin", "maxWidth"])
+        delete main.settings[key];
+    } else
+      main = make(
+        "core/column",
+        { width: "2fr", classes: "c27-single-main c27-page-column" },
+        content,
+      );
+    root.children = [
+      ...header,
+      make(
+        "core/columns",
+        {
+          classes: "c27-single-layout c27-page-layout",
+          gap: 48,
+          stackOnMobile: true,
+          maxWidth: template.id === "full-width" ? 1600 : 1280,
+        },
+        [
+          main,
+          make(
+            "core/column",
+            { width: "1fr", classes: "c27-single-sidebar c27-page-sidebar" },
+            [make("theme/part-sidebar")],
+          ),
+        ],
+      ),
+      ...footer,
+    ];
+  }
+  document.css = (document.css || "") + "\n" + marker + "\n";
+  delete document.compiled;
+}
+
+/** Separate the desktop sidebar from the post content with a subtle rule. */
+function addGlossySidebarBorder(document) {
+  const marker = "/* Glossy desktop sidebar left border */";
+  if (document.css?.includes(marker)) return;
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+@media(min-width:1025px){.theme-root .c27-single-sidebar{border-style:solid;border-width:0 0 0 1px;border-color:#ffffff20}}
+`;
+  delete document.compiled;
+}
+
+/** Let expanded sidebar widgets use the page scrollbar instead of a nested scroller. */
+function removeGlossySidebarScroll(document) {
+  const marker = "/* Glossy sidebar natural height without inner scrolling */";
+  if (document.css?.includes(marker)) return;
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .theme-part-sidebar{max-height:none;overflow:visible}
+`;
+  delete document.compiled;
+}
+
+/** Pin the sidebar within its column without covering the shared footer. */
+function upgradeGlossySidebar(document) {
+  const marker = "/* Glossy desktop pinned sidebar and dark search */";
+  if (document.css?.includes(marker)) return;
+  const visit = (node) => {
+    if (!node) return;
+    if (node.type === "core/search") {
+      node.settings ||= {};
+      node.settings.searchStyle = "dark";
+      node.settings.presentation = "inline";
+    }
+    node.children?.forEach(visit);
+  };
+  visit(document.parts?.sidebar);
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+@media(min-width:1025px){.theme-root .c27-single-sidebar{align-self:stretch}.theme-root .theme-part-sidebar{position:sticky;top:120px;max-height:calc(100vh - 144px);overflow:auto}}
+@media(max-width:1024px){.theme-root .c27-single-layout>.theme-layout{grid-template-columns:1fr}.theme-root .theme-part-sidebar{position:relative;top:0;max-height:none;overflow:visible}}
+`;
+  delete document.compiled;
+}
+
+/** Add reusable navigation and per-entry project metadata to the shared sidebar. */
+function addGlossySidebarWidgets(document) {
+  const marker = "/* Glossy sidebar section navigation and project details */";
+  const root = document.parts?.sidebar;
+  if (!root || document.css?.includes(marker)) return;
+  root.children ||= [];
+  for (const [type, settings, classes] of [
+    [
+      "core/table-of-contents",
+      {
+        title: "On this page",
+        minLevel: "h2",
+        maxLevel: "h3",
+        highlightCurrent: true,
+        scrollOffset: 120,
+      },
+      "c27-sidebar-toc",
+    ],
+    [
+      "core/project-details",
+      {
+        title: "Project details",
+        source: "content",
+        showType: true,
+        showYear: true,
+        showTechnologies: true,
+        showLinks: true,
+        openNewTab: true,
+      },
+      "c27-sidebar-details",
+    ],
+  ]) {
+    if (!root.children.some((node) => node.type === type))
+      root.children.push({
+        id: "glossy-sidebar-" + crypto.randomUUID(),
+        type,
+        settings: { ...settings, classes },
+      });
+  }
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-sidebar-toc,.theme-root .c27-sidebar-details{margin-top:28px}
+.theme-root .c27-sidebar-details:empty{display:none}
+.theme-root .theme-part-sidebar .theme-toc,.theme-root .theme-part-sidebar .theme-project-details{padding:20px;background-color:#17191bc9;border:1px solid #ffffff20;border-radius:16px;backdrop-filter:blur(20px)}
+.theme-root .theme-part-sidebar .theme-toc h3,.theme-root .theme-part-sidebar .theme-project-details h3{font-size:18px;line-height:26px;letter-spacing:-0.4px;margin:0 0 18px}
+.theme-root .theme-part-sidebar .theme-toc a[aria-current]{color:#c5e5ff}
+.theme-root .theme-toc-empty{font-size:13px;line-height:21px;opacity:0.65}
 `;
   delete document.compiled;
 }
@@ -1170,59 +1469,48 @@ function repairGlossyPostsArchive(document) {
   delete document.compiled;
 }
 
-/** A readable Projects title with an independently editable Divider below it. */
-function refineGlossyProjectsHeading(document) {
-  const marker = "/* Glossy Projects heading and divider */";
-  const root = document.templates?.projects;
-  if (!root || document.css?.includes(marker)) return;
-  let parent = root;
-  let index =
-    root.children?.findIndex(
-      (n) =>
-        n.type === "core/title" ||
-        (n.type === "core/heading" && n.settings.level === "h1"),
-    ) ?? -1;
-  if (index < 0) {
-    index = root.children?.[0]?.type === "theme/part-header" ? 1 : 0;
-    root.children ||= [];
-    root.children.splice(index, 0, {
-      id: "glossy-projects-title-" + crypto.randomUUID(),
-      type: "core/title",
-      settings: { level: "h1" },
-    });
-  }
-  const heading = parent.children[index];
-  heading.settings.fontSize = 36;
-  heading.settings.lineHeight = 44;
-  heading.settings.classes = [
-    ...new Set(
-      String(heading.settings.classes || "")
-        .split(/\s+/)
-        .filter(Boolean)
-        .concat("c27-projects-heading"),
-    ),
-  ].join(" ");
-  if (parent.children[index + 1]?.type !== "core/divider")
-    parent.children.splice(index + 1, 0, {
-      id: "glossy-projects-divider-" + crypto.randomUUID(),
-      type: "core/divider",
-      settings: {
-        lineColor: "#ffffff26",
-        thickness: 1,
-        lineStyle: "solid",
-        dividerWidth: 100,
-        align: "center",
-        spacing: 16,
-        classes: "c27-projects-divider",
-      },
-    });
+/** Keep archive heading typography independent of the oversized landing heading. */
+function refineGlossyPostsHeading(document) {
+  const marker = "/* Glossy Posts heading and divider */";
+  if (document.css?.includes(marker)) return;
+  const visit = (node) => {
+    const children = node?.children || [];
+    const index = children.findIndex(
+      (child) =>
+        child.type === "core/title" ||
+        (child.type === "core/heading" && child.settings?.level === "h1"),
+    );
+    if (index < 0) return children.some(visit);
+    const heading = children[index];
+    heading.settings ||= {};
+    heading.settings.fontSize = 36;
+    heading.settings.lineHeight = 44;
+    heading.settings.classes = [
+      ...new Set(
+        String(heading.settings.classes || "")
+          .split(/\s+/)
+          .filter(Boolean)
+          .concat("c27-posts-heading"),
+      ),
+    ].join(" ");
+    if (children[index + 1]?.type !== "core/divider")
+      children.splice(index + 1, 0, {
+        id: "glossy-posts-divider-" + crypto.randomUUID(),
+        type: "core/divider",
+        settings: {
+          lineColor: "#ffffff26",
+          thickness: 1,
+          lineStyle: "solid",
+          dividerWidth: 100,
+          align: "center",
+          spacing: 16,
+        },
+      });
+    return true;
+  };
+  if (!visit(document.templates?.["post-archive"])) return;
   document.css =
     (document.css || "") +
-    `
-${marker}
-.theme-root .c27-projects-heading h1{font-size:inherit;line-height:inherit;letter-spacing:-1px}
-.theme-root .c27-projects-heading,.theme-root .c27-projects-divider{max-width:1280px;margin:0 auto;padding-left:48px;padding-right:48px;box-sizing:border-box}
-@media(max-width:600px){.theme-root .c27-projects-heading,.theme-root .c27-projects-divider{padding-left:24px;padding-right:24px}}
-`;
+    `\n${marker}\n.theme-root .c27-posts-heading h1{font-size:inherit;line-height:inherit;letter-spacing:-1px}\n`;
   delete document.compiled;
 }

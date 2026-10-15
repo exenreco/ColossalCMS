@@ -317,22 +317,6 @@ export function colossal2027Theme() {
     contact(),
     part("footer"),
   ]);
-  for (const [id, name, sections] of [
-    ["projects", "Projects", [work(), contact()]],
-    ["resume", "Resume", [resume(), about(), contact()]],
-  ]) {
-    d.manifest.templates.push({
-      id,
-      name,
-      file: `templates/${id}.html`,
-      appliesTo: ["page"],
-    });
-    d.templates[id] = box("c27-body", [
-      part("header"),
-      ...sections,
-      part("footer"),
-    ]);
-  }
   d.css = `
 .theme-root.c27-body{margin:0;display:flow-root;background-color:#0c0d10;background-image:radial-gradient(ellipse at 78% 12%,#20253144,transparent 42%);color:#f1f2f4;font-family:Arial,Helvetica,sans-serif;line-height:1.7}
 .theme-root.c27-body *{box-sizing:border-box}

@@ -115,11 +115,131 @@ html[data-admin-mode="dark"] cl-admin .plugin-view-toggle button.selected {
   background: #56df951a;
   color: var(--green);
 }
-html[data-admin-mode="dark"] cl-admin .plugin-table tbody tr:nth-child(odd) {
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.plugin-table, .admin-striped-table)
+  tbody
+  tr:nth-child(odd) {
   background: #ffffff04;
 }
-html[data-admin-mode="dark"] cl-admin .plugin-table tbody tr:nth-child(even) {
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.plugin-table, .admin-striped-table)
+  tbody
+  tr:nth-child(even) {
   background: var(--surface);
+}
+
+/* Inline checkbox rows override the stacked labels used by ordinary form fields. */
+cl-admin .form-content label.admin-checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+cl-admin .form-content .admin-checkbox-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+cl-admin .form-content .admin-checkbox-row > span {
+  min-width: 0;
+}
+
+/* Plugin-declared submenus share the same navigation rail and active tree. */
+cl-admin .sidebar .admin-nav-parent {
+  cursor: pointer;
+}
+cl-admin .sidebar .admin-submenu-caret {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.18s ease;
+}
+cl-admin .sidebar .nav-count + .admin-submenu-caret {
+  margin-left: 0;
+}
+cl-admin .sidebar .admin-nav-item.open > a .admin-submenu-caret {
+  transform: rotate(90deg);
+}
+cl-admin .sidebar .admin-submenu {
+  list-style: none;
+  margin: 4px 0 8px 17px;
+  padding: 4px 0 4px 12px;
+  border-left: 1px solid #afd5bd40;
+  background: #ffffff04;
+  border-radius: 0 7px 7px 0;
+}
+cl-admin .sidebar .admin-submenu[hidden] {
+  display: none;
+}
+cl-admin .sidebar .admin-submenu li {
+  margin: 0;
+  padding: 0;
+}
+cl-admin .sidebar .admin-submenu a {
+  min-height: 32px;
+  padding: 7px 9px;
+  font-size: 12px;
+  white-space: normal;
+}
+cl-admin .sidebar .admin-submenu a.active {
+  color: var(--green);
+  background: #56df9510;
+  font-weight: 600;
+}
+cl-admin .nav-expanded .sidebar .navigation-tree .admin-submenu a::before {
+  display: block;
+  left: -13px;
+  width: 13px;
+}
+cl-admin .sidebar .admin-nav-item {
+  position: relative;
+}
+cl-admin .sidebar .admin-nav-item::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 0;
+  bottom: -4px;
+  border-left: 1px solid #afd5bd4d;
+  display: none;
+  pointer-events: none;
+}
+cl-admin .nav-expanded .sidebar .admin-nav-item::before {
+  display: block;
+}
+cl-admin .sidebar .admin-nav-item:first-child::before {
+  top: 18px;
+}
+cl-admin .sidebar .admin-nav-item:last-child::before {
+  bottom: auto;
+  height: 18px;
+}
+cl-admin .sidebar .navigation-tree .admin-nav-item > a::before {
+  top: 0;
+  height: 18px;
+  border-left: 1px solid currentColor;
+  border-radius: 0 0 0 7px;
+}
+cl-admin .sidebar .navigation-tree .admin-nav-item > a:first-child::before {
+  top: 0;
+  height: 18px;
+}
+cl-admin .sidebar .admin-nav-parent .admin-submenu-caret {
+  display: none;
+}
+cl-admin .nav-expanded .sidebar .admin-nav-parent .admin-submenu-caret {
+  display: block;
+}
+cl-admin .app-shell:not(.nav-expanded) .sidebar .admin-submenu {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  cl-admin .sidebar .admin-submenu-caret {
+    transition: none;
+  }
 }
 
 /* One navigation list: expanding reveals labels beside the same icons. */

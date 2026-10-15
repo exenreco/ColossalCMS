@@ -317,6 +317,36 @@ test("published autosave preserves live text and creates a recoverable revision;
     409,
   );
 });
+test("Plugin submenu declarations stay within their admin namespace and reject invalid children", () => {
+  const make = (children) => {
+    const value = manifest();
+    value.admin.menu.children = children;
+    return value;
+  };
+  const path = manifest().admin.menu.path;
+  const child = {
+    id: "settings",
+    label: "Settings",
+    path,
+    queryParams: { tab: "settings" },
+  };
+  assert.doesNotThrow(() => validateManifest(make([child])));
+  assert.doesNotThrow(() =>
+    validateManifest(make([{ ...child, path: path + "/new" }])),
+  );
+  for (const children of [
+    [child, child],
+    [{ ...child, path: "https://example.com" }],
+    [{ ...child, path: "/admin/settings" }],
+    [{ ...child, path: path + "/../settings" }],
+    [{ ...child, children: [] }],
+    [{ ...child, label: "" }],
+    [{ ...child, queryParams: { tab: { nested: true } } }],
+    "invalid",
+  ])
+    assert.throws(() => validateManifest(make(children)), /Submenu/);
+});
+
 test("ZIP parser rejects traversal, missing manifest, corruption, and incompatible versions", () => {
   assert.throws(
     () => inspectZip(zipSync({ "../outside.mjs": strToU8("bad") })),

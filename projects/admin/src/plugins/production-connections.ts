@@ -9,6 +9,7 @@ import { FormsModule } from "@angular/forms";
 import { DatePipe } from "@angular/common";
 import { IconComponent } from "../../../../shared/icon.component";
 import { ApiService } from "../../../../shared/api.service";
+import { adminSections } from "../../../../shared/admin-sections";
 
 interface EnvField {
   key: string;
@@ -645,7 +646,23 @@ export class ProductionConnectionsComponent implements OnInit, OnDestroy {
     "Connection Console",
     "Heartbeat",
   ];
-  tab = "Setup";
+  sectionState = adminSections(
+    {
+      setup: "Setup",
+      database: "Database Provider",
+      storage: "Storage Provider",
+      console: "Connection Console",
+      heartbeat: "Heartbeat",
+    },
+    "Setup",
+    () => {
+      this.shown = {};
+      this.showPassword = false;
+    },
+  );
+  get tab() {
+    return this.sectionState.value();
+  }
   get sectionDescription() {
     const descriptions: Record<string, string> = {
       Setup:
@@ -660,7 +677,7 @@ export class ProductionConnectionsComponent implements OnInit, OnDestroy {
     return descriptions[this.tab] || "";
   }
   selectSection(section: string) {
-    this.tab = section;
+    this.sectionState.select(section);
     this.shown = {};
     this.showPassword = false;
   }

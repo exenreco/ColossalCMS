@@ -13,7 +13,11 @@
       "icon": "posts",
       "path": "/admin/posts",
       "order": 30,
-      "group": "main"
+      "group": "main",
+      "children": [
+        { "id": "all", "label": "All Posts", "path": "/admin/posts" },
+        { "id": "new", "label": "Add New Post", "path": "/admin/posts/new" }
+      ]
     },
     "skeleton": {
       "component": "PostsListSkeletonComponent",

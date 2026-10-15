@@ -44,6 +44,81 @@
     "toolbar": ["slotId", "format", "sizing", "width", "height"]
   },
   {
+    "type": "messaging/form",
+    "label": "Message form",
+    "category": "Plugin",
+    "pluginId": "com.colossal.messaging",
+    "icon": "fas fa-envelope",
+    "container": false,
+    "fields": [
+      {
+        "key": "title",
+        "label": "Heading override",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "description",
+        "label": "Introduction override",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "columns",
+        "label": "Field columns",
+        "type": "select",
+        "default": "1",
+        "options": ["1", "2"]
+      }
+    ],
+    "toolbar": ["columns"]
+  },
+  {
+    "type": "trivia/quiz",
+    "label": "Trivia",
+    "category": "Plugin",
+    "pluginId": "com.colossal.trivia",
+    "icon": "fas fa-question-circle",
+    "container": false,
+    "fields": [
+      {
+        "key": "title",
+        "label": "Heading",
+        "type": "text",
+        "default": "Test your knowledge"
+      },
+      {
+        "key": "description",
+        "label": "Introduction",
+        "type": "text",
+        "default": "How well do you know this site? Complete each statement."
+      },
+      {
+        "key": "scope",
+        "label": "Question source",
+        "type": "select",
+        "default": "default",
+        "options": ["default", "all", "pages", "posts", "current"]
+      },
+      {
+        "key": "questionCount",
+        "label": "Questions per round (0 = plugin default)",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 20
+      },
+      {
+        "key": "answerStyle",
+        "label": "Answer style",
+        "type": "select",
+        "default": "multiple-choice",
+        "options": ["multiple-choice", "text"]
+      }
+    ],
+    "toolbar": ["scope", "questionCount", "answerStyle"]
+  },
+  {
     "type": "core/container",
     "label": "Container",
     "category": "Layout",
@@ -1624,5 +1699,138 @@
       "background",
       "align"
     ]
+  },
+  {
+    "type": "core/table-of-contents",
+    "label": "On this page",
+    "category": "Dynamic",
+    "icon": "fas fa-list-ol",
+    "container": false,
+    "fields": [
+      {
+        "key": "title",
+        "label": "Heading",
+        "type": "text",
+        "default": "On this page"
+      },
+      {
+        "key": "minLevel",
+        "label": "First heading level",
+        "type": "select",
+        "default": "h2",
+        "options": ["h1", "h2", "h3", "h4"]
+      },
+      {
+        "key": "maxLevel",
+        "label": "Last heading level",
+        "type": "select",
+        "default": "h3",
+        "options": ["h2", "h3", "h4", "h5", "h6"]
+      },
+      {
+        "key": "numbered",
+        "label": "Numbered list",
+        "type": "checkbox",
+        "default": false
+      },
+      {
+        "key": "highlightCurrent",
+        "label": "Highlight current section",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "scrollOffset",
+        "label": "Scroll offset (px)",
+        "type": "number",
+        "default": 120,
+        "min": 0,
+        "max": 300
+      }
+    ],
+    "toolbar": ["minLevel", "maxLevel", "numbered"]
+  },
+  {
+    "type": "core/project-details",
+    "label": "Project details",
+    "category": "Dynamic",
+    "icon": "fas fa-briefcase",
+    "container": false,
+    "fields": [
+      {
+        "key": "title",
+        "label": "Heading",
+        "type": "text",
+        "default": "Project details"
+      },
+      {
+        "key": "source",
+        "label": "Details source",
+        "type": "select",
+        "default": "content",
+        "options": ["content", "custom"]
+      },
+      {
+        "key": "projectType",
+        "label": "Custom project type",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "year",
+        "label": "Custom year",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "technologies",
+        "label": "Custom technologies (comma separated)",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "liveUrl",
+        "label": "Custom live site URL",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "repositoryUrl",
+        "label": "Custom repository URL",
+        "type": "text",
+        "default": ""
+      },
+      {
+        "key": "showType",
+        "label": "Show project type",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "showYear",
+        "label": "Show year",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "showTechnologies",
+        "label": "Show technologies",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "showLinks",
+        "label": "Show project links",
+        "type": "checkbox",
+        "default": true
+      },
+      {
+        "key": "openNewTab",
+        "label": "Open links in new tab",
+        "type": "checkbox",
+        "default": true
+      }
+    ],
+    "toolbar": ["source", "showTechnologies", "showLinks"]
   }
 ]

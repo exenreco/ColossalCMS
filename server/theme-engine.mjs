@@ -32,6 +32,11 @@ import {
 import { fail } from "./v2-utils.mjs";
 import { pluginBlocks } from "./plugin-blocks.mjs";
 import {
+  renderProjectDetails,
+  renderTableOfContents,
+  SIDEBAR_BLOCK_CSS,
+} from "./sidebar-blocks.mjs";
+import {
   BRILLIANT_MODEL_URL,
   BRILLIANT_POSTER_URL,
   modelSourceUrl,
@@ -243,6 +248,23 @@ export function sanitizeTemplate(
         "data-geometry-count",
         "data-geometry-speed",
         "data-geometry-distance",
+        "data-particle-text",
+        "data-particle-color",
+        "data-particle-radius",
+        "data-particle-strength",
+        "data-toc-min",
+        "data-toc-max",
+        "data-toc-offset",
+        "data-toc-highlight",
+        "data-toc-numbered",
+        "data-trivia-scope",
+        "data-trivia-count",
+        "data-trivia-style",
+        "data-trivia-content",
+        "data-trivia-preview",
+        "data-messaging-preview",
+        "data-messaging-title",
+        "data-messaging-description",
         "data-source-block-id",
         "data-content-id",
         "data-theme-template",
@@ -1860,6 +1882,8 @@ function dynamic(type, s, ctx, children) {
     const tag = s.linkHome === false ? "div" : "a";
     return `<${tag} class="theme-site-brand"${tag === "a" ? ' href="/"' : ""} style="display:inline-flex;align-items:center;flex-direction:${s.orientation === "vertical" ? "column" : "row"};gap:${num(s.gap ?? 12, 0, 120)}px">${content}</${tag}>`;
   }
+  if (type === "core/project-details") return renderProjectDetails(s, c);
+  if (type === "core/table-of-contents") return renderTableOfContents(s);
   if (type === "core/title") {
     const text = c?.title || (ctx.kind === "404" ? "Page not found" : "");
     if (!text) return "";
@@ -2256,6 +2280,8 @@ function renderListExcerpt(excerpt, settings) {
 }
 export const BASE_THEME_CSS =
   MENU_CSS +
+  SIDEBAR_BLOCK_CSS +
+  pluginBlocks.styles +
   ".theme-root{min-height:100vh}.theme-root *{box-sizing:border-box}.theme-root img,.theme-root video{max-width:100%;height:auto}.theme-root audio{width:100%}.theme-root figure{margin:20px 0}.theme-root figcaption{font-size:13px;color:#74846a}.theme-menu{display:flex;gap:24px;flex-wrap:wrap}.theme-post-grid article{background:#ffffff;padding:24px;border:1px solid #e0e6da;border-radius:12px}.theme-post-grid a{text-decoration:none}.theme-post-grid h2{line-height:1.4}.theme-root pre{white-space:pre-wrap;background:#eaf0e1;padding:20px}.theme-root input,.theme-root button{font:inherit;padding:10px;border:1px solid #becdb4;border-radius:6px}.theme-pagination{display:flex;gap:24px;justify-content:center;padding:24px}@media(min-width:1025px){.theme-hide-desktop{display:none!important}}@media(min-width:641px) and (max-width:1024px){.theme-hide-tablet{display:none!important}.theme-post-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:640px){.theme-hide-mobile{display:none!important}.theme-columns,.theme-post-grid{grid-template-columns:1fr!important}}";
 export const PICKER_THEME_CSS =
   "@keyframes cl-picker-fade{from{opacity:0}to{opacity:1}}@keyframes cl-picker-slide{from{transform:translateY(24px)}to{transform:translateY(0)}}@keyframes cl-picker-scale{from{transform:scale(.85)}to{transform:scale(1)}}@media(prefers-reduced-motion:reduce){.theme-root [data-block-id]{animation:none!important}}";

@@ -137,15 +137,39 @@ html[data-admin-mode="dark"] cl-admin .badge.scheduled {
 }
 cl-admin .table-scroll,
 cl-admin .plugin-table-wrap,
+cl-admin .admin-table-wrap,
 cl-admin .table-wrap {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
-cl-admin .plugin-table-wrap .plugin-table :is(th, td) {
+cl-admin :is(.plugin-table-wrap, .admin-table-wrap) {
+  overflow-x: auto;
+}
+cl-admin :is(.plugin-table, .admin-striped-table) {
+  min-width: 720px;
+}
+cl-admin :is(.plugin-table, .admin-striped-table) tbody tr:nth-child(odd) {
+  background: color-mix(in srgb, var(--green) 3%, var(--surface));
+}
+cl-admin :is(.plugin-table, .admin-striped-table) tbody tr:nth-child(even) {
+  background: var(--surface);
+}
+cl-admin :is(.plugin-table, .admin-striped-table) tbody tr:hover {
+  background: color-mix(in srgb, var(--green) 5%, var(--surface));
+}
+cl-admin :is(.plugin-table, .admin-striped-table) tbody tr.row-selected {
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+}
+cl-admin
+  :is(.plugin-table-wrap .plugin-table, .admin-table-wrap .admin-striped-table)
+  :is(th, td) {
   padding: 14px 16px;
   vertical-align: middle;
+  white-space: normal;
 }
-cl-admin .plugin-table-wrap .plugin-table .selection-cell {
+cl-admin
+  :is(.plugin-table-wrap .plugin-table, .admin-table-wrap .admin-striped-table)
+  .selection-cell {
   padding: 12px;
 }
 cl-admin .plugin-table-wrap .plugin-table .description {
@@ -323,10 +347,20 @@ cl-admin .admin-modal .dialog-actions {
   padding-top: 20px;
   border-top: 1px solid var(--border);
 }
-html[data-admin-mode="dark"] cl-admin table tbody tr:hover {
+html[data-admin-mode="dark"] cl-admin table tbody tr:hover,
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.plugin-table, .admin-striped-table)
+  tbody
+  tr:hover {
   background: #56df9508;
 }
-html[data-admin-mode="dark"] cl-admin table tbody tr.row-selected {
+html[data-admin-mode="dark"] cl-admin table tbody tr.row-selected,
+html[data-admin-mode="dark"]
+  cl-admin
+  :is(.plugin-table, .admin-striped-table)
+  tbody
+  tr.row-selected {
   background: #56df9514;
 }
 @keyframes admin-drawer-enter {
@@ -416,6 +450,21 @@ cl-admin .admin-bulk-actions .bulk-clear-selection.selection-empty {
 }
 cl-admin .admin-bulk-actions.clear-below [role="status"] {
   grid-column: 1 / -1;
+}
+cl-admin .message-inbox-toolbar .admin-bulk-actions {
+  padding: 0;
+  border: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+cl-admin .message-inbox-toolbar .admin-bulk-actions select {
+  min-width: 0;
+  width: 100%;
+  height: 38px;
+  margin: 0;
+}
+cl-admin .message-inbox-toolbar .admin-bulk-actions > .button {
+  height: 38px;
+  margin: 0;
 }
 cl-admin .content-actions-row {
   align-items: flex-start;

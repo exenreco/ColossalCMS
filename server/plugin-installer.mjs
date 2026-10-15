@@ -174,6 +174,42 @@ export function validateManifest(m) {
     fail(
       "The manifest needs an admin entry component, menu label, path, and integer order.",
     );
+  const children = m.admin.menu.children;
+  if (
+    children !== undefined &&
+    (!Array.isArray(children) ||
+      children.length > 20 ||
+      new Set(children.map((item) => item?.id)).size !== children.length ||
+      children.some(
+        (item) =>
+          !item ||
+          typeof item.id !== "string" ||
+          !/^[a-z][a-z0-9-]{0,49}$/.test(item.id) ||
+          typeof item.label !== "string" ||
+          !item.label.trim() ||
+          item.label.length > 80 ||
+          typeof item.path !== "string" ||
+          !/^\/admin\/[a-z][a-z0-9-]*(?:\/[a-z0-9-]+)*$/.test(item.path) ||
+          !(
+            item.path === m.admin.menu.path ||
+            item.path.startsWith(m.admin.menu.path + "/")
+          ) ||
+          item.children !== undefined ||
+          (item.queryParams !== undefined &&
+            (!item.queryParams ||
+              typeof item.queryParams !== "object" ||
+              Array.isArray(item.queryParams) ||
+              Object.entries(item.queryParams).some(
+                ([key, value]) =>
+                  !/^[a-z][a-z0-9_-]{0,39}$/.test(key) ||
+                  typeof value !== "string" ||
+                  value.length > 200,
+              ))),
+      ))
+  )
+    fail(
+      "Submenu links need unique IDs, labels and paths within the plugin's admin route.",
+    );
   if (
     !Array.isArray(m.frontend?.routes) ||
     m.frontend.routes.some(

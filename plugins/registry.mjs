@@ -13,7 +13,11 @@ import login_security from "./login-security/plugin.manifest.json" with { type: 
 import maintenance from "./maintenance/plugin.manifest.json" with { type: "json" };
 import seo from "./seo/plugin.manifest.json" with { type: "json" };
 import aiAssistant from "./ai-assistant/plugin.manifest.json" with { type: "json" };
+import trivia from "./trivia/plugin.manifest.json" with { type: "json" };
+import messaging from "./messaging/plugin.manifest.json" with { type: "json" };
 export const manifests = [
+  messaging,
+  trivia,
   aiAssistant,
   themes,
   media,

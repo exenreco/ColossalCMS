@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.trivia",
+  "name": "Trivia",
+  "description": "Generate interactive trivia from published pages and posts and display it with the Trivia block.",
+  "isCore": false,
+  "version": "0.0.3",
+  "author": "Colossal Core Team",
+  "icon": "question-circle",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": [] },
+  "admin": {
+    "entryComponent": "TriviaComponent",
+    "menu": {
+      "label": "Trivia",
+      "icon": "question-circle",
+      "path": "/admin/trivia",
+      "order": 960,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

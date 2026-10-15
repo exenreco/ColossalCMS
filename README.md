@@ -33,6 +33,8 @@ All application files live at the **repository root**. Run commands in the direc
 - [Plugins and extensions](#plugins-and-extensions)
   - [Maintenance](#maintenance)
   - [Google Ads](#google-ads)
+  - [Trivia](#trivia)
+  - [Messaging](#messaging)
   - [Advanced SEO](#advanced-seo)
   - [Plugin packages and development](#plugin-packages-and-development)
 - [Authentication and authorization](#authentication-and-authorization)
@@ -977,6 +979,20 @@ The extension integrates **AdSense display ads**, not campaign management or Goo
 Configure verification from **Google Ads → Site verification**: independently enable the meta tag and `/ads.txt`, inspect their previews, and optionally enter custom plain-text ads.txt content. Leave custom content blank to generate Google's entry from the Publisher ID; custom content replaces the entire file. Save to publish. These controls work independently of live ads and default to enabled for existing installations.
 
 On public pages, valid visible units load the validated asynchronous AdSense script once and initialize each unit once. Previews use placeholders. Deactivation suppresses live rendering but retains settings. Account approval and ad availability are outside the CMS.
+
+### Trivia
+
+Install and activate **Trivia**, then configure its source scope, excluded pages/posts and default round length on the Trivia plugin page. Add the **Trivia** block from the editor's Plugin category to display a quiz. Its Inspector controls the heading, introduction, content source, multiple-choice or typed answers, and round length (`0` inherits the plugin default).
+
+Questions are fill-in-the-blank statements extracted from current published page/post content, without an AI provider or new environment variables. Visitors receive correct/incorrect feedback, the source statement and link, and a final round score. Drafts, future scheduled content and the assigned 404 page are excluded. Responses and scores are not stored. See [Trivia configuration, generation and API](docs/developers/trivia.md).
+
+### Messaging
+
+Install and activate **Messaging**, then open **Messaging → Settings** to configure up to 20 fields, labels, required values, field order and confirmation text. Supported fields include text, email, message text, telephone, URL, number, dropdown and checkbox. Add the **Message form** block from the editor's Plugin category; its Inspector provides one- or two-column layout and optional heading/description overrides.
+
+Received messages are saved in the database and displayed in **Messaging → Inbox**, with read/unread, archive, trash/restore and email retry bulk actions. Configure shared outgoing mail under **Settings → SMTP**, then enable notifications and set the recipient in Messaging. A blank recipient uses the SMTP From address. Failed or unconfigured delivery does not discard the message. No Messaging-specific environment variables are needed.
+
+Glossy includes a **Contact** page template with the Message form block and shared Sidebar. Create a page and assign **Contact** in its editor or Quick Edit; creating the template does not create a public page automatically. See [Messaging configuration, delivery and API](docs/developers/messaging.md).
 
 ### Plugin packages and development
 

@@ -13,7 +13,11 @@
       "icon": "pages",
       "path": "/admin/pages",
       "order": 20,
-      "group": "main"
+      "group": "main",
+      "children": [
+        { "id": "all", "label": "All Pages", "path": "/admin/pages" },
+        { "id": "new", "label": "Add New Page", "path": "/admin/pages/new" }
+      ]
     },
     "skeleton": {
       "component": "PagesListSkeletonComponent",

@@ -1,5 +1,15 @@
 /** Bundled SVG drawings shared by the editor, icon picker, and public renderer. */
 export const BLOCK_ICON_PATHS: Record<string, string[]> = {
+  envelope: ["M3 5h18v14H3z", "M3 5l9 7 9-7"],
+  "question-circle": [
+    "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
+    "M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01",
+  ],
+  "list-ol": [
+    "M9 6h12M9 12h12M9 18h12",
+    "M3 4h1v4M3 8h2M3 11h2l-2 3h2M3 17h2l-1 2h1l-1 2H3",
+  ],
+  briefcase: ["M3 7h18v14H3z", "M8 7V3h8v4M3 12h18M10 12v3h4v-3"],
   minus: ["M4 12h16"],
   github: [
     "M9 22v-3.5c-4 .8-4-2-6-2.5M15 22v-3.8c0-1-.3-1.6-.8-2 3-.4 6-1.5 6-6.5a5 5 0 0 0-1.4-3.5c.2-.9.2-2.2-.4-3.5-1.4 0-2.8.8-3.7 1.5a13 13 0 0 0-7.4 0C6.4 3.5 5 2.7 3.6 2.7c-.6 1.3-.6 2.6-.4 3.5a5 5 0 0 0-1.4 3.5c0 5 3 6.1 6 6.5-.5.4-.8 1-.8 2V22",
@@ -147,6 +157,9 @@ export const BLOCK_ICON_PATHS: Record<string, string[]> = {
 };
 
 export const APP_ICON_PATHS: Record<string, string> = {
+  envelope: "M3 5h18v14H3zM3 5l9 7 9-7",
+  "question-circle":
+    "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01",
   ai: "M12 3v3M10 3h4M7 6h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM4 12H2v4h2M20 12h2v4h-2M8 11v2M16 11v2M9 17h6",
   login: "M15 3h6v18h-6M3 12h12M10 7l5 5-5 5",
   download: "M12 3v12M7 10l5 5 5-5M3 16v5h18v-5",

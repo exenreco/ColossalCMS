@@ -33,6 +33,12 @@ export interface Content {
   templateId?: string;
   views30Days?: number;
 }
+export interface AdminSubmenuLink {
+  id: string;
+  label: string;
+  path: string;
+  queryParams?: Record<string, string>;
+}
 export interface Plugin {
   patterns?: import("./block-patterns").BlockPattern[];
   id: string;
@@ -54,6 +60,7 @@ export interface Plugin {
       path: string;
       order?: number;
       group?: "main" | "system";
+      children?: AdminSubmenuLink[];
     };
     skeleton?: {
       component: string;

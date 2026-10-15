@@ -5,6 +5,10 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+export {
+  messagingMessages,
+  messagingTokens,
+} from "../plugins/messaging/schema";
 export const content = sqliteTable(
   "content",
   {

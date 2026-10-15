@@ -13,7 +13,45 @@
       "icon": "settings",
       "path": "/admin/settings",
       "order": 50,
-      "group": "main"
+      "group": "main",
+      "children": [
+        {
+          "id": "general",
+          "label": "General",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "general" }
+        },
+        {
+          "id": "reading",
+          "label": "Reading",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "reading" }
+        },
+        {
+          "id": "appearance",
+          "label": "Appearance",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "appearance" }
+        },
+        {
+          "id": "smtp",
+          "label": "SMTP",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "smtp" }
+        },
+        {
+          "id": "team",
+          "label": "Team & roles",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "team" }
+        },
+        {
+          "id": "api-keys",
+          "label": "API keys",
+          "path": "/admin/settings",
+          "queryParams": { "tab": "api-keys" }
+        }
+      ]
     },
     "skeleton": {
       "component": "SettingsSkeletonComponent",

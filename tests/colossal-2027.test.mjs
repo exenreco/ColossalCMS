@@ -79,9 +79,14 @@ test("Glossy uses native blocks for ordinary content and uses Site Identity and 
     ...Object.values(document.parts),
   ].forEach(visit);
   const html = nodes.filter((node) => node.type === "core/rich-text");
+  for (const pattern of document.manifest.patterns || [])
+    (pattern.blocks || []).forEach(visit);
   assert.equal(html.length, 0);
   assert.equal(document.manifest.name, "Glossy");
-  const identity = nodes.find((node) => node.type === "core/site-brand");
+  const identity = nodes.find(
+    (node) =>
+      node.type === "core/site-brand" && node.settings.display === "logo",
+  );
   assert.equal(identity.settings.display, "logo");
   const menu = nodes.find((node) => node.type === "core/menu");
   assert.equal(menu.settings.mobileIcon, "bars");
@@ -463,8 +468,8 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.equal(d.parts.footer.children[0].children.length, 3);
     assert.match(home.css, /position:sticky/);
     assert.match(home.css, /prefers-reduced-motion:reduce/);
-    assert.ok(d.manifest.templates.some((t) => t.name === "Projects"));
-    assert.ok(d.manifest.templates.some((t) => t.name === "Resume"));
+    assert.ok(!d.manifest.templates.some((t) => t.id === "projects"));
+    assert.ok(!d.manifest.templates.some((t) => t.id === "resume"));
   } finally {
     db.close();
   }
@@ -1210,6 +1215,7 @@ test("theme CSS retains scoped absolute mobile dropdowns while rejecting fixed o
 test("Glossy repairs the imported content-only Posts archive with shared chrome and native listing blocks", () => {
   const d = colossal2027Theme();
   d.css = d.css.replace("/* Glossy restored posts archive */", "");
+  d.css = d.css.replace("/* Glossy Posts heading and divider */", "");
   d.templates["post-archive"] = {
     id: "imported-archive",
     type: "core/container",
@@ -1228,8 +1234,11 @@ test("Glossy repairs the imported content-only Posts archive with shared chrome 
     root.children.map((n) => n.type),
     ["theme/part-header", "core/container", "theme/part-footer"],
   );
-  assert.equal(root.children[1].children[2].type, "core/post-list");
-  assert.equal(root.children[1].children[2].settings.columns, 2);
+  assert.equal(root.children[1].children[0].settings.fontSize, 36);
+  assert.equal(root.children[1].children[0].settings.lineHeight, 44);
+  assert.equal(root.children[1].children[1].type, "core/divider");
+  assert.equal(root.children[1].children[3].type, "core/post-list");
+  assert.equal(root.children[1].children[3].settings.columns, 2);
   assert.equal(root.settings.classes, "c27-body");
   const once = JSON.stringify(d);
   migrateGlasseyDocument(d);

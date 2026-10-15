@@ -170,12 +170,12 @@ export function parseSql(sql, args = []) {
     if (
       (countAlias || group || Object.keys(dateFields).length) &&
       (!countAlias ||
-        !group ||
+        (!group && columns.length !== 1) ||
         join ||
         alias ||
-        columns.length !== group.length + 1 ||
+        columns.length !== (group?.length || 0) + 1 ||
         new Set(columns).size !== columns.length ||
-        !group.every(
+        !(group || []).every(
           (field) => columns.includes(field) && field !== countAlias,
         ))
     )
@@ -198,7 +198,14 @@ export function parseSql(sql, args = []) {
       if (!Number.isInteger(limit) || limit < 1)
         throw new Error("Invalid query limit.");
     }
-    result = { kind, table, columns, filter, sort, limit, alias, join };
+    let offset;
+    if (peek() === "OFFSET") {
+      take();
+      offset = value();
+      if (!limit || !Number.isInteger(offset) || offset < 0)
+        throw new Error("Invalid query offset.");
+    }
+    result = { kind, table, columns, filter, sort, limit, alias, join, offset };
     if (countAlias) result.aggregate = { group, countAlias, dateFields };
   } else if (kind === "INSERT") {
     let ignore = false;
@@ -302,6 +309,17 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
       let rows;
       if (q.aggregate) {
         const { group, countAlias, dateFields } = q.aggregate;
+        if (!group)
+          return {
+            results: [
+              {
+                [countAlias]: await collection.countDocuments(
+                  q.filter,
+                  options,
+                ),
+              },
+            ],
+          };
         const expression = (field) =>
           dateFields[field]
             ? { $substrBytes: ["$" + dateFields[field], 0, 10] }
@@ -324,6 +342,7 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
           },
         ];
         if (Object.keys(q.sort).length) pipeline.push({ $sort: q.sort });
+        if (q.offset) pipeline.push({ $skip: q.offset });
         if (q.limit) pipeline.push({ $limit: q.limit });
         return {
           results: await collection.aggregate(pipeline, options).toArray(),
@@ -360,6 +379,7 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
       } else {
         let query = collection.find(q.filter, options);
         if (Object.keys(q.sort).length) query = query.sort(q.sort);
+        if (q.offset) query = query.skip(q.offset);
         if (q.limit) query = query.limit(q.limit);
         rows = await query.toArray();
       }

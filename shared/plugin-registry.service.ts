@@ -14,7 +14,11 @@ import loginSecurity from "../plugins/login-security/plugin.manifest.json";
 import maintenance from "../plugins/maintenance/plugin.manifest.json";
 import seo from "../plugins/seo/plugin.manifest.json";
 import aiAssistant from "../plugins/ai-assistant/plugin.manifest.json";
+import trivia from "../plugins/trivia/plugin.manifest.json";
+import messaging from "../plugins/messaging/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
+  messaging,
+  trivia,
   aiAssistant,
   themes,
   media,
@@ -33,6 +37,10 @@ export const PLUGIN_MANIFESTS = [
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  MessagingComponent: () =>
+    import("../plugins/messaging/admin").then((m) => m.MessagingComponent),
+  TriviaComponent: () =>
+    import("../plugins/trivia/admin").then((m) => m.TriviaComponent),
   AiAssistantComponent: () =>
     import("../projects/admin/src/plugins/ai-assistant").then(
       (m) => m.AiAssistantComponent,

@@ -33,6 +33,10 @@ test("legacy icon migration preserves core, copied themes, drafts and history an
           "core/menu-item",
           "core/custom-link",
           "core/divider",
+          "core/table-of-contents",
+          "core/project-details",
+          "trivia/quiz",
+          "messaging/form",
         ].includes(b.type),
     );
     original.manifest.blocks.find(

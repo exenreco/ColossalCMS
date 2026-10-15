@@ -52,6 +52,9 @@ export function createPluginRegistry(contributions) {
     if (contribution.metadata) metadata.push(contribution.metadata);
   }
   return Object.freeze({
+    styles: contributions
+      .map((contribution) => contribution.styles || "")
+      .join("\n"),
     ids: Object.freeze([...ids]),
     renderBlock(type, settings, context, helpers) {
       const render = blockRenderers.get(type);

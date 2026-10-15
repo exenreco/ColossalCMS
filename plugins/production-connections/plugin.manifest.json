@@ -15,7 +15,39 @@
       "icon": "globe",
       "path": "/admin/connections",
       "order": 950,
-      "group": "system"
+      "group": "system",
+      "children": [
+        {
+          "id": "setup",
+          "label": "Setup",
+          "path": "/admin/connections",
+          "queryParams": { "tab": "setup" }
+        },
+        {
+          "id": "database",
+          "label": "Database Provider",
+          "path": "/admin/connections",
+          "queryParams": { "tab": "database" }
+        },
+        {
+          "id": "storage",
+          "label": "Storage Provider",
+          "path": "/admin/connections",
+          "queryParams": { "tab": "storage" }
+        },
+        {
+          "id": "console",
+          "label": "Connection Console",
+          "path": "/admin/connections",
+          "queryParams": { "tab": "console" }
+        },
+        {
+          "id": "heartbeat",
+          "label": "Heartbeat",
+          "path": "/admin/connections",
+          "queryParams": { "tab": "heartbeat" }
+        }
+      ]
     },
     "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
   },

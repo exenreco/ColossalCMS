@@ -13,7 +13,6 @@ import { WORKSPACE_STEPS } from "../../../shared/workspace-progress";
 import {
   Router,
   RouterLink,
-  RouterLinkActive,
   RouterOutlet,
   NavigationEnd,
 } from "@angular/router";
@@ -21,6 +20,10 @@ import { ApiService } from "../../../shared/api.service";
 import { IconComponent } from "../../../shared/icon.component";
 import { PluginViewState } from "./plugin-view-state";
 import { MaintenanceState } from "./maintenance-state";
+import { PluginNavigationBadges } from "../../../shared/plugin-navigation-badges.service";
+import { NgTemplateOutlet } from "@angular/common";
+import { Plugin, AdminSubmenuLink } from "../../../shared/models";
+import { AdminToolbar } from "../../../shared/admin-toolbar";
 @Component({
   selector: "cl-admin",
   standalone: true,
@@ -28,9 +31,9 @@ import { MaintenanceState } from "./maintenance-state";
     MediaPickerComponent,
     ScreenOptionsComponent,
     RouterLink,
-    RouterLinkActive,
     RouterOutlet,
     IconComponent,
+    NgTemplateOutlet,
   ],
   styles: `
     .maintenance-switch {
@@ -82,6 +85,79 @@ import { MaintenanceState } from "./maintenance-state";
   template: `
     @if (api.state()) {
       <div class="app-shell" [class.nav-expanded]="navigationExpanded">
+        <ng-template #navigationItem let-p>
+          <div
+            class="admin-nav-item"
+            [class.open]="submenuExpanded(p)"
+            (keydown.escape)="closeSubmenu(p, $event)"
+          >
+            <a
+              [routerLink]="
+                p.admin.menu.children?.length ? null : route(p.admin.menu.path)
+              "
+              [class.active]="navigationActive(p)"
+              [class.admin-nav-parent]="!!p.admin.menu.children?.length"
+              [attr.role]="p.admin.menu.children?.length ? 'button' : null"
+              [attr.tabindex]="p.admin.menu.children?.length ? 0 : null"
+              [attr.aria-expanded]="
+                p.admin.menu.children?.length ? submenuExpanded(p) : null
+              "
+              [attr.aria-controls]="
+                p.admin.menu.children?.length ? 'submenu-' + p.id : null
+              "
+              [attr.aria-label]="p.admin.menu.label"
+              [attr.aria-current]="
+                !p.admin.menu.children?.length && navigationActive(p)
+                  ? 'page'
+                  : null
+              "
+              [attr.title]="p.admin.menu.label"
+              (click)="activateNavigation(p, $event)"
+              (keydown.enter)="activateParentKey(p, $event)"
+              (keydown.space)="activateParentKey(p, $event)"
+              (keydown.arrowright)="openSubmenu(p, $event)"
+              (keydown.arrowleft)="closeSubmenu(p, $event)"
+              ><cl-icon [name]="p.icon" /><span>{{ p.admin.menu.label }}</span>
+              @if (navigationCount(p); as count) {
+                <span
+                  class="nav-count"
+                  [attr.aria-label]="count + ' ' + navigationBadges.label(p.id)"
+                  >{{ count }}</span
+                >
+              }
+              @if (p.admin.menu.children?.length) {
+                <cl-icon name="chevron" class="admin-submenu-caret" />
+              }
+            </a>
+            @if (p.admin.menu.children?.length) {
+              <ul
+                class="admin-submenu"
+                [id]="'submenu-' + p.id"
+                [hidden]="!submenuExpanded(p)"
+                [attr.aria-label]="p.admin.menu.label + ' submenu'"
+              >
+                @for (
+                  child of p.admin.menu.children;
+                  track child.id;
+                  let index = $index
+                ) {
+                  <li>
+                    <a
+                      [routerLink]="route(child.path)"
+                      [queryParams]="child.queryParams || {}"
+                      [class.active]="submenuActive(child, index)"
+                      [attr.aria-current]="
+                        submenuActive(child, index) ? 'page' : null
+                      "
+                      (click)="menuOpen = false"
+                      >{{ child.label }}</a
+                    >
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </ng-template>
         <aside class="sidebar" [class.mobile-open]="menuOpen">
           <div class="admin-navigation-panel">
             <a
@@ -111,39 +187,20 @@ import { MaintenanceState } from "./maintenance-state";
             <span class="nav-label">WORKSPACE</span>
             <nav class="navigation-tree" aria-label="Main navigation">
               @for (p of mainNavigation; track p.id) {
-                <a
-                  [routerLink]="route(p.admin.menu.path)"
-                  routerLinkActive="active"
-                  ariaCurrentWhenActive="page"
-                  [attr.aria-label]="p.admin.menu.label"
-                  [attr.title]="p.admin.menu.label"
-                  (click)="menuOpen = false"
-                  ><cl-icon [name]="p.icon" /><span>{{
-                    p.admin.menu.label
-                  }}</span>
-                  @if (p.id.endsWith("posts")) {
-                    <span class="nav-count">{{ postCount }}</span>
-                  } @else if (p.id.endsWith("pages")) {
-                    <span class="nav-count">{{ pageCount }}</span>
-                  }
-                </a>
+                <ng-container
+                  [ngTemplateOutlet]="navigationItem"
+                  [ngTemplateOutletContext]="{ $implicit: p }"
+                />
               }
             </nav>
             @if (systemNavigation.length) {
               <span class="nav-label extension-label">SYSTEM</span>
               <nav class="navigation-tree" aria-label="System navigation">
                 @for (p of systemNavigation; track p.id) {
-                  <a
-                    [routerLink]="route(p.admin.menu.path)"
-                    routerLinkActive="active"
-                    ariaCurrentWhenActive="page"
-                    [attr.aria-label]="p.admin.menu.label"
-                    [attr.title]="p.admin.menu.label"
-                    (click)="menuOpen = false"
-                    ><cl-icon [name]="p.icon" /><span>{{
-                      p.admin.menu.label
-                    }}</span></a
-                  >
+                  <ng-container
+                    [ngTemplateOutlet]="navigationItem"
+                    [ngTemplateOutletContext]="{ $implicit: p }"
+                  />
                 }
               </nav>
             }
@@ -276,6 +333,7 @@ import { MaintenanceState } from "./maintenance-state";
               @if (contentScreenKind; as kind) {
                 <cl-screen-options [kind]="kind" [seoEnabled]="seoEnabled" />
               }
+              <ng-container [ngTemplateOutlet]="adminToolbar.content()" />
               <a class="button subtle" href="/" target="_blank"
                 >View site <cl-icon name="external"
               /></a>
@@ -419,6 +477,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   maintenance = inject(MaintenanceState);
   pluginView = inject(PluginViewState);
   api = inject(ApiService);
+  navigationBadges = inject(PluginNavigationBadges);
+  adminToolbar = inject(AdminToolbar);
   appearance = inject(AdminAppearanceService);
   router = inject(Router);
   setup = false;
@@ -433,6 +493,93 @@ export class AdminComponent implements OnInit, OnDestroy {
   section = "Dashboard";
   showWorkspaceProgress = signal(false);
   private workspaceProgressTimer?: ReturnType<typeof setTimeout>;
+  expandedNavigation: string | null | undefined;
+  navigationActive(plugin: Plugin) {
+    return this.router.isActive(
+      this.router.createUrlTree([this.route(plugin.admin.menu.path)]),
+      {
+        paths: "subset",
+        queryParams: "ignored",
+        fragment: "ignored",
+        matrixParams: "ignored",
+      },
+    );
+  }
+  submenuExpanded(plugin: Plugin) {
+    return (
+      this.navigationExpanded &&
+      !!plugin.admin.menu.children?.length &&
+      (this.expandedNavigation === undefined
+        ? this.navigationActive(plugin)
+        : this.expandedNavigation === plugin.id)
+    );
+  }
+  submenuActive(child: AdminSubmenuLink, index: number) {
+    const pathMatches = this.router.isActive(
+      this.router.createUrlTree([this.route(child.path)]),
+      {
+        paths: "exact",
+        queryParams: "ignored",
+        fragment: "ignored",
+        matrixParams: "ignored",
+      },
+    );
+    const params = this.router.parseUrl(this.router.url).queryParamMap;
+    return (
+      pathMatches &&
+      Object.entries(child.queryParams || {}).every(
+        ([key, value]) =>
+          params.get(key) === value || (!params.has(key) && index === 0),
+      )
+    );
+  }
+  navigationCount(plugin: Plugin) {
+    return plugin.id === "com.colossal.posts"
+      ? this.postCount
+      : plugin.id === "com.colossal.pages"
+        ? this.pageCount
+        : this.navigationBadges.count(plugin.id);
+  }
+  activateNavigation(plugin: Plugin, event: Event) {
+    if (!plugin.admin.menu.children?.length) {
+      this.menuOpen = false;
+      return;
+    }
+    event.preventDefault();
+    const opening = !this.submenuExpanded(plugin);
+    this.expandedNavigation = opening ? plugin.id : null;
+    this.navigationExpanded = true;
+    if (opening) {
+      const first = plugin.admin.menu.children[0];
+      void this.router.navigate([this.route(first.path)], {
+        queryParams: first.queryParams || {},
+      });
+    }
+  }
+  activateParentKey(plugin: Plugin, event: Event) {
+    if (plugin.admin.menu.children?.length)
+      this.activateNavigation(plugin, event);
+  }
+  openSubmenu(plugin: Plugin, event: Event) {
+    if (!plugin.admin.menu.children?.length) return;
+    event.preventDefault();
+    this.expandedNavigation = plugin.id;
+    this.navigationExpanded = true;
+    const group = (event.currentTarget as HTMLElement).closest(
+      ".admin-nav-item",
+    );
+    this.cdr.detectChanges();
+    group?.querySelector<HTMLElement>(".admin-submenu a")?.focus();
+  }
+  closeSubmenu(plugin: Plugin, event: Event) {
+    if (!plugin.admin.menu.children?.length) return;
+    event.preventDefault();
+    this.expandedNavigation = null;
+    (event.target as HTMLElement)
+      .closest(".admin-nav-item")
+      ?.querySelector<HTMLElement>(".admin-nav-parent")
+      ?.focus();
+  }
   ngOnDestroy() {
     clearTimeout(this.workspaceProgressTimer);
   }
@@ -440,6 +587,12 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.initialize();
     this.router.events.subscribe((e) => {
       if (e instanceof NavigationEnd) {
+        this.expandedNavigation =
+          this.api
+            .state()
+            ?.plugins.find(
+              (p) => p.admin.menu.children?.length && this.navigationActive(p),
+            )?.id || null;
         const part = e.urlAfterRedirects.split("?")[0].split("/")[1];
         this.section = part
           ? part

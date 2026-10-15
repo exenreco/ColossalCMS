@@ -1,0 +1,37 @@
+{
+  "id": "com.colossal.messaging",
+  "name": "Messaging",
+  "description": "Build a configurable contact form, receive messages in your inbox and send notifications through shared SMTP.",
+  "isCore": false,
+  "version": "0.0.3",
+  "author": "Colossal Core Team",
+  "icon": "envelope",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.1", "plugins": [] },
+  "admin": {
+    "entryComponent": "MessagingComponent",
+    "menu": {
+      "label": "Messaging",
+      "icon": "envelope",
+      "path": "/admin/messaging",
+      "order": 970,
+      "group": "system",
+      "children": [
+        {
+          "id": "inbox",
+          "label": "Inbox",
+          "path": "/admin/messaging",
+          "queryParams": { "tab": "inbox" }
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "path": "/admin/messaging",
+          "queryParams": { "tab": "settings" }
+        }
+      ]
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "table" }
+  },
+  "frontend": { "routes": [] }
+}

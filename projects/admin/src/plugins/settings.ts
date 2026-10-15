@@ -6,6 +6,7 @@ import { DatePipe } from "@angular/common";
 import { ApiService } from "../../../../shared/api.service";
 import { IconComponent } from "../../../../shared/icon.component";
 import { SmtpSettingsComponent } from "../../../../shared/smtp-settings.component";
+import { adminSections } from "../../../../shared/admin-sections";
 import {
   formatPageTitle,
   TITLE_SEPARATORS,
@@ -65,7 +66,10 @@ import {
             ];
             track t
           ) {
-            <button [class.active]="tab === t" (click)="tab = t; error = ''">
+            <button
+              [class.active]="tab === t"
+              (click)="sectionState.select(t); error = ''"
+            >
               {{ t }}<cl-icon name="chevron" />
             </button>
           }
@@ -530,7 +534,20 @@ import {
 export class SettingsComponent {
   api = inject(ApiService);
   mediaSelection = inject(MediaSelectionService);
-  tab = "General";
+  sectionState = adminSections(
+    {
+      general: "General",
+      reading: "Reading",
+      appearance: "Appearance",
+      smtp: "SMTP",
+      team: "Team & roles",
+      "api-keys": "API keys",
+    },
+    "General",
+  );
+  get tab() {
+    return this.sectionState.value();
+  }
   routingChanged(key: "homePageId" | "postsPageId" | "notFoundPageId") {
     for (const other of [
       "homePageId",
