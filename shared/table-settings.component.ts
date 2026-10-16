@@ -1,5 +1,12 @@
 import { tableTreeData, tableRows, editTableTrack } from "./table-tree";
-import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
+import {
+  Component,
+  EventEmitter,
+  input,
+  computed,
+  Output,
+  inject,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ColorPickerComponent } from "./pickers/color-picker.component";
 import {
@@ -352,22 +359,26 @@ import { ThemeEditorState } from "./theme-editor-state";
 })
 export class TableSettingsComponent {
   private state = inject(ThemeEditorState);
-  @Input() blockId = "";
-  @Input() value: unknown;
+  blockId = input("");
+  value = input<unknown>();
   @Output() valueChange = new EventEmitter<TableData>();
   error = "";
-  get data() {
-    const node = this.state.find(this.blockId);
+  private tableNode = computed(() => this.state.find(this.blockId()));
+  private tableData = computed(() => {
+    const node = this.tableNode();
     return node?.children
       ? tableTreeData(node)
-      : normalizeTableData(this.value);
+      : normalizeTableData(this.value());
+  });
+  get data() {
+    return this.tableData();
   }
   get native() {
-    return !!this.state.find(this.blockId)?.children;
+    return !!this.tableNode()?.children;
   }
   openCell(row: number, column: number, extend: boolean) {
     this.selectCell(row, column, extend);
-    const node = this.state.find(this.blockId);
+    const node = this.state.find(this.blockId());
     const cell = node && tableRows(node)[row]?.children?.[column];
     if (cell && !extend) this.state.selected.set(cell.id);
   }
@@ -378,7 +389,7 @@ export class TableSettingsComponent {
       this.data.rows.length - 1,
     );
     const range =
-      selected?.id === this.blockId
+      selected?.id === this.blockId()
         ? selected
         : { startRow: row, endRow: row, startColumn: 0, endColumn: 0 };
     return {
@@ -393,7 +404,7 @@ export class TableSettingsComponent {
       ? this.data.rows.length
       : this.data.rows[0].length;
     this.state.tableSelection.set({
-      id: this.blockId,
+      id: this.blockId(),
       ...this.range,
       [key]: Math.max(0, Math.min(max - 1, Math.floor(Number(value) || 1) - 1)),
     });
@@ -401,7 +412,7 @@ export class TableSettingsComponent {
   selectCell(row: number, column: number, extend: boolean) {
     const merge = this.span(row, column);
     this.state.tableSelection.set({
-      id: this.blockId,
+      id: this.blockId(),
       startRow: extend ? this.range.startRow : row,
       startColumn: extend ? this.range.startColumn : column,
       endRow: row + (merge?.rowSpan || 1) - 1,
@@ -495,7 +506,7 @@ export class TableSettingsComponent {
     this.emit(setTableCellText(this.data, row, column, value));
   }
   track(axis: "row" | "column", index: number, remove = false) {
-    const node = this.state.find(this.blockId);
+    const node = this.state.find(this.blockId());
     if (!node?.children) return false;
     this.state.commit(() => editTableTrack(node, axis, index, remove));
     return true;
@@ -530,7 +541,7 @@ export class TableSettingsComponent {
     const d = this.data;
     if (d.merges.length) return;
     const next = index + direction;
-    const node = this.state.find(this.blockId);
+    const node = this.state.find(this.blockId());
     if (node?.children && next >= 0 && next < d.rows.length) {
       this.state.commit(() => {
         const rows = tableRows(node),

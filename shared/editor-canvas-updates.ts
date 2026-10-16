@@ -36,15 +36,19 @@ export class EditorCanvasUpdates {
     this.patch(this.previous.body, next.body);
     // Inline typing mutates the live DOM before a render. Undo can restore an
     // identical server snapshot, so compare authored text with the live content too.
+    const renderedBlocks = new Map(
+      Array.from(next.querySelectorAll("[data-block-id]")).map((element) => [
+        element.getAttribute("data-block-id"),
+        element,
+      ]),
+    );
     for (const paragraph of Array.from(
       document.querySelectorAll<HTMLElement>("[data-inline-text-editor]"),
     )) {
       const blockId = paragraph
         .closest("[data-block-id]")
         ?.getAttribute("data-block-id");
-      const block = Array.from(next.querySelectorAll("[data-block-id]")).find(
-        (element) => element.getAttribute("data-block-id") === blockId,
-      );
+      const block = renderedBlocks.get(blockId || "");
       const rendered = block?.querySelector(
         ":scope > p,:scope > h1,:scope > h2,:scope > h3,:scope > h4,:scope > h5,:scope > h6",
       );
@@ -62,9 +66,7 @@ export class EditorCanvasUpdates {
       ),
     )) {
       const id = cell.dataset["inlineTableEditor"];
-      const block = Array.from(next.querySelectorAll("[data-block-id]")).find(
-        (element) => element.getAttribute("data-block-id") === id,
-      );
+      const block = renderedBlocks.get(id || "");
       const table = block?.querySelector<HTMLTableElement>(".cl-data-table");
       const rendered = table?.querySelector(
         `[data-table-row="${Number(cell.dataset["tableRow"])}"][data-table-column="${Number(cell.dataset["tableColumn"])}"]`,

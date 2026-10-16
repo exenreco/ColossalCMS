@@ -44,13 +44,31 @@ export function installTableCanvasTools(
   table.parentElement
     ?.querySelector(":scope > .cl-table-canvas-tools")
     ?.remove();
+  const cells = Array.from(
+    table.querySelectorAll<HTMLTableCellElement>("[data-table-row]"),
+  ).filter((cell) => cell.closest("table") === table);
+  // Remove old affordances before measuring. Read geometry before adding any handles,
+  // so setup does not alternate layout reads and DOM writes for every cell.
+  for (const cell of cells)
+    cell
+      .querySelectorAll(".cl-table-resize")
+      .forEach((handle) => handle.remove());
+  const columns = Array.from(
+    table.querySelectorAll<HTMLElement>(":scope > colgroup > col"),
+  );
+  const rows = Array.from(table.rows);
+  const measured = (axis: "column" | "row") =>
+    axis === "column"
+      ? columns.map((col) =>
+          Math.max(40, Math.round(col.getBoundingClientRect().width)),
+        )
+      : rows.map((row) =>
+          Math.max(24, Math.round(row.getBoundingClientRect().height)),
+        );
+  const initialSizes = { column: measured("column"), row: measured("row") };
   const highlight = () => {
     const range = tableRange(selected());
-    for (const cell of Array.from(
-      Array.from(
-        table.querySelectorAll<HTMLTableCellElement>("[data-table-row]"),
-      ).filter((cell) => cell.closest("table") === table),
-    )) {
+    for (const cell of cells) {
       const row = Number(cell.dataset["tableRow"]),
         column = Number(cell.dataset["tableColumn"]);
       cell.classList.toggle(
@@ -77,14 +95,7 @@ export function installTableCanvasTools(
     highlight();
   };
   let activeCleanup: (() => void) | undefined;
-  for (const cell of Array.from(
-    Array.from(
-      table.querySelectorAll<HTMLTableCellElement>("[data-table-row]"),
-    ).filter((cell) => cell.closest("table") === table),
-  )) {
-    cell
-      .querySelectorAll(".cl-table-resize")
-      .forEach((handle) => handle.remove());
+  for (const cell of cells) {
     cell.addEventListener(
       "pointerdown",
       (event) => {
@@ -120,17 +131,9 @@ export function installTableCanvasTools(
         axis === "column" ? "vertical" : "horizontal",
       );
       handle.setAttribute("aria-label", `Resize ${axis} ${index + 1}`);
-      const measured = () =>
-        axis === "column"
-          ? Array.from(table.querySelectorAll("col")).map((c) =>
-              Math.max(40, Math.round(c.getBoundingClientRect().width)),
-            )
-          : Array.from(table.rows).map((r) =>
-              Math.max(24, Math.round(r.getBoundingClientRect().height)),
-            );
       handle.setAttribute("aria-valuemin", axis === "column" ? "40" : "24");
       handle.setAttribute("aria-valuemax", axis === "column" ? "1200" : "800");
-      handle.setAttribute("aria-valuenow", String(measured()[index]));
+      handle.setAttribute("aria-valuenow", String(initialSizes[axis][index]));
       handle.addEventListener(
         "keydown",
         (event) => {
@@ -140,7 +143,7 @@ export function installTableCanvasTools(
           event.preventDefault();
           event.stopPropagation();
           const data = read();
-          const values = measured();
+          const values = measured(axis);
           values[index] = Math.min(
             axis === "column" ? 1200 : 800,
             Math.max(
@@ -166,13 +169,10 @@ export function installTableCanvasTools(
           options.resizing(true);
           (doc.activeElement as HTMLElement)?.blur();
           const data = read(),
-            values = measured(),
+            values = measured(axis),
             initial = values[index],
             start = axis === "column" ? event.clientX : event.clientY;
-          const elements =
-            axis === "column"
-              ? Array.from(table.querySelectorAll<HTMLElement>("col"))
-              : Array.from(table.rows);
+          const elements = axis === "column" ? columns : rows;
           const original = elements.map((el) => el.getAttribute("style")),
             tableStyle = table.getAttribute("style");
           const controller = new AbortController();

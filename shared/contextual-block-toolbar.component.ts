@@ -2,6 +2,7 @@ import { mergeTableCells, splitTableCells } from "./table-block";
 import { tableTreeData, setTableTreeData } from "./table-tree";
 import {
   Component,
+  computed,
   EventEmitter,
   Input,
   Output,
@@ -331,26 +332,34 @@ import { EditorIconComponent } from "./editor-icon.component";
 export class ContextualBlockToolbarComponent
   implements AfterViewInit, OnDestroy
 {
-  get tableForTools() {
+  private tableContext = computed(() => {
     let node = this.state.node;
     while (node && node.type !== "core/table")
       node = this.state.parent(node.id);
     return node;
+  });
+  get tableForTools() {
+    return this.tableContext();
   }
-  canEditTableCells(operation: "merge" | "split") {
-    const table = this.tableForTools,
+  private tableCellActions = computed(() => {
+    const table = this.tableContext(),
       range = this.state.tableSelection();
-    if (!table || range?.id !== table.id) return false;
+    if (!table || range?.id !== table.id) return { merge: false, split: false };
     const data = tableTreeData(table);
+    let merge = false;
     try {
-      if (operation === "merge") {
-        mergeTableCells(data, range);
-        return true;
-      }
-      return splitTableCells(data, range).merges.length < data.merges.length;
+      mergeTableCells(data, range);
+      merge = true;
     } catch {
-      return false;
+      /* Invalid ranges cannot merge. */
     }
+    return {
+      merge,
+      split: splitTableCells(data, range).merges.length < data.merges.length,
+    };
+  });
+  canEditTableCells(operation: "merge" | "split") {
+    return this.tableCellActions()[operation];
   }
   editTableCells(operation: "merge" | "split") {
     const table = this.tableForTools,
