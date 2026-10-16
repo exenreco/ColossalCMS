@@ -8,6 +8,8 @@ import { publicHtml } from "../server/public-html.mjs";
 import { buildGlossyStyles } from "../scripts/build-glossy-styles.mjs";
 import assets from "../shared/glossy-hero-assets.json" with { type: "json" };
 import { initialPublicRender } from "../shared/public-render.ts";
+import { decodedPortraitCanvas } from "../shared/ice-scene/portrait-texture.ts";
+import { hydrateStaticVeil } from "../shared/ice-scene/static-veil.ts";
 import {
   imageAspect,
   throneFrame,
@@ -28,6 +30,53 @@ const fixture = () => ({
     className: "c27-body",
     style: "",
   },
+});
+
+test("responsive artwork is rasterized into an exact GPU pixel buffer without another download", () => {
+  const calls = [];
+  const canvas = {
+    getContext: () => ({ drawImage: (...args) => calls.push(args) }),
+  };
+  const image = {
+    naturalWidth: 390,
+    naturalHeight: 519,
+    width: 345,
+    height: 460,
+    currentSrc: "/hero-640.webp",
+    ownerDocument: { createElement: () => canvas },
+  };
+  assert.equal(decodedPortraitCanvas(image), canvas);
+  assert.equal(canvas.width, 390);
+  assert.equal(canvas.height, 519);
+  assert.deepEqual(calls, [[image, 0, 0, 390, 519]]);
+});
+
+test("fallback veil tracks page scroll and viewport height and detaches after removal", () => {
+  const listeners = new Map(),
+    properties = new Map();
+  const view = {
+    scrollY: 0,
+    addEventListener: (name, fn) => listeners.set(name, fn),
+    removeEventListener: (name) => listeners.delete(name),
+  };
+  const host = {
+    isConnected: true,
+    clientHeight: 844,
+    querySelector: () => ({}),
+    ownerDocument: { defaultView: view },
+    style: { setProperty: (key, value) => properties.set(key, value) },
+  };
+  hydrateStaticVeil(host);
+  assert.equal(properties.get("--scene-height"), "844px");
+  view.scrollY = 1000;
+  listeners.get("scroll")();
+  assert.equal(properties.get("--scene-scroll-y"), "1000px");
+  host.clientHeight = 740;
+  listeners.get("resize")();
+  assert.equal(properties.get("--scene-height"), "740px");
+  host.isConnected = false;
+  listeners.get("scroll")();
+  assert.equal(listeners.size, 0);
 });
 
 test("decoded artwork proportions ignore CSS sizing and static framing matches the perspective model", () => {

@@ -1,3 +1,5 @@
+import { hydrateStaticVeil } from "./ice-scene/static-veil";
+
 /** The heavy renderer remains a lazy chunk until a model is near the viewport. */
 export function hydrateModels(root: ParentNode) {
   root
@@ -6,6 +8,7 @@ export function hydrateModels(root: ParentNode) {
       if (host.dataset["modelMounted"]) return;
       host.dataset["modelMounted"] = "true";
       const progressive = host.dataset["progressiveScene"] === "true";
+      if (progressive) hydrateStaticVeil(host);
       const fadeBackground =
         !progressive &&
         host.ownerDocument === document &&

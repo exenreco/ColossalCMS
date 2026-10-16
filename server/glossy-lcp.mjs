@@ -94,7 +94,7 @@ export function optimizeGlossyRender(rendered, preview = false) {
     veil.parent = scene;
     scene.children.push(veil);
   }
-  const css = `.cl-ice-world[data-progressive-scene=true]{opacity:1!important}.cl-scene-static-veil{position:absolute;inset:0;background:var(--static-veil-color);opacity:var(--static-veil-opacity);pointer-events:none;z-index:1}@media(max-width:600px){.cl-ice-world[data-scene-veil-mobile-gradient=true] .cl-scene-static-veil{opacity:.77}}`;
+  const css = `.cl-ice-world[data-progressive-scene=true]{opacity:1!important}.cl-scene-static-veil{position:absolute;inset:0;background:var(--static-veil-color);opacity:var(--static-veil-opacity);pointer-events:none;z-index:1}@media(max-width:600px){.cl-ice-world[data-scene-veil-mobile-gradient=true][data-scene-veil-enabled=true] .cl-scene-static-veil{opacity:1;background:linear-gradient(to bottom,color-mix(in srgb,var(--static-veil-color) 77%,transparent) calc(var(--scene-height,100vh) - var(--scene-scroll-y,0px)),color-mix(in srgb,var(--static-veil-color) 96%,transparent) calc(var(--scene-height,100vh)*1.25 - var(--scene-scroll-y,0px)))}}`;
   const customFont = /(?:font-family|font):[^;}]*\b(?:Manrope|DM Sans)/i.test(
     rendered.css + rendered.body.style + rendered.html,
   );

@@ -14,6 +14,7 @@ import { GlassVeilComponent } from "./glass-veil-component";
 import { RainLinesComponent } from "./rain-lines-component";
 import { SceneComponent, SceneFrame } from "./scene-component";
 import { clamp, scrollProgress, easeTo } from "./scene-math";
+import { decodedPortraitCanvas } from "./portrait-texture";
 
 /** One renderer, with independent scene components and a viewport-sized background. */
 export async function mountIceWorld(host: HTMLElement) {
@@ -101,10 +102,12 @@ export async function mountIceWorld(host: HTMLElement) {
     );
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
-    if (progressive && fallback?.complete && fallback.naturalWidth) {
-      // Share the decoded LCP image instead of issuing another texture download.
-      texture = new THREE.Texture(fallback);
-      texture.needsUpdate = true;
+    const decoded =
+      progressive && fallback?.complete && fallback.naturalWidth
+        ? decodedPortraitCanvas(fallback)
+        : null;
+    if (decoded) {
+      texture = new THREE.CanvasTexture(decoded);
     } else {
       texture = await new THREE.TextureLoader().loadAsync(
         host.dataset["portraitUrl"],
