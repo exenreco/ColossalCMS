@@ -1,3 +1,10 @@
+import {
+  createWebpVariant,
+  ensureWebpVariant,
+  variantKey,
+  acceptsWebp,
+  webpEligible,
+} from "../plugins/media/variants.mjs";
 import { imageSize } from "image-size";
 import { inspectModel } from "./gltf.mjs";
 import { modelPoster } from "./model-poster.mjs";
@@ -207,6 +214,7 @@ export async function handleMedia(request, env, user, path) {
       );
     const bytes = new Uint8Array(await file.arrayBuffer());
     const info = inspectMedia(bytes, file.name, file.type);
+    info.metadata.originalFilename = file.name.slice(0, 200);
     if (info.type !== "model" && file.size > 25 * 1024 * 1024)
       fail("Images, PDFs, audio and video must be 25 MB or smaller.", 413);
     if (current && current.type !== info.type)
@@ -234,6 +242,7 @@ export async function handleMedia(request, env, user, path) {
     await storage.put(key, info.bytes || bytes);
     try {
       if (posterKey) await storage.put(posterKey, modelPoster(file.name));
+      if (info.type === "image") await createWebpVariant(env, bytes, info, key);
     } catch (e) {
       await storage.delete(key);
       throw e;
@@ -277,8 +286,12 @@ export async function handleMedia(request, env, user, path) {
     } catch (e) {
       await storage.delete(key);
       if (posterKey) await storage.delete(posterKey);
+      if (info.metadata.webp)
+        await storage.delete(info.metadata.webp.storageKey);
       throw e;
     }
+    if (current && variantKey(current))
+      await storage.delete(variantKey(current));
     if (current?.storage_key) await storage.delete(current.storage_key);
     if (current?.type === "model" && parse(current.metadata).posterStorageKey)
       await storage.delete(parse(current.metadata).posterStorageKey);
@@ -339,6 +352,7 @@ export async function handleMedia(request, env, user, path) {
         { references: refs },
       );
     // Delete metadata only after blob deletion succeeds, so failure remains recoverable.
+    if (variantKey(current)) await storage.delete(variantKey(current));
     if (current.storage_key) await storage.delete(current.storage_key);
     if (current.type === "model" && parse(current.metadata).posterStorageKey)
       await storage.delete(parse(current.metadata).posterStorageKey);
@@ -348,7 +362,7 @@ export async function handleMedia(request, env, user, path) {
   return json({ error: "Media endpoint not found." }, 404);
 }
 export async function serveMedia(request, env, id, identity, poster = false) {
-  const record = await env.DB.prepare("SELECT * FROM media WHERE id=?")
+  let record = await env.DB.prepare("SELECT * FROM media WHERE id=?")
     .bind(id)
     .first();
   if (!record) fail("Media not found.", 404);
@@ -365,20 +379,52 @@ export async function serveMedia(request, env, id, identity, poster = false) {
       headers: { Location: target.href, "Cache-Control": "no-cache" },
     });
   }
-  const file = await env.STORAGE?.get(
+  const negotiate =
+    !poster && record.type === "image" && webpEligible(record.mime);
+  const preferWebp = negotiate && acceptsWebp(request);
+  if (preferWebp) {
+    try {
+      record = await ensureWebpVariant(env, record);
+    } catch {
+      /* Always retain original delivery when conversion is unavailable. */
+    }
+  }
+  const key =
     poster && record.type === "model"
       ? parse(record.metadata).posterStorageKey
-      : record.storage_key,
-  );
+      : record.storage_key;
+  let optimized = preferWebp ? variantKey(record) : "";
+  let file;
+  try {
+    file = await env.STORAGE?.get(optimized || key);
+  } catch (error) {
+    if (!optimized) throw error;
+  }
+  if (!file && optimized) {
+    optimized = "";
+    file = await env.STORAGE?.get(key);
+  }
   if (!file) fail("This media file is unavailable.", 404);
   const headers = {
-    "Content-Type": poster ? "image/svg+xml" : record.mime,
+    "Content-Type": poster
+      ? "image/svg+xml"
+      : optimized
+        ? "image/webp"
+        : record.mime,
+    ...(negotiate ? { Vary: "Accept" } : {}),
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-cache",
     "Content-Security-Policy":
       "default-src 'none'; style-src 'unsafe-inline'; sandbox",
     "Accept-Ranges": "bytes",
   };
+  if (new URL(request.url).searchParams.get("download") === "1") {
+    const name = String(
+      parse(record.metadata).originalFilename || record.name || "download",
+    ).replace(/[\r\n"\\]/g, "_");
+    headers["Content-Disposition"] =
+      `attachment; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase())}`;
+  }
   const buffer = await file.arrayBuffer();
   const range = request.headers.get("Range");
   if (range) {
@@ -386,7 +432,10 @@ export async function serveMedia(request, env, id, identity, poster = false) {
     if (!m)
       return new Response(null, {
         status: 416,
-        headers: { "Content-Range": "bytes */" + buffer.byteLength },
+        headers: {
+          ...headers,
+          "Content-Range": "bytes */" + buffer.byteLength,
+        },
       });
     const start = m[1]
         ? Number(m[1])
@@ -400,16 +449,22 @@ export async function serveMedia(request, env, id, identity, poster = false) {
     if (start > end || start >= buffer.byteLength)
       return new Response(null, {
         status: 416,
-        headers: { "Content-Range": "bytes */" + buffer.byteLength },
+        headers: {
+          ...headers,
+          "Content-Range": "bytes */" + buffer.byteLength,
+        },
       });
-    return new Response(buffer.slice(start, end + 1), {
-      status: 206,
-      headers: {
-        ...headers,
-        "Content-Range": `bytes ${start}-${end}/${buffer.byteLength}`,
-        "Content-Length": String(end - start + 1),
+    return new Response(
+      request.method === "HEAD" ? null : buffer.slice(start, end + 1),
+      {
+        status: 206,
+        headers: {
+          ...headers,
+          "Content-Range": `bytes ${start}-${end}/${buffer.byteLength}`,
+          "Content-Length": String(end - start + 1),
+        },
       },
-    });
+    );
   }
   return new Response(request.method === "HEAD" ? null : buffer, {
     headers: { ...headers, "Content-Length": String(buffer.byteLength) },

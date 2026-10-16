@@ -1,3 +1,4 @@
+import { imageOptimizer } from "../plugins/media/image-optimizer.mjs";
 import http from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
@@ -100,6 +101,7 @@ export async function productionRuntime(config, log = console.log) {
     }
     await seedBuiltInData(DB, log, config.CMS_ADMIN_EMAIL);
     return {
+      IMAGE_OPTIMIZER: imageOptimizer,
       DB,
       STORAGE,
       AUTH,

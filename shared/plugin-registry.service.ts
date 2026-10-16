@@ -1,3 +1,4 @@
+import caching from "../plugins/caching/plugin.manifest.json";
 import themes from "../plugins/themes/plugin.manifest.json";
 import media from "../plugins/media/plugin.manifest.json";
 import { Injectable } from "@angular/core";
@@ -18,6 +19,7 @@ import trivia from "../plugins/trivia/plugin.manifest.json";
 import messaging from "../plugins/messaging/plugin.manifest.json";
 import lazyLoad from "../plugins/lazy-load/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
+  caching,
   lazyLoad,
   messaging,
   trivia,
@@ -39,6 +41,8 @@ export const PLUGIN_MANIFESTS = [
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  CachingComponent: () =>
+    import("../plugins/caching/admin").then((m) => m.CachingComponent),
   LazyLoadComponent: () =>
     import("../plugins/lazy-load/admin").then((m) => m.LazyLoadComponent),
   MessagingComponent: () =>

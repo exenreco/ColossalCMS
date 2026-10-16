@@ -1,6 +1,7 @@
 /** Reviewed, bundled contributions only. Uploaded package code is never evaluated. */
 export function createPluginRegistry(contributions) {
   const blockRenderers = new Map();
+  const responseMetadata = new WeakMap();
   const ids = new Set(),
     routes = [],
     documents = [],
@@ -9,6 +10,11 @@ export function createPluginRegistry(contributions) {
     if (!contribution.id || ids.has(contribution.id))
       throw new Error("Duplicate or missing plugin contribution ID.");
     ids.add(contribution.id);
+    if (
+      contribution.request !== undefined &&
+      typeof contribution.request !== "function"
+    )
+      throw new Error("Invalid plugin request middleware.");
     for (const [type, render] of Object.entries(
       contribution.blockRenderers || {},
     )) {
@@ -52,6 +58,26 @@ export function createPluginRegistry(contributions) {
     if (contribution.metadata) metadata.push(contribution.metadata);
   }
   return Object.freeze({
+    withResponseMetadata(response, metadata) {
+      responseMetadata.set(response, metadata);
+      return response;
+    },
+    async request(context, next) {
+      let dispatch = next;
+      for (const contribution of [...contributions].reverse()) {
+        if (!contribution.request) continue;
+        const following = dispatch;
+        dispatch = () =>
+          contribution.request(
+            {
+              ...context,
+              responseMetadata: (response) => responseMetadata.get(response),
+            },
+            following,
+          );
+      }
+      return dispatch();
+    },
     styles: contributions
       .map((contribution) => contribution.styles || "")
       .join("\n"),

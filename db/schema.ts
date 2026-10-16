@@ -1,3 +1,4 @@
+export { responseCache } from "../plugins/caching/schema";
 import {
   sqliteTable,
   text,

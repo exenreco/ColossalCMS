@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.caching",
+  "name": "Caching",
+  "description": "Speed up public pages with a persistent response cache, automatic invalidation and a warm-instance memory cache.",
+  "isCore": false,
+  "version": "0.0.3",
+  "author": "Colossal Core Team",
+  "icon": "cache",
+  "license": "MIT",
+  "requires": { "colossal": ">=0.0.3", "plugins": [] },
+  "admin": {
+    "entryComponent": "CachingComponent",
+    "menu": {
+      "label": "Caching",
+      "icon": "cache",
+      "path": "/admin/caching",
+      "order": 985,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

@@ -117,6 +117,7 @@ export interface MediaItem {
   description: string;
   tags: string[];
   url: string;
+  originalUrl?: string;
   thumbnailUrl?: string;
   mime: string;
   metadata: {
@@ -126,6 +127,14 @@ export interface MediaItem {
     animationCount?: number;
     warnings?: string[];
     size: number;
+    webpStatus?: "ready" | "skipped" | "unavailable";
+    webp?: {
+      mime: string;
+      size: number;
+      width: number;
+      height: number;
+      pages: number;
+    };
     width?: number;
     height?: number;
     duration?: number;

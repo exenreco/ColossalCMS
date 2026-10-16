@@ -163,6 +163,9 @@ export const BLOCK_ICON_PATHS: Record<string, string[]> = {
 };
 
 export const APP_ICON_PATHS: Record<string, string> = {
+  cache:
+    "M4 4h16v6H4zM4 14h16v6H4zM7 7h.01M7 17h.01M15 7h3M15 17h3M8 10v4M16 10v4",
+
   envelope: "M3 5h18v14H3zM3 5l9 7 9-7",
   "question-circle":
     "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01",

@@ -358,7 +358,13 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
                   <dd>{{ warning }}</dd>
                 }
               }
-              <dt>File size</dt>
+              @if (detail.metadata.webp; as webp) {
+                <dt>Site delivery</dt>
+                <dd>WebP · {{ webp.size / 1024 | number: "1.0-1" }} KB</dd>
+                <dt>Original format</dt>
+                <dd>{{ detail.mime }}</dd>
+              }
+              <dt>Original file size</dt>
               <dd>{{ detail.metadata.size / 1024 | number: "1.0-1" }} KB</dd>
               @if (detail.metadata.width) {
                 <dt>Dimensions</dt>
@@ -391,6 +397,11 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
               </div>
             }
             <div class="dialog-actions">
+              @if (detail.originalUrl) {
+                <a class="button" [href]="detail.originalUrl" download
+                  >Download original</a
+                >
+              }
               <button type="button" class="button" (click)="replace()">
                 Replace file</button
               ><button class="button primary" [disabled]="busy">

@@ -1,3 +1,4 @@
+import { imageOptimizer } from "../plugins/media/image-optimizer.mjs";
 import { localCredentialKey } from "./credential-runtime.mjs";
 import { localStorage } from "./local-storage.mjs";
 import { clientIp } from "./client-ip.mjs";
@@ -113,6 +114,7 @@ const cmsServer = http
         },
       );
       const env = {
+        IMAGE_OPTIMIZER: imageOptimizer,
         DB,
         ASSETS,
         STORAGE,

@@ -1954,3 +1954,81 @@ Colossal CMS is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Ex
 Table blocks contain **Table Header**, **Table Body**, and **Table Footer** sections. Each section contains **Table Row** blocks, and each row contains **Table Cell** blocks. Cells accept ordinary blocks such as paragraphs, headings, images, buttons, and layouts. Edit paragraph and heading text directly in the canvas; use the block list to select, reorder, copy, or remove nested blocks. Table toolbars provide shortcuts to add sections, rows, and cells.
 
 Existing tables automatically become native child blocks when opened or saved. Cell text, column widths, row heights, colors, and merged regions are preserved. Table-level sizing, merge/split, and appearance controls continue to apply. Merging displays the selected cells’ inner blocks together; splitting restores their original cell placement. The authenticated outline HTTP endpoints and editor commands enforce the same semantic nesting rules.
+
+## Caching plugin
+
+Install **Caching** from **Plugins**, then open **Caching** in the admin sidebar. Installation activates the plugin. Public response caching is enabled by default with a **300-second (5-minute)** lifetime. Existing installations retain their plugin settings after deployment; install the new plugin once to start caching.
+
+### What is cached
+
+| Response                                                                                                     | Behavior                                                                                                |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Anonymous public page HTML                                                                                   | Cached after a successful render; subsequent requests skip theme compilation and render/plugin queries. |
+| `GET /api/themes/render`                                                                                     | Cached separately for each public path and pagination value.                                            |
+| `GET /api/public`                                                                                            | Caches the public site snapshot.                                                                        |
+| Admin, setup, login, signed-in or cookie-bearing requests                                                    | Always bypass the cache.                                                                                |
+| Theme previews, searches, unknown query parameters, private downloads, message forms and dynamic plugin APIs | Always bypass the cache.                                                                                |
+| Errors, maintenance responses, redirects, private responses and responses setting cookies                    | Never stored.                                                                                           |
+
+The plugin uses an **origin response cache**, rather than browser/CDN page caching. Responses retain `Cache-Control: no-store`, allowing automatic invalidation and accurate document-view tracking on every visit. Static media loading and large 3D scene performance remain separate concerns.
+
+### Storage, freshness and limits
+
+- Cached output lives in the `response_cache` table/collection in the configured SQLite, MongoDB, or Cloudflare D1 database. No new credentials or environment variables are required.
+- A bounded memory cache accelerates warm instances. Database entries allow separate Vercel instances running the same deployment to reuse rendered output.
+- The shared cache holds **up to 64 responses**, each at most **512 KB**, using bounded hash slots. Collisions replace older entries. Expired entries are not served; slots are reused automatically.
+- Successful content, theme, media, settings, maintenance, and plugin mutations invalidate cached responses. Draft changes may also invalidate the cache. Editor render/preview requests and editor preferences do not trigger a purge.
+- A database generation changes on invalidation. All instances check the current generation before reuse, so an older in-flight render cannot restore a valid stale entry after a purge.
+- Cache expiry is shortened to the next scheduled publication time. New bundled builds have a new namespace, preventing cached HTML from referencing assets from a previous deployment. Source-mode server restarts also use a fresh namespace.
+- Excluded paths include their descendants. For example, `/contact` excludes `/contact` and `/contact/team` from page/render caching. Public site-snapshot caching is controlled separately.
+- View analytics still run on cached document requests; render API calls, HEAD requests and previews do not count as document views.
+- Cache failures fall back to normal rendering. Purge and settings errors are reported on the plugin page. The cache is disposable and excluded from local-to-production data migration.
+
+### Admin controls and diagnostics
+
+The settings panel controls caching, public HTML, public APIs, lifetime (30–3600 seconds), and path exclusions. Saving settings clears existing entries. **Purge cache** invalidates output across server instances. **Refresh statistics** reloads stored response count, size, and the last invalidation time. Hit, miss, bypass, and error counters describe only the current server instance and reset when it restarts; they are not aggregate site analytics.
+
+To verify caching, open a public page twice while signed out (without cookies). Inspect its response headers:
+
+| Header                     | Meaning                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| `X-Colossal-Cache: MISS`   | The response was rendered and stored.                                                        |
+| `X-Colossal-Cache: HIT`    | The response came from memory or the database cache.                                         |
+| `X-Colossal-Cache: BYPASS` | This response was not suitable for storage. Some excluded/inactive requests omit the header. |
+| `X-Colossal-Cache: ERROR`  | Storage failed; the normally rendered response was still delivered.                          |
+| `Age`                      | Age of a cached response, in seconds.                                                        |
+
+### Caching API
+
+These endpoints require an administrator session. Mutations use the same same-origin protection as other admin APIs.
+
+| Method | Endpoint                   | Purpose                                                                                       |
+| ------ | -------------------------- | --------------------------------------------------------------------------------------------- |
+| GET    | `/api/admin/caching`       | Read settings and cache statistics.                                                           |
+| POST   | `/api/admin/caching`       | Save `{ enabled, ttl, cachePages, cacheApi, excludedPaths }` and invalidate cached responses. |
+| POST   | `/api/admin/caching/purge` | Invalidate all cached responses.                                                              |
+
+Caching is isolated in `plugins/caching`. The plugin registry's generic `request(context, next)` contribution wraps requests, and `withResponseMetadata(response, metadata)` marks reviewed public responses eligible for reuse. Core document delivery supplies the shared view-tracking callback; the caching plugin does not own analytics SQL or special-case other plugins.
+
+## Automatic WebP image delivery
+
+The core **Media** plugin automatically generates a WebP rendition of uploaded **PNG, JPEG, and GIF** images on local Node development, Node production hosting, and Vercel. The original upload remains unchanged in storage. Existing eligible uploads are optimized on their first authorized request from a WebP-capable browser, so re-uploading is not required.
+
+| Request or format                                               | Delivery behavior                                                                                                           |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Image request with `Accept: image/webp`                         | Serves the stored WebP variant when available, with `Content-Type: image/webp` and `Vary: Accept`.                          |
+| Browser without explicit WebP support                           | Serves the original file and MIME type.                                                                                     |
+| `/api/media/:id/file?format=original&download=1`                | Downloads the original upload after the normal authorization check. The Media details panel includes **Download original**. |
+| SVG                                                             | Remains a vector image; existing SVG safety validation still applies.                                                       |
+| Existing WebP                                                   | Served directly without another conversion.                                                                                 |
+| Animated GIF                                                    | Converted with its frames, delays, loop setting and transparency preserved when within processing limits.                   |
+| Animated PNG, oversized animations or an unavailable converter  | The original remains available; animated PNG is not flattened to a still image.                                             |
+| External image URL, video, audio, PDF, 3D model or model poster | Retains its existing behavior.                                                                                              |
+
+WebP encoding uses Sharp at quality **85**, with alpha quality **100**. JPEG EXIF orientation is applied to the WebP rendition; the original retains its original bytes and metadata. No new environment variables are required. A Node-only image capability is injected into the portable Media API, keeping native image libraries out of the Worker bundle. On an edge-only runtime without this capability, existing WebP variants can still be delivered and other images retain their originals.
+
+Processing is bounded to **40 million decoded pixels**, **100 frames**, and a **10-second codec timeout**, with at most two simultaneous conversions per Node instance. Busy instances immediately use the original and defer optimization; unsupported or failed conversions retain original delivery. These limits supplement the existing upload size and type checks.
+
+Both originals and variants use the configured local filesystem, MongoDB GridFS, or R2-compatible storage adapter. A variant's storage key is tied to its original's unique storage key. Replacement and deletion remove the associated variant; failed database writes clean up newly generated blobs. Local storage migration already copies both files. Protected-download copies continue to use the original upload.
+
+The Media details panel shows the generated WebP size alongside the original format and original file size. The existing `/api/media/:id/file` URL stays stable, so themes, blocks, site logos and featured images do not need URL changes. HEAD and byte-range responses describe the selected representation correctly. Media authorization runs before first-use conversion or delivery; unpublished/private media does not become public through optimization.

@@ -1,3 +1,4 @@
+import caching from "./caching/plugin.manifest.json" with { type: "json" };
 import themes from "./themes/plugin.manifest.json" with { type: "json" };
 import media from "./media/plugin.manifest.json" with { type: "json" };
 import dashboard from "./dashboard/plugin.manifest.json" with { type: "json" };
@@ -17,6 +18,7 @@ import trivia from "./trivia/plugin.manifest.json" with { type: "json" };
 import messaging from "./messaging/plugin.manifest.json" with { type: "json" };
 import lazyLoad from "./lazy-load/plugin.manifest.json" with { type: "json" };
 export const manifests = [
+  caching,
   lazyLoad,
   messaging,
   trivia,

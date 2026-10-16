@@ -1,3 +1,4 @@
+import caching from "../plugins/caching/server.mjs";
 import aiAssistant from "../plugins/ai-assistant/server.mjs";
 import { createPluginRegistry } from "./plugin-registry.mjs";
 import maintenance from "../plugins/maintenance/server.mjs";
@@ -12,6 +13,7 @@ import lazyLoad from "../plugins/lazy-load/server.mjs";
 
 // The composition root is the only place that knows which reviewed integrations are bundled.
 export const pluginRuntime = createPluginRegistry([
+  caching,
   lazyLoad,
   messaging,
   trivia,

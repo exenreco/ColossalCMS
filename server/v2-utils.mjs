@@ -95,6 +95,14 @@ export async function readJson(request, limit = 300000) {
     fail("Invalid JSON.");
   }
 }
+function publicMediaMetadata(value) {
+  const metadata = parse(value);
+  if (metadata.webp) {
+    const { storageKey, sourceKey, ...details } = metadata.webp;
+    metadata.webp = details;
+  }
+  return metadata;
+}
 export const mediaRecord = (r) => ({
   ...r,
   altText: r.alt_text,
@@ -102,8 +110,9 @@ export const mediaRecord = (r) => ({
   uploadedAt: r.uploaded_at,
   updatedAt: r.updated_at,
   tags: parse(r.tags, []),
-  metadata: parse(r.metadata),
+  metadata: publicMediaMetadata(r.metadata),
   url: "/api/media/" + r.id + "/file",
+  originalUrl: "/api/media/" + r.id + "/file?format=original&download=1",
   thumbnailUrl:
     r.type === "image"
       ? "/api/media/" + r.id + "/file"

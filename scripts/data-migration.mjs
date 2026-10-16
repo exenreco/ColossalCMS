@@ -7,7 +7,7 @@ import { localDatabase } from "./local-database.mjs";
 import { initialize } from "../server/worker.mjs";
 
 const tables = Object.keys(productionSchema()).filter(
-  (name) => name !== "auth_sessions",
+  (name) => name !== "auth_sessions" && name !== "response_cache",
 );
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export async function localMigrationAvailable(directory) {

@@ -305,7 +305,7 @@ function workspaceBootstrap(db, user, passwordAuth) {
     },
   });
 }
-export default {
+const coreWorker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -437,10 +437,20 @@ export default {
           if (rendered.preview) headers.set("X-Robots-Tag", "noindex");
           else if (rendered.seo?.robots)
             headers.set("X-Robots-Tag", rendered.seo.robots);
-          return new Response(html, {
-            status: rendered.status || 200,
-            headers,
-          });
+          return pluginRuntime.withResponseMetadata(
+            new Response(html, {
+              status: rendered.status || 200,
+              headers,
+            }),
+            {
+              cacheable: !rendered.preview,
+              rendered: {
+                status: rendered.status || 200,
+                preview: !!rendered.preview,
+                viewContentId: rendered.viewContentId || "",
+              },
+            },
+          );
         }
         return new Response(response.body, {
           status: response.status,
@@ -458,15 +468,16 @@ export default {
           protectedDownload[1],
         );
       if (path === "/api/themes/render" && request.method === "GET") {
-        return json(
-          await pluginRuntime.transformRender(
-            await publicThemeRenderData(request, env),
-            {
-              request,
-              database: () => database(env),
-            },
-          ),
+        const rendered = await pluginRuntime.transformRender(
+          await publicThemeRenderData(request, env),
+          { request, database: () => database(env) },
         );
+        return pluginRuntime.withResponseMetadata(json(rendered), {
+          cacheable:
+            !rendered.preview &&
+            rendered.status === 200 &&
+            !rendered.maintenance,
+        });
       }
       const themeAsset = path.match(/^\/api\/themes\/([^/]+)\/assets\/(.+)$/);
       if (themeAsset && request.method === "GET")
@@ -505,19 +516,22 @@ export default {
         );
       if (path === "/api/public" && request.method === "GET") {
         const s = await state(db, null);
-        return json({
-          settings: s.settings,
-          plugins: s.plugins.filter((p) => p.active),
-          content: s.content.filter(isPublished),
-          media: s.media.filter(
-            (m) =>
-              m.id === s.settings.siteIconId ||
-              m.id === s.settings.siteLogoId ||
-              s.content
-                .filter(isPublished)
-                .some((c) => mediaIds(c.details).includes(m.id)),
-          ),
-        });
+        return pluginRuntime.withResponseMetadata(
+          json({
+            settings: s.settings,
+            plugins: s.plugins.filter((p) => p.active),
+            content: s.content.filter(isPublished),
+            media: s.media.filter(
+              (m) =>
+                m.id === s.settings.siteIconId ||
+                m.id === s.settings.siteLogoId ||
+                s.content
+                  .filter(isPublished)
+                  .some((c) => mediaIds(c.details).includes(m.id)),
+            ),
+          }),
+          { cacheable: true },
+        );
       }
       if (path === "/api/content" && request.method === "GET") {
         const token = request.headers
@@ -1230,5 +1244,18 @@ export default {
         error.status || 500,
       );
     }
+  },
+};
+export default {
+  fetch(request, env) {
+    return pluginRuntime.request(
+      {
+        request,
+        env,
+        recordView: (rendered) =>
+          recordDocumentView(database(env), request, rendered),
+      },
+      () => coreWorker.fetch(request, env),
+    );
   },
 };
