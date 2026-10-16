@@ -15,9 +15,9 @@ function animatedPng(bytes) {
 }
 /** Node-only codec; the storage-independent Media API receives this as a capability. */
 export const imageOptimizer = {
-  async toWebp(bytes, mime) {
+  async toWebp(bytes, mime, width) {
     if (
-      !["image/png", "image/jpeg", "image/gif"].includes(mime) ||
+      !["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mime) ||
       animatedPng(bytes)
     )
       return null;
@@ -43,6 +43,9 @@ export const imageOptimizer = {
       )
         return null;
       const pipeline = (metadata.pages || 1) > 1 ? image : image.autoOrient();
+      // Resizing animated media can alter frame geometry; retain its full variant.
+      if (width && (metadata.pages || 1) > 1) return null;
+      if (width) pipeline.resize({ width, withoutEnlargement: true });
       const output = await pipeline
         .timeout({ seconds: 10 })
         .webp({ quality: 85, alphaQuality: 100, effort: 4 })

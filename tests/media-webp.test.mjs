@@ -5,6 +5,8 @@ import { imageOptimizer } from "../plugins/media/image-optimizer.mjs";
 import { variantKey, acceptsWebp } from "../plugins/media/variants.mjs";
 import { handleMedia, serveMedia } from "../server/media.mjs";
 import { localDatabase } from "../scripts/local-database.mjs";
+import { createVercelHandler } from "../scripts/vercel-handler.mjs";
+import { publicMediaReferences } from "../server/v2-utils.mjs";
 const png = () =>
   sharp({
     create: {
@@ -16,6 +18,241 @@ const png = () =>
   })
     .png()
     .toBuffer();
+
+test("public logos and verified admin thumbnails never scan revisions or theme history", async () => {
+  const f = await fixture();
+  try {
+    const item = await f.upload(await png());
+    await f.DB.prepare("INSERT INTO config (id,value) VALUES ('site',?)")
+      .bind(JSON.stringify({ siteLogoId: item.id }))
+      .run();
+    const prepare = f.DB.prepare;
+    const operations = [];
+    f.env.DB = {
+      prepare(sql) {
+        operations.push(sql);
+        if (/\b(?:revisions|theme_history|content|themes)\b/i.test(sql))
+          throw new Error("Expensive history/reference scan must not run");
+        return prepare(sql);
+      },
+    };
+    const publicLogo = await f.get(item.id, {
+      headers: { Accept: "image/webp" },
+    });
+    assert.equal(publicLogo.status, 200);
+    assert.equal(
+      (await sharp(new Uint8Array(await publicLogo.arrayBuffer())).metadata())
+        .format,
+      "webp",
+    );
+    assert.match(publicLogo.headers.get("Server-Timing"), /media-access;dur=/);
+    operations.length = 0;
+    let checked = false;
+    const admin = await serveMedia(
+      new Request(`https://cms.test/api/media/${item.id}/file`, {
+        headers: {
+          "oai-authenticated-user-id": "member",
+          Accept: "image/webp",
+        },
+      }),
+      f.env,
+      item.id,
+      async () => {
+        checked = true;
+        return { role: "admin" };
+      },
+    );
+    assert.equal(admin.status, 200);
+    assert.equal(checked, true);
+    assert.deepEqual(operations, ["SELECT * FROM media WHERE id=?"]);
+    assert.equal(admin.headers.get("Vercel-CDN-Cache-Control"), null);
+    await assert.rejects(
+      serveMedia(
+        new Request(`https://cms.test/api/media/${item.id}/file`, {
+          headers: { "oai-authenticated-user-id": "forged" },
+        }),
+        f.env,
+        item.id,
+        async () => {
+          throw Object.assign(new Error("Unauthorized"), { status: 401 });
+        },
+      ),
+      /Unauthorized/,
+    );
+  } finally {
+    f.DB.close();
+  }
+});
+
+test("public media access uses current published records and excludes drafts, future posts and historical references", async () => {
+  const db = localDatabase();
+  try {
+    const add = (id, status, publishAt, imageId) =>
+      db
+        .prepare(
+          "INSERT INTO content (id,kind,title,slug,excerpt,body,status,publish_at,updated_at,author,details) VALUES (?,'post',?,?,'','',?,?,'now','author',?)",
+        )
+        .bind(
+          id,
+          id,
+          id,
+          status,
+          publishAt,
+          JSON.stringify({ featuredImageId: imageId }),
+        )
+        .run();
+    await add("published", "published", "2000-01-01", "public-img");
+    await add("draft", "draft", "2000-01-01", "draft-img");
+    await add("future", "scheduled", "2999-01-01", "future-img");
+    const prepare = db.prepare;
+    const inspected = {
+      prepare(sql) {
+        assert.doesNotMatch(sql, /\b(?:revisions|theme_history|draft)\b/i);
+        return prepare(sql);
+      },
+    };
+    assert.equal(
+      (await publicMediaReferences(inspected, "public-img")).length,
+      1,
+    );
+    assert.equal(
+      (await publicMediaReferences(inspected, "draft-img")).length,
+      0,
+    );
+    assert.equal(
+      (await publicMediaReferences(inspected, "future-img")).length,
+      0,
+    );
+    const document = JSON.stringify({
+      templates: { home: { settings: { mediaId: "theme-img" } } },
+      parts: {},
+    });
+    await db
+      .prepare(
+        "INSERT INTO themes (id,manifest,published,active,updated_at) VALUES ('theme','{}',?,0,'now')",
+      )
+      .bind(document)
+      .run();
+    assert.equal(
+      (await publicMediaReferences(inspected, "theme-img")).length,
+      0,
+    );
+    await db.prepare("UPDATE themes SET active=1 WHERE id='theme'").run();
+    assert.equal(
+      (await publicMediaReferences(inspected, "theme-img")).length,
+      1,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("responsive images resize once, use bounded widths, cache only versioned public images and clean up", async () => {
+  let conversions = 0;
+  const f = await fixture({
+    toWebp: (...args) => {
+      conversions++;
+      return imageOptimizer.toWebp(...args);
+    },
+  });
+  try {
+    const bytes = await sharp({
+      create: {
+        width: 1100,
+        height: 700,
+        channels: 4,
+        background: { r: 20, g: 80, b: 130, alpha: 0.4 },
+      },
+    })
+      .png()
+      .toBuffer();
+    const item = await f.upload(bytes);
+    await f.DB.prepare("INSERT INTO config (id,value) VALUES ('site',?)")
+      .bind(JSON.stringify({ siteLogoId: item.id }))
+      .run();
+    const query = `?format=webp&width=320&v=${encodeURIComponent(item.updatedAt)}`;
+    const resized = await f.get(item.id, {}, query);
+    const metadata = await sharp(
+      new Uint8Array(await resized.arrayBuffer()),
+    ).metadata();
+    assert.equal(metadata.width, 320);
+    assert.equal(metadata.height, 204);
+    assert.equal(metadata.hasAlpha, true);
+    assert.equal(resized.headers.get("Vary"), null);
+    assert.equal(
+      resized.headers.get("Vercel-CDN-Cache-Control"),
+      "public, max-age=60",
+    );
+    assert.match(item.srcset, /width=960/);
+    assert.doesNotMatch(item.srcset, /width=1280/);
+    const before = conversions;
+    await f.get(item.id, {}, query);
+    assert.equal(conversions, before);
+    const revalidated = await f.get(
+      item.id,
+      { headers: { "If-None-Match": resized.headers.get("ETag") } },
+      query,
+    );
+    assert.equal(revalidated.status, 304);
+    for (const options of [
+      { headers: { Cookie: "session=private" } },
+      { headers: { Authorization: "Bearer private" } },
+      { headers: { Range: "bytes=0-9" } },
+    ]) {
+      const privateResponse = await f.get(item.id, options, query);
+      assert.equal(
+        privateResponse.headers.get("Vercel-CDN-Cache-Control"),
+        null,
+      );
+      assert.equal(
+        privateResponse.headers.get("Cache-Control"),
+        "private, no-store",
+      );
+    }
+    for (const suffix of ["&themePreview=private", "&download=1"]) {
+      const privateResponse = await f.get(item.id, {}, query + suffix);
+      assert.equal(
+        privateResponse.headers.get("Vercel-CDN-Cache-Control"),
+        null,
+      );
+    }
+    assert.equal(
+      (await f.get(item.id, {}, "?format=webp&width=320&v=old")).headers.get(
+        "Vercel-CDN-Cache-Control",
+      ),
+      null,
+    );
+    await assert.rejects(f.get(item.id, {}, "?format=webp&width=321"));
+    const handler = createVercelHandler(
+      { CMS_PUBLIC_URL: "https://cms.test" },
+      async () => ({ ...f.env, AUTH: { identify: async () => null } }),
+    );
+    let delivered;
+    await handler(
+      { url: `/api/media/${item.id}/file${query}`, method: "GET", headers: {} },
+      {
+        writeHead(status, headers) {
+          delivered = new Headers(headers);
+          assert.equal(status, 200);
+        },
+        end() {},
+      },
+    );
+    assert.equal(
+      delivered.get("Vercel-CDN-Cache-Control"),
+      "public, max-age=60",
+    );
+    assert.equal(delivered.get("X-Colossal-Public-Media"), null);
+    assert.match(delivered.get("Server-Timing"), /runtime;dur=/);
+    await f.upload(bytes, "replacement.png", "image/png", item.id);
+    assert.equal(
+      [...f.blobs.keys()].filter((key) => key.includes(".w320.webp")).length,
+      0,
+    );
+  } finally {
+    f.DB.close();
+  }
+});
 async function fixture(optimizer = imageOptimizer) {
   const DB = localDatabase(),
     blobs = new Map();

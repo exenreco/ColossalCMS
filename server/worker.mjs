@@ -1,3 +1,4 @@
+import { requestDatabase } from "./request-performance.mjs";
 import {
   collectBlockPatterns,
   renderPatternPreview,
@@ -121,7 +122,8 @@ async function identity(request, db) {
 }
 export async function initialize(db, user, report = () => {}) {
   report(0);
-  await ensureThemes(db);
+  if ((await ensureThemes(db)) === false)
+    fail("Workspace changed during initialization. Please retry.", 409);
   report(1);
   await db.batch(
     catalog.map((p) =>
@@ -1247,15 +1249,29 @@ const coreWorker = {
   },
 };
 export default {
-  fetch(request, env) {
-    return pluginRuntime.request(
+  async fetch(request, env) {
+    const start = performance.now();
+    const scope = env.DB ? requestDatabase(env.DB) : null;
+    // Middleware uses cacheIdentity to retain warm caches across request scopes.
+    const scopedEnv = scope ? { ...env, DB: scope.db } : env;
+    const response = await pluginRuntime.request(
       {
         request,
-        env,
+        env: scopedEnv,
         recordView: (rendered) =>
-          recordDocumentView(database(env), request, rendered),
+          recordDocumentView(database(scopedEnv), request, rendered),
       },
-      () => coreWorker.fetch(request, env),
+      () => coreWorker.fetch(request, scopedEnv),
     );
+    const headers = new Headers(response.headers);
+    headers.append(
+      "Server-Timing",
+      `app;dur=${(performance.now() - start).toFixed(1)}, db;dur=${(scope?.stats.duration || 0).toFixed(1)}, queries;desc="${scope?.stats.count || 0}", reused;desc="${scope?.stats.reused || 0}"`,
+    );
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   },
 };

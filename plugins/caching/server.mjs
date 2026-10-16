@@ -13,6 +13,7 @@ const build =
     : __CMS_CACHE_BUILD_ID__;
 const instances = new WeakMap();
 const instance = (db) => {
+  db = db.cacheIdentity || db;
   if (!instances.has(db))
     instances.set(db, {
       memory: new Map(),

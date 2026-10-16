@@ -1,3 +1,4 @@
+import { responsiveSourceSet } from "../plugins/media/delivery.mjs";
 import {
   migrateTable,
   tablePlacement,
@@ -112,6 +113,11 @@ export const mediaRecord = (r) => ({
   tags: parse(r.tags, []),
   metadata: publicMediaMetadata(r.metadata),
   url: "/api/media/" + r.id + "/file",
+  srcset: responsiveSourceSet({
+    ...r,
+    updatedAt: r.updated_at,
+    metadata: parse(r.metadata),
+  }),
   originalUrl: "/api/media/" + r.id + "/file?format=original&download=1",
   thumbnailUrl:
     r.type === "image"
@@ -148,7 +154,51 @@ export function mediaIds(details) {
 export const published = (c) =>
   c.status === "published" ||
   (c.status === "scheduled" && (c.publishAt || c.publish_at) <= now());
-export async function references(db, id) {
+/** Serving a file needs current public access, never its revision/deletion audit. */
+export async function publicMediaReferences(db, id) {
+  const settings = parse(
+    (await db.prepare("SELECT value FROM config WHERE id='site'").first())
+      ?.value,
+  );
+  if (settings.siteIconId === id || settings.siteLogoId === id)
+    return [{ id: "site-identity", published: true }];
+  const rows = await all(
+    db,
+    "SELECT id,details,status,publish_at FROM content WHERE status='published' OR status='scheduled'",
+  );
+  const content = rows.find(
+    (row) => published(row) && mediaIds(parse(row.details)).includes(id),
+  );
+  if (content) return [{ id: content.id, published: true }];
+  const themes = await all(
+    db,
+    "SELECT id,published FROM themes WHERE active=1",
+  );
+  const theme = themes.find((row) =>
+    themeMediaIds(parse(row.published)).includes(id),
+  );
+  if (theme) return [{ id: theme.id, published: true }];
+  const plugin = await db
+    .prepare("SELECT active FROM plugins WHERE id='com.colossal.maintenance'")
+    .first();
+  if (!plugin?.active) return [];
+  const maintenance = parse(
+    (
+      await db
+        .prepare("SELECT value FROM config WHERE id='maintenance'")
+        .first()
+    )?.value,
+  );
+  if (!maintenance.settings?.enabled) return [];
+  const layout = maintenance.layouts?.find(
+    (item) => item.id === maintenance.settings.layoutId,
+  );
+  return layout && themeMediaIds(layout.published).includes(id)
+    ? [{ id: layout.id, published: true }]
+    : [];
+}
+export async function references(db, id, { publicOnly = false } = {}) {
+  if (publicOnly) return publicMediaReferences(db, id);
   const refs = [];
   const rows = await all(
     db,

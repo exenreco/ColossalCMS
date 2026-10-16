@@ -10,7 +10,11 @@ export async function mountModel(host: HTMLElement) {
   let renderer: any,
     controls: any,
     frame = 0,
-    observer: ResizeObserver | undefined;
+    observer: ResizeObserver | undefined,
+    visibilityObserver: IntersectionObserver | undefined;
+  const view = host.ownerDocument.defaultView || window;
+  const mobile = view.matchMedia("(max-width: 1024px)");
+  const motionPreference = view.matchMedia("(prefers-reduced-motion: reduce)");
   try {
     const model = await new GLTFLoader().loadAsync(host.dataset["modelUrl"]);
     if (!host.isConnected) return;
@@ -21,7 +25,9 @@ export async function mountModel(host: HTMLElement) {
       antialias: true,
       canvas: host.ownerDocument.createElement("canvas"),
     });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(
+      Math.min(devicePixelRatio, mobile.matches ? 1 : 1.5),
+    );
     renderer.domElement.style.display = "block";
     renderer.domElement.tabIndex = 0;
     renderer.domElement.setAttribute(
@@ -62,7 +68,6 @@ export async function mountModel(host: HTMLElement) {
       0,
       Math.min(4, Number(host.dataset["scrollStrength"] || 1)),
     );
-    const view = host.ownerDocument.defaultView || window;
     let scrollProgress = 0;
     const updateScroll = () => {
       const rect = host.getBoundingClientRect();
@@ -87,8 +92,7 @@ export async function mountModel(host: HTMLElement) {
     controls = new OrbitControls(camera, preview || renderer.domElement);
     controls.enabled = host.dataset["controls"] !== "false";
     controls.autoRotate =
-      host.dataset["autoRotate"] === "true" &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      host.dataset["autoRotate"] === "true" && !motionPreference.matches;
     controls.autoRotateSpeed = Number(host.dataset["rotateSpeed"] || 2) / 6;
     const keys = (event: KeyboardEvent) => {
       if (
@@ -131,11 +135,18 @@ export async function mountModel(host: HTMLElement) {
     observer.observe(host);
     resize();
     host.replaceChildren(renderer.domElement, ...(preview ? [preview] : []));
+    let visible = true;
+    visibilityObserver = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting);
+      if (visible) previewDirty = true;
+    });
+    visibilityObserver.observe(host);
     let last = performance.now();
     const tick = (time: number) => {
       if (!host.isConnected) {
         if (scrollEnabled) view.removeEventListener("scroll", updateScroll);
         observer?.disconnect();
+        visibilityObserver?.disconnect();
         controls.dispose();
         renderer.dispose();
         model.scene.traverse((o: any) => {
@@ -151,9 +162,18 @@ export async function mountModel(host: HTMLElement) {
         });
         return;
       }
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches)
-        controls.autoRotate = false;
-      else if (scrollEnabled) {
+      const reduced = motionPreference.matches;
+      if (
+        host.ownerDocument.hidden ||
+        !visible ||
+        time - last < 33 ||
+        (reduced && !previewDirty)
+      ) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      controls.autoRotate = !reduced && host.dataset["autoRotate"] === "true";
+      if (!reduced && scrollEnabled) {
         const motion = (scrollProgress - 0.5) * scrollStrength;
         model.scene.rotation.y +=
           (originalRotation.y +
@@ -172,12 +192,14 @@ export async function mountModel(host: HTMLElement) {
         previewDirty = false;
         lastSnapshot = time;
       }
+      if (!preview) previewDirty = false;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
   } catch (error) {
     cancelAnimationFrame(frame);
     observer?.disconnect();
+    visibilityObserver?.disconnect();
     controls?.dispose();
     renderer?.dispose();
     console.warn(

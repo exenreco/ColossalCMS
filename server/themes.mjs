@@ -254,7 +254,8 @@ export async function ensureFormattedHtmlContent(db) {
   return true;
 }
 export async function ensureThemes(db) {
-  if (!(await ensureGlassey(db))) return;
+  if (db.builtinsReady) return true;
+  if (!(await ensureGlassey(db))) return false;
   if (
     !(await db
       .prepare("SELECT id FROM themes WHERE id=?")
@@ -276,7 +277,7 @@ export async function ensureThemes(db) {
       normalizeFormattedHtmlNames,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -284,8 +285,8 @@ export async function ensureThemes(db) {
       normalizeFormattedHtmlNames,
     ))
   )
-    return;
-  if (!(await ensureFormattedHtmlContent(db))) return;
+    return false;
+  if (!(await ensureFormattedHtmlContent(db))) return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -293,7 +294,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -301,7 +302,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -309,7 +310,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -317,7 +318,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -325,7 +326,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -333,7 +334,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -341,7 +342,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -349,7 +350,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -357,7 +358,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -365,7 +366,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -373,7 +374,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -381,7 +382,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -389,7 +390,7 @@ export async function ensureThemes(db) {
       migrateGlasseyDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -400,7 +401,7 @@ export async function ensureThemes(db) {
       },
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -411,7 +412,7 @@ export async function ensureThemes(db) {
       },
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -422,7 +423,7 @@ export async function ensureThemes(db) {
       },
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -430,7 +431,7 @@ export async function ensureThemes(db) {
       removeStandaloneExcerptBlocks,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -438,7 +439,7 @@ export async function ensureThemes(db) {
       normalizeContextDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await ensureThemeDocumentUpgrade(
       db,
@@ -446,7 +447,7 @@ export async function ensureThemes(db) {
       normalizeMenuDocument,
     ))
   )
-    return;
+    return false;
   if (
     !(await db
       .prepare("SELECT id FROM config WHERE id='theme-menu-item-blocks-v1'")
@@ -465,14 +466,14 @@ export async function ensureThemes(db) {
         (document) => normalizeMenuDocument(document, pages, site),
       ))
     )
-      return;
+      return false;
   }
   if (
     await db
       .prepare("SELECT id FROM config WHERE id='theme-role-templates-v2'")
       .first()
   )
-    return;
+    return true;
   const changes = [];
   for (const row of await all(db, "SELECT * FROM themes")) {
     const published = parse(row.published);
@@ -509,13 +510,14 @@ export async function ensureThemes(db) {
         (result) => Number(result.meta?.changes ?? result.changes) !== 1,
       )
     )
-      return;
+      return false;
   }
   await db
     .prepare(
       "INSERT OR IGNORE INTO config (id,value) VALUES ('theme-role-templates-v2','1')",
     )
     .run();
+  return true;
 }
 export async function listThemes(db) {
   await ensureThemes(db);
@@ -647,7 +649,18 @@ export async function previewAllowsMedia(db, token, id) {
   return themeMediaIds(p.document).includes(id);
 }
 export async function context(db, path, query = "", page = 1) {
-  const rows = await all(db, "SELECT * FROM content ORDER BY publish_at DESC");
+  const [rows, settingsRow, plugins, mediaRows, adSettings] = await Promise.all(
+    [
+      all(
+        db,
+        "SELECT * FROM content WHERE status='published' OR status='scheduled' ORDER BY publish_at DESC",
+      ),
+      db.prepare("SELECT value FROM config WHERE id='site'").first(),
+      all(db, "SELECT id FROM plugins WHERE active=1"),
+      all(db, "SELECT * FROM media"),
+      readAdSettings(db),
+    ],
+  );
   const content = rows
     .map((r) => ({
       ...r,
@@ -656,10 +669,7 @@ export async function context(db, path, query = "", page = 1) {
       templateId: r.template_id,
     }))
     .filter(published);
-  const settings = parse(
-    (await db.prepare("SELECT value FROM config WHERE id='site'").first())
-      ?.value,
-  );
+  const settings = parse(settingsRow?.value);
   const indexPage = content.find((c) => c.id === settings.postsPageId);
   const modern = settings.routingVersion === 2;
   const indexPath = modern
@@ -698,15 +708,14 @@ export async function context(db, path, query = "", page = 1) {
   }
   if (kind === "404" && settings.notFoundPageId)
     entry = content.find((c) => c.id === settings.notFoundPageId);
-  const plugins = await all(db, "SELECT id FROM plugins WHERE active=1");
   return {
     content: entry,
     kind,
     settings,
     allContent: content,
-    media: (await all(db, "SELECT * FROM media")).map(mediaRecord),
+    media: mediaRows.map(mediaRecord),
     plugins,
-    adSettings: await readAdSettings(db),
+    adSettings,
     path,
     query,
     page,

@@ -32,6 +32,10 @@ export async function productionRuntime(config, log = console.log) {
   const bootstrapEnvironment = { ...config };
   config = validateConnectionConfig({ ...connectionDefaults, ...config });
   validateConnectionConfig({ ...config, CMS_STORAGE_PROVIDER: "local" }, true);
+  const databaseConnection = {
+    uri: config.MONGODB_URI,
+    name: config.MONGODB_DATABASE,
+  };
   let DB, STORAGE;
   try {
     if (config.CMS_DB_PROVIDER === "mongodb")
@@ -69,7 +73,15 @@ export async function productionRuntime(config, log = console.log) {
       await STORAGE.test();
       log("R2 / S3 bucket connected.");
     } else if (config.CMS_STORAGE_PROVIDER === "gridfs") {
-      STORAGE = await connectGridFS(config, log);
+      STORAGE = await connectGridFS(
+        config,
+        log,
+        true,
+        config.MONGODB_URI === databaseConnection.uri &&
+          config.MONGODB_DATABASE === databaseConnection.name
+          ? DB.mongoClient
+          : undefined,
+      );
     } else {
       const dir = resolve(config.CMS_DATA_DIR || ".production", "storage");
       await mkdir(dir, { recursive: true });
@@ -100,6 +112,7 @@ export async function productionRuntime(config, log = console.log) {
       );
     }
     await seedBuiltInData(DB, log, config.CMS_ADMIN_EMAIL);
+    DB.builtinsReady = true;
     return {
       IMAGE_OPTIMIZER: imageOptimizer,
       DB,

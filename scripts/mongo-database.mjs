@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb";
+import { createHash } from "node:crypto";
 import { configureMongoDNS } from "./mongo-dns.mjs";
 import {
   productionSchema,
@@ -300,7 +301,7 @@ export function parseSql(sql, args = []) {
 }
 
 export function mongoAdapter(client, database, schema = productionSchema()) {
-  async function execute(sql, args, session) {
+  async function execute(sql, args, session, first = false) {
     const q = parseSql(sql, args);
     if (!schema[q.table]) throw new Error("Unknown CMS collection.");
     const collection = database.collection(q.table),
@@ -377,10 +378,17 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
         ];
         rows = await collection.aggregate(pipeline, options).toArray();
       } else {
-        let query = collection.find(q.filter, options);
+        const projection =
+          q.alias || q.columns.includes("*")
+            ? undefined
+            : Object.fromEntries(q.columns.map((field) => [field, 1]));
+        let query = collection.find(q.filter, {
+          ...options,
+          ...(projection ? { projection } : {}),
+        });
         if (Object.keys(q.sort).length) query = query.sort(q.sort);
         if (q.offset) query = query.skip(q.offset);
-        if (q.limit) query = query.limit(q.limit);
+        if (first || q.limit) query = query.limit(first ? 1 : q.limit);
         rows = await query.toArray();
       }
       return {
@@ -464,10 +472,12 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
     args,
     bind: (...values) => prepared(sql, values),
     all: () => execute(sql, args),
-    first: async () => (await execute(sql, args)).results[0] || null,
+    first: async () =>
+      (await execute(sql, args, undefined, true)).results[0] || null,
     run: () => execute(sql, args),
   });
   return {
+    mongoClient: client,
     prepare: prepared,
     ping: () => database.command({ ping: 1 }, { timeoutMS: 10000 }),
     batch: async (statements) => {
@@ -487,12 +497,23 @@ export function mongoAdapter(client, database, schema = productionSchema()) {
   };
 }
 
-export async function connectMongo(config, log = () => {}, initialize = true) {
+export async function connectMongo(
+  config,
+  log = () => {},
+  initialize = true,
+  suppliedClient,
+) {
   configureMongoDNS(config, log);
-  const client = new MongoClient(config.MONGODB_URI, {
-    serverSelectionTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
-  });
+  const client =
+    suppliedClient ||
+    new MongoClient(config.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+      minPoolSize: 0,
+      maxIdleTimeMS: 60000,
+      waitQueueTimeoutMS: 10000,
+    });
   try {
     log("Connecting to MongoDB…");
     await client.connect();
@@ -508,7 +529,15 @@ export async function connectMongo(config, log = () => {}, initialize = true) {
         { code: "CMS_MONGO_REPLICA_SET" },
       );
     const schema = productionSchema();
-    if (initialize) {
+    const schemaVersion = createHash("sha256")
+      .update(JSON.stringify(schema))
+      .digest("hex");
+    const marker = initialize
+      ? await database
+          .collection("config")
+          .findOne({ id: "runtime:mongo-schema" })
+      : null;
+    if (initialize && marker?.value !== schemaVersion) {
       const existing = new Set(
         (await database.listCollections({}, { nameOnly: true }).toArray()).map(
           (c) => c.name,
@@ -516,9 +545,18 @@ export async function connectMongo(config, log = () => {}, initialize = true) {
       );
       for (const [name, table] of Object.entries(schema)) {
         if (!existing.has(name)) {
-          await database.createCollection(name, {
-            validator: mongoValidator(table),
-          });
+          try {
+            await database.createCollection(name, {
+              validator: mongoValidator(table),
+            });
+          } catch (error) {
+            if (error.code !== 48) throw error;
+            await database.command({
+              collMod: name,
+              validator: mongoValidator(table),
+              validationLevel: "strict",
+            });
+          }
           log("Created collection: " + name);
         } else {
           await database.command({
@@ -538,6 +576,13 @@ export async function connectMongo(config, log = () => {}, initialize = true) {
           log("Ensured index: " + name + " / " + index.fields.join(", "));
         }
       }
+      await database
+        .collection("config")
+        .updateOne(
+          { id: "runtime:mongo-schema" },
+          { $set: { value: schemaVersion } },
+          { upsert: true },
+        );
     }
     return mongoAdapter(client, database, schema);
   } catch (e) {

@@ -99,10 +99,31 @@ export async function seedBuiltInData(
   log = () => {},
   email = "builtin@colossal.invalid",
 ) {
+  // A deployment provisions bundled data once, rather than once per cold instance.
+  const version =
+    typeof __CMS_CACHE_BUILD_ID__ === "undefined"
+      ? null
+      : __CMS_CACHE_BUILD_ID__;
+  if (
+    version &&
+    (
+      await db
+        .prepare("SELECT value FROM config WHERE id='runtime:builtins'")
+        .first()
+    )?.value === version
+  )
+    return;
   log(
     "Installing built-in themes, plugin catalog, settings and sample content…",
   );
   await initialize(db, { email });
+  if (version)
+    await db
+      .prepare(
+        "INSERT INTO config (id,value) VALUES ('runtime:builtins',?) ON CONFLICT(id) DO UPDATE SET value=excluded.value",
+      )
+      .bind(version)
+      .run();
   log("Built-in data ready. Existing records preserved.");
 }
 

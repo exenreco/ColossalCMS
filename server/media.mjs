@@ -4,6 +4,8 @@ import {
   variantKey,
   acceptsWebp,
   webpEligible,
+  responsiveFile,
+  deleteResponsiveFiles,
 } from "../plugins/media/variants.mjs";
 import { imageSize } from "image-size";
 import { inspectModel } from "./gltf.mjs";
@@ -290,6 +292,7 @@ export async function handleMedia(request, env, user, path) {
         await storage.delete(info.metadata.webp.storageKey);
       throw e;
     }
+    if (current) await deleteResponsiveFiles(storage, current);
     if (current && variantKey(current))
       await storage.delete(variantKey(current));
     if (current?.storage_key) await storage.delete(current.storage_key);
@@ -352,6 +355,7 @@ export async function handleMedia(request, env, user, path) {
         { references: refs },
       );
     // Delete metadata only after blob deletion succeeds, so failure remains recoverable.
+    await deleteResponsiveFiles(storage, current);
     if (variantKey(current)) await storage.delete(variantKey(current));
     if (current.storage_key) await storage.delete(current.storage_key);
     if (current.type === "model" && parse(current.metadata).posterStorageKey)
@@ -362,13 +366,22 @@ export async function handleMedia(request, env, user, path) {
   return json({ error: "Media endpoint not found." }, 404);
 }
 export async function serveMedia(request, env, id, identity, poster = false) {
+  const accessStarted = performance.now();
   let record = await env.DB.prepare("SELECT * FROM media WHERE id=?")
     .bind(id)
     .first();
   if (!record) fail("Media not found.", 404);
   if (poster && record.type !== "model") fail("Model poster not found.", 404);
-  const refs = await references(env.DB, id);
-  if (!refs.some((r) => r.published)) await identity(request, env.DB);
+  // The Node/Vercel handler supplies this identity only after session validation.
+  // Still verify it here; a header alone must not grant media access.
+  const authenticated = request.headers.has("oai-authenticated-user-id");
+  let refs = [];
+  if (authenticated) await identity(request, env.DB);
+  else {
+    refs = await references(env.DB, id, { publicOnly: true });
+    if (!refs.some((r) => r.published)) await identity(request, env.DB);
+  }
+  const accessDuration = performance.now() - accessStarted;
   const externalUrl = parse(record.metadata).externalUrl;
   if (!poster && externalUrl && !record.storage_key) {
     const target = new URL(externalUrl);
@@ -382,7 +395,20 @@ export async function serveMedia(request, env, id, identity, poster = false) {
   const negotiate =
     !poster && record.type === "image" && webpEligible(record.mime);
   const preferWebp = negotiate && acceptsWebp(request);
-  if (preferWebp) {
+  const query = new URL(request.url).searchParams;
+  const width = Number(query.get("width"));
+  const optimizeStarted = performance.now();
+  let resized;
+  if (!poster && query.get("format") === "webp" && query.has("width")) {
+    if (![320, 640, 960, 1280, 1920].includes(width))
+      fail("Choose a supported image width.");
+    try {
+      resized = await responsiveFile(env, record, width);
+    } catch {
+      /* Retain original delivery on codec/storage failures. */
+    }
+  }
+  if (preferWebp && !resized) {
     try {
       record = await ensureWebpVariant(env, record);
     } catch {
@@ -393,10 +419,12 @@ export async function serveMedia(request, env, id, identity, poster = false) {
     poster && record.type === "model"
       ? parse(record.metadata).posterStorageKey
       : record.storage_key;
-  let optimized = preferWebp ? variantKey(record) : "";
-  let file;
+  const optimizeDuration = performance.now() - optimizeStarted;
+  const storageStarted = performance.now();
+  let optimized = resized?.key || (preferWebp ? variantKey(record) : "");
+  let file = resized?.file;
   try {
-    file = await env.STORAGE?.get(optimized || key);
+    file ||= await env.STORAGE?.get(optimized || key);
   } catch (error) {
     if (!optimized) throw error;
   }
@@ -411,13 +439,55 @@ export async function serveMedia(request, env, id, identity, poster = false) {
       : optimized
         ? "image/webp"
         : record.mime,
-    ...(negotiate ? { Vary: "Accept" } : {}),
+    ...(negotiate &&
+    query.get("format") !== "webp" &&
+    query.get("format") !== "original"
+      ? { Vary: "Accept" }
+      : {}),
     "X-Content-Type-Options": "nosniff",
-    "Cache-Control": "no-cache",
+    "Cache-Control": "private, no-store",
     "Content-Security-Policy":
       "default-src 'none'; style-src 'unsafe-inline'; sandbox",
     "Accept-Ranges": "bytes",
+    "Server-Timing": `media-access;dur=${accessDuration.toFixed(1)}, media-optimize;dur=${optimizeDuration.toFixed(1)}, media-storage;dur=${(performance.now() - storageStarted).toFixed(1)}`,
   };
+  // Explicit format avoids CDN content negotiation ambiguity. Short CDN TTL bounds
+  // withdrawal visibility; replacement gets a new version immediately.
+  const publicImage =
+    !poster &&
+    record.type === "image" &&
+    refs.some((r) => r.published) &&
+    query.get("v") === record.updated_at &&
+    (query.get("format") === "original" ||
+      (query.get("format") === "webp" && optimized)) &&
+    !query.has("download") &&
+    !query.has("themePreview") &&
+    !request.headers.has("Cookie") &&
+    !request.headers.has("Authorization") &&
+    !request.headers.has("oai-authenticated-user-id") &&
+    !request.headers.has("Range");
+  if (publicImage) {
+    headers["Cache-Control"] = "public, max-age=0, must-revalidate";
+    headers["Vercel-CDN-Cache-Control"] = "public, max-age=60";
+    headers["X-Colossal-Public-Media"] = "1";
+  }
+  const fingerprint = new TextEncoder().encode(optimized || key);
+  const digest = await crypto.subtle.digest("SHA-256", fingerprint);
+  headers.ETag =
+    '"' +
+    Array.from(new Uint8Array(digest), (b) =>
+      b.toString(16).padStart(2, "0"),
+    ).join("") +
+    '"';
+  if (
+    !request.headers.has("Range") &&
+    request.headers
+      .get("If-None-Match")
+      ?.split(",")
+      .map((tag) => tag.trim())
+      .includes(headers.ETag)
+  )
+    return new Response(null, { status: 304, headers });
   if (new URL(request.url).searchParams.get("download") === "1") {
     const name = String(
       parse(record.metadata).originalFilename || record.name || "download",

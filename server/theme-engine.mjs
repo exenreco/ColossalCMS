@@ -1,3 +1,4 @@
+import { responsiveSourceSet } from "../plugins/media/delivery.mjs";
 import {
   migrateTable,
   tablePlacement,
@@ -1797,7 +1798,9 @@ function mediaHtml(m, ctx) {
         esc(url) +
         '" alt="' +
         esc(m.altText) +
-        '" loading="lazy">'
+        '" loading="lazy" decoding="async"' +
+        responsiveAttributes(m, ctx) +
+        ">"
       : "<" +
         m.type +
         ' src="' +
@@ -1808,6 +1811,14 @@ function mediaHtml(m, ctx) {
     (m.caption ? "<figcaption>" + esc(m.caption) + "</figcaption>" : "") +
     "</figure>"
   );
+}
+function responsiveAttributes(media, ctx, size = 0) {
+  const srcset = responsiveSourceSet(media, ctx.previewToken || "");
+  if (!srcset) return "";
+  const sizes = size
+    ? `(max-width: ${size}px) 100vw, ${size}px`
+    : ctx.imageSizes || "(max-width: 640px) 100vw, 1280px";
+  return ` srcset="${esc(srcset)}" sizes="${esc(sizes)}"`;
 }
 function dynamic(type, s, ctx, children) {
   if (type === "core/protected-file") return renderProtectedFile(s, ctx, esc);
@@ -2048,7 +2059,7 @@ function dynamic(type, s, ctx, children) {
         : m?.url;
     if (!src) return "";
     const size = { small: 320, medium: 640, large: 960 }[s.size] || 0;
-    const img = `<img src="${esc(src)}" alt="${esc(s.alt || m?.altText || "")}" loading="lazy" style="${size ? "max-width:" + size + "px;" : ""}border-radius:${num(s.radius, 0, 100)}px">`;
+    const img = `<img src="${esc(src)}" alt="${esc(s.alt || m?.altText || "")}" loading="lazy" decoding="async"${s.source === "url" ? "" : responsiveAttributes(m, ctx, size)} style="${size ? "max-width:" + size + "px;" : ""}border-radius:${num(s.radius, 0, 100)}px">`;
     const linked =
       /^https:\/\//.test(s.link || "") || /^\/(?!\/)/.test(s.link || "")
         ? `<a href="${esc(s.link)}">${img}</a>`
@@ -2193,7 +2204,11 @@ function dynamic(type, s, ctx, children) {
           .map((entry, index) => {
             const rendered = renderListLayout(
               entryLayout,
-              { ...listContext, content: entry },
+              {
+                ...listContext,
+                content: entry,
+                imageSizes: `(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${Math.ceil(1280 / num(s.layout === "list" ? 1 : s.columns || 3, 1, 6))}px`,
+              },
               index === 0
                 ? ""
                 : "item-" + String(entry.id || index).replace(/[^\w-]/g, ""),

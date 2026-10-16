@@ -2,6 +2,7 @@ import { MongoClient, GridFSBucket } from "mongodb";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { configureMongoDNS } from "./mongo-dns.mjs";
+const GRIDFS_VERSION = "1";
 
 function storageKey(value) {
   if (
@@ -114,6 +115,10 @@ export async function connectGridFS(
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       timeoutMS: 30000,
+      maxPoolSize: 10,
+      minPoolSize: 0,
+      maxIdleTimeMS: 60000,
+      waitQueueTimeoutMS: 10000,
     });
   try {
     log("Connecting to MongoDB GridFS storage…");
@@ -122,7 +127,11 @@ export async function connectGridFS(
     await db.command({ ping: 1 });
     const name = config.MONGODB_GRIDFS_BUCKET || "colossal_media";
     const collections = [name + ".files", name + ".chunks", name + ".keys"];
-    if (initialize) {
+    const markerId = "__cms_schema_version__";
+    const marker = initialize
+      ? await db.collection(collections[2]).findOne({ _id: markerId })
+      : null;
+    if (initialize && marker?.schemaVersion !== GRIDFS_VERSION) {
       for (const collection of collections) {
         try {
           await db.createCollection(collection);
@@ -138,7 +147,14 @@ export async function connectGridFS(
         .collection(collections[1])
         .createIndex({ files_id: 1, n: 1 }, { unique: true });
       log("GridFS file, chunk and media-key indexes ready.");
-    } else {
+      await db
+        .collection(collections[2])
+        .updateOne(
+          { _id: markerId },
+          { $set: { schemaVersion: GRIDFS_VERSION } },
+          { upsert: true },
+        );
+    } else if (!initialize) {
       for (const collection of collections)
         await db.collection(collection).findOne({});
       log(
@@ -149,13 +165,13 @@ export async function connectGridFS(
       ...gridfsStorage(
         new GridFSBucket(db, { bucketName: name }),
         db.collection(collections[2]),
-        () => client.close(),
+        () => (suppliedClient ? Promise.resolve() : client.close()),
         log,
       ),
       ping: () => db.command({ ping: 1 }, { timeoutMS: 10000 }),
     };
   } catch (error) {
-    await client.close().catch(() => {});
+    if (!suppliedClient) await client.close().catch(() => {});
     throw error;
   }
 }

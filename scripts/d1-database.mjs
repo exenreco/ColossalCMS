@@ -63,15 +63,15 @@ export async function migrateD1(db, log = () => {}) {
         ),
       )
     : new Set();
+  const locallyApplied = new Set(
+    (await db.prepare("SELECT name FROM local_migrations").all()).results.map(
+      (row) => row.name,
+    ),
+  );
   for (const file of (await readdir("drizzle"))
     .filter((f) => f.endsWith(".sql"))
     .sort()) {
-    if (
-      await db
-        .prepare("SELECT name FROM local_migrations WHERE name=?")
-        .bind(file)
-        .first()
-    ) {
+    if (locallyApplied.has(file)) {
       log("Migration already applied: " + file);
       continue;
     }

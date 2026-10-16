@@ -19,6 +19,7 @@ import { clamp, scrollProgress, easeTo } from "./scene-math";
 export async function mountIceWorld(host: HTMLElement) {
   const doc = host.ownerDocument,
     view = doc.defaultView || window;
+  const mobile = view.matchMedia("(max-width: 1024px)");
   const embeddingFrame = view.frameElement;
   const attached = () =>
     host.isConnected && (!embeddingFrame || embeddingFrame.isConnected);
@@ -93,7 +94,9 @@ export async function mountIceWorld(host: HTMLElement) {
       powerPreference: "low-power",
     });
     renderer.setClearColor(0, 0);
-    renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, 1.35));
+    renderer.setPixelRatio(
+      Math.min(view.devicePixelRatio || 1, mobile.matches ? 1 : 1.35),
+    );
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     texture = await new THREE.TextureLoader().loadAsync(
@@ -350,7 +353,12 @@ export async function mountIceWorld(host: HTMLElement) {
         return;
       }
       animation = requestAnimationFrame(tick);
-      if (!visible || doc.hidden || time - last < (preview ? 33 : 16)) return;
+      if (
+        !visible ||
+        doc.hidden ||
+        time - last < (preview || mobile.matches ? 33 : 16)
+      )
+        return;
       const delta = Math.min(0.05, (time - last) / 1000);
       last = time;
       if (motion.matches !== lastReduced) {

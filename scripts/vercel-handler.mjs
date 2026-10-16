@@ -72,6 +72,7 @@ export function createVercelHandler(
     return runtime;
   };
   return async (req, res) => {
+    const started = performance.now();
     try {
       let origin;
       try {
@@ -161,12 +162,17 @@ export function createVercelHandler(
       // Reject unauthenticated cron calls before opening database connections.
       if (path === HEARTBEAT_PATH)
         authorizeHeartbeat(request, config.CRON_SECRET);
+      const cold = !runtime;
+      const runtimeStarted = performance.now();
       const env = await getRuntime();
+      const runtimeDuration = performance.now() - runtimeStarted;
+      const authStarted = performance.now();
       let response =
         path === HEARTBEAT_PATH
           ? await heartbeatResponse(env)
           : await handleNodeAuth(request, env.AUTH, ip);
       if (path === "/healthz") response = Response.json({ ok: true });
+      let authDuration = performance.now() - authStarted;
       if (!response) {
         const member = await env.AUTH.identify(request);
         if (member) {
@@ -180,16 +186,31 @@ export function createVercelHandler(
               Location: (await env.AUTH.setupNeeded()) ? "/setup" : "/login",
             },
           });
-        else
+        else {
+          authDuration = performance.now() - authStarted;
           response = await worker.fetch(new Request(request, { headers }), env);
+        }
       }
-      // Dynamic CMS and auth responses must never be stored by the CDN.
+      // Only the reviewed public-media path may opt into CDN caching.
       const responseHeaders = new Headers(response.headers);
-      responseHeaders.set(
-        "Cache-Control",
-        response.headers.get("Content-Type")?.startsWith("application/x-ndjson")
-          ? "no-store, no-transform"
-          : "no-store",
+      const publicMedia =
+        /^\/api\/media\/[^/]+\/file$/.test(path) &&
+        responseHeaders.get("X-Colossal-Public-Media") === "1" &&
+        [200, 304].includes(response.status);
+      responseHeaders.delete("X-Colossal-Public-Media");
+      if (!publicMedia)
+        responseHeaders.set(
+          "Cache-Control",
+          response.headers
+            .get("Content-Type")
+            ?.startsWith("application/x-ndjson")
+            ? "no-store, no-transform"
+            : "no-store",
+        );
+      if (!publicMedia) responseHeaders.delete("Vercel-CDN-Cache-Control");
+      responseHeaders.append(
+        "Server-Timing",
+        `runtime;dur=${runtimeDuration.toFixed(1)};desc="${cold ? "cold" : "warm"}", auth;dur=${authDuration.toFixed(1)}, total;dur=${(performance.now() - started).toFixed(1)}`,
       );
       res.writeHead(response.status, Object.fromEntries(responseHeaders));
       await writeResponseBody(response, res, req.method === "HEAD");

@@ -45,7 +45,10 @@ export const content = sqliteTable(
     details: text("details").notNull().default("{}"),
     templateId: text("template_id").notNull().default(""),
   },
-  (t) => [uniqueIndex("idx_content_slug").on(t.slug)],
+  (t) => [
+    uniqueIndex("idx_content_slug").on(t.slug),
+    index("idx_content_published_date").on(t.status, t.publishAt),
+  ],
 );
 export const config = sqliteTable("config", {
   id: text("id").primaryKey(),
@@ -158,23 +161,31 @@ export const notices = sqliteTable("notices", {
   createdAt: text("created_at").notNull(),
 });
 
-export const themes = sqliteTable("themes", {
-  id: text("id").primaryKey(),
-  manifest: text("manifest").notNull(),
-  published: text("published").notNull(),
-  draft: text("draft"),
-  active: integer("active").notNull().default(0),
-  isCore: integer("is_core").notNull().default(0),
-  revision: integer("revision").notNull().default(1),
-  updatedAt: text("updated_at").notNull(),
-});
-export const themeHistory = sqliteTable("theme_history", {
-  id: text("id").primaryKey(),
-  themeId: text("theme_id").notNull(),
-  version: text("version").notNull(),
-  snapshot: text("snapshot").notNull(),
-  createdAt: text("created_at").notNull(),
-});
+export const themes = sqliteTable(
+  "themes",
+  {
+    id: text("id").primaryKey(),
+    manifest: text("manifest").notNull(),
+    published: text("published").notNull(),
+    draft: text("draft"),
+    active: integer("active").notNull().default(0),
+    isCore: integer("is_core").notNull().default(0),
+    revision: integer("revision").notNull().default(1),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("idx_themes_active").on(t.active)],
+);
+export const themeHistory = sqliteTable(
+  "theme_history",
+  {
+    id: text("id").primaryKey(),
+    themeId: text("theme_id").notNull(),
+    version: text("version").notNull(),
+    snapshot: text("snapshot").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("idx_theme_history_theme_date").on(t.themeId, t.createdAt)],
+);
 
 export const loginIpWindows = sqliteTable("login_ip_windows", {
   id: text("id").primaryKey(),

@@ -178,6 +178,7 @@ test("GridFS initializes collections/indexes idempotently and tests without writ
   const operations = [];
   let fail = false,
     closed = 0;
+  const markers = new Map();
   const db = {
     async command() {
       if (fail) throw new Error("private credential");
@@ -189,8 +190,12 @@ test("GridFS initializes collections/indexes idempotently and tests without writ
     },
     collection(name) {
       return {
-        async findOne() {
+        async findOne(filter) {
           operations.push("read:" + name);
+          return markers.get(filter?._id);
+        },
+        async updateOne(filter, update) {
+          markers.set(filter._id, update.$set);
         },
         async createIndex(keys, options) {
           operations.push({ name, keys, options });
@@ -232,9 +237,12 @@ test("GridFS initializes collections/indexes idempotently and tests without writ
       (v) => v.name === "colossal_media.chunks" && v.options.unique,
     ),
   );
+  operations.length = 0;
+  await (await connectGridFS(config, () => {}, true, client)).close();
+  assert.deepEqual(operations, ["ping", "read:colossal_media.keys"]);
   fail = true;
   await assert.rejects(connectGridFS(config, () => {}, true, client));
-  assert.equal(closed, 3);
+  assert.equal(closed, 0, "shared client belongs to its caller");
 });
 
 test("GridFS configuration works with D1, requires Mongo credentials, and console awaits storage close", async () => {

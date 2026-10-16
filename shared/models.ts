@@ -118,6 +118,7 @@ export interface MediaItem {
   tags: string[];
   url: string;
   originalUrl?: string;
+  srcset?: string;
   thumbnailUrl?: string;
   mime: string;
   metadata: {

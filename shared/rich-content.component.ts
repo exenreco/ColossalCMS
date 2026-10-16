@@ -57,6 +57,9 @@ import { RichNode, MediaItem } from "./models";
             @if (m.type === "image") {
               <img
                 [src]="m.url + '?v=' + m.updatedAt"
+                [attr.srcset]="m.srcset || null"
+                sizes="(max-width: 640px) 100vw, 960px"
+                decoding="async"
                 [alt]="m.altText"
                 loading="lazy"
               />

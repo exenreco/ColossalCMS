@@ -16,8 +16,11 @@ The server build also generates `dist/server/vercel-runtime.mjs`. This bundles t
 | Build command     | `pnpm build`                                  |
 | Output directory  | `dist/client`                                 |
 | Node.js           | 24.x                                          |
+| Function region   | Cleveland (`cle1`), near Nebraska             |
 
-The committed JSON supplies build settings and routing. Admin navigation/assets, authentication, health checks, media, and APIs go through the Function. Existing public static files use Vercel's filesystem; other routes reach the public application through the handler. Dynamic responses use `Cache-Control: no-store`.
+The committed JSON supplies build settings and routing. Admin navigation/assets, authentication, health checks, media, and APIs go through the Function. Existing public static files use Vercel's filesystem; other routes reach the public application through the handler. Dynamic responses use `Cache-Control: no-store`. The exception is explicitly formatted, versioned public images, which may use Vercel's CDN for 60 seconds; private/authenticated/preview media remains uncached. A withdrawn public image can remain in that CDN cache until its short TTL expires.
+
+Keep MongoDB close to `cle1` for minimum database latency; this setting does not relocate an Atlas cluster. Schema fingerprints and deployment markers avoid repeating completed provisioning on every cold instance, and matching MongoDB/GridFS connections share a pool. `Server-Timing` exposes cold/warm initialization, authentication, application, database and total timings. See [Production performance](../../README.md#production-performance) for metrics, responsive image URLs and cache behavior.
 
 ## Environment variables
 

@@ -116,6 +116,9 @@ import { themeLoadingCss } from "../../../shared/theme-loading";
                     <img
                       class="journal-featured-image"
                       [src]="image.url + '?v=' + image.updatedAt"
+                      [attr.srcset]="image.srcset || null"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 640px"
+                      decoding="async"
                       [alt]="image.altText"
                     />
                   }
@@ -164,6 +167,9 @@ import { themeLoadingCss } from "../../../shared/theme-loading";
                 <figure class="article-featured-image">
                   <img
                     [src]="image.url + '?v=' + image.updatedAt"
+                    [attr.srcset]="image.srcset || null"
+                    sizes="(max-width: 640px) 100vw, 960px"
+                    decoding="async"
                     [alt]="image.altText"
                   />
                   @if (image.caption) {
