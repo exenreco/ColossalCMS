@@ -2064,3 +2064,11 @@ Media responses also report `media-access`, `media-optimize`, and `media-storage
 Headers contain durations and counts only, never queries, credentials or content. `X-Colossal-Cache` identifies origin response-cache hits; `X-Vercel-Cache` identifies Vercel CDN behavior. Dynamic HTML and authenticated responses remain `no-store`; the Caching plugin still caches eligible HTML internally without bypassing view analytics.
 
 Verify these paths with `node --test tests/production-performance.test.mjs tests/media-webp.test.mjs tests/gridfs-storage.test.mjs tests/vercel.test.mjs tests/caching.test.mjs`. No new environment variables or paid caching service are required.
+
+### Glossy LCP loading
+
+Published Glossy pages retain the server-rendered DOM and load a small enhancement entry point; Angular remains available as a lazy fallback for other themes and previews. The hero is visible before JavaScript, with `loading="eager"`, `fetchpriority="high"` and a responsive image preload at the start of the document head. Bundled portrait/throne PNGs use prebuilt transparent WebP alternatives, described in `shared/glossy-hero-assets.json`; custom artwork URLs are preserved.
+
+The Three.js scene starts after the hero image loads and the browser has an idle opportunity. It reuses that decoded image and fades only the live canvas over the static artwork. If JavaScript, a scene chunk or WebGL fails, the static artwork remains visible. A static veil preserves the theme's dark appearance before the canvas is ready.
+
+`pnpm build:server` creates a hashed Glossy stylesheet without unused DM Sans/Manrope font faces. The server also removes those faces from Angular's inline critical CSS when Glossy uses system fonts. Authored theme typography selecting either font keeps the original stylesheet and declarations. Theme settings/content are not overwritten by these delivery optimizations. After deployment, measure production LCP with PageSpeed Insights or browser performance tools; local asset-size reductions alone are not a field LCP measurement.

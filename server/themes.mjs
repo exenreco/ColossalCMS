@@ -1,4 +1,5 @@
 import { zipSync, strToU8 } from "fflate";
+import { optimizeGlossyRender } from "./glossy-lcp.mjs";
 import semver from "semver";
 import { seoMetadata } from "./seo.mjs";
 import { formatPageTitle } from "../shared/page-title.ts";
@@ -785,11 +786,14 @@ export async function publicThemeRenderData(request, env) {
   };
   try {
     return {
-      ...renderTheme(
-        d,
-        landingTemplate ? { ...ctx, kind: "home" } : ctx,
-        selectedTemplate?.id || landingTemplate,
-        preview?.part ? { part: preview.part } : {},
+      ...optimizeGlossyRender(
+        renderTheme(
+          d,
+          landingTemplate ? { ...ctx, kind: "home" } : ctx,
+          selectedTemplate?.id || landingTemplate,
+          preview?.part ? { part: preview.part } : {},
+        ),
+        !!token,
       ),
       adsEnabled:
         !token &&

@@ -1,0 +1,20 @@
+{
+  "/themes/colossal-2027/ice-portrait.png": {
+    "src": "/themes/colossal-2027/ice-portrait-1246.webp",
+    "width": 1246,
+    "height": 1262,
+    "srcset": "/themes/colossal-2027/ice-portrait-640.webp 640w, /themes/colossal-2027/ice-portrait-1246.webp 1246w"
+  },
+  "/themes/colossal-2027/ice-throne.png": {
+    "src": "/themes/colossal-2027/ice-throne-1086.webp",
+    "width": 1086,
+    "height": 1448,
+    "srcset": "/themes/colossal-2027/ice-throne-640.webp 640w, /themes/colossal-2027/ice-throne-1086.webp 1086w"
+  },
+  "/themes/colossal-2027/ice-throne-royal.png": {
+    "src": "/themes/colossal-2027/ice-throne-royal-1086.webp",
+    "width": 1086,
+    "height": 1448,
+    "srcset": "/themes/colossal-2027/ice-throne-royal-640.webp 640w, /themes/colossal-2027/ice-throne-royal-1086.webp 1086w"
+  }
+}

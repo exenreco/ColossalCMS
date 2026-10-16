@@ -429,7 +429,7 @@ test("portfolio theme uses its editable landing template at / while standard con
     assert.equal(home.templateId, "home");
     assert.match(
       home.html,
-      /data-portrait-url="\/themes\/colossal-2027\/ice-throne-royal.png"/,
+      /data-portrait-url="\/themes\/colossal-2027\/ice-throne-royal-1086.webp"/,
     );
     assert.match(home.html, /data-scene-preset="ice-world"/);
     assert.match(home.html, /data-full-viewport="true"/);

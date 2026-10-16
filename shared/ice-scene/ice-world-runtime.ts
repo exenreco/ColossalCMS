@@ -27,7 +27,9 @@ export async function mountIceWorld(host: HTMLElement) {
     ".cl-portrait-fallback",
   );
   const full = host.dataset["fullViewport"] === "true";
-  const fadeBackground = full && doc === document;
+  const progressive = host.dataset["progressiveScene"] === "true";
+  const staticVeil = host.querySelector<HTMLElement>(".cl-scene-static-veil");
+  const fadeBackground = full && doc === document && !progressive;
   if (fadeBackground) host.style.opacity = "0";
   // Stretch between viewport edges rather than mixing vh/svh heights. Set this
   // before texture loading so the fallback and live scene have the same frame.
@@ -99,9 +101,15 @@ export async function mountIceWorld(host: HTMLElement) {
     );
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
-    texture = await new THREE.TextureLoader().loadAsync(
-      host.dataset["portraitUrl"],
-    );
+    if (progressive && fallback?.complete && fallback.naturalWidth) {
+      // Share the decoded LCP image instead of issuing another texture download.
+      texture = new THREE.Texture(fallback);
+      texture.needsUpdate = true;
+    } else {
+      texture = await new THREE.TextureLoader().loadAsync(
+        host.dataset["portraitUrl"],
+      );
+    }
     if (!attached()) {
       dispose();
       return;
@@ -217,6 +225,10 @@ export async function mountIceWorld(host: HTMLElement) {
     const canvas = renderer.domElement as HTMLCanvasElement;
     canvas.style.cssText =
       "display:block;width:100%;height:100%;position:absolute;inset:0;";
+    if (progressive) {
+      canvas.style.opacity = "0";
+      canvas.style.zIndex = "2";
+    }
     canvas.setAttribute("aria-hidden", "true");
     host.append(canvas);
     const preview = doc !== document ? doc.createElement("img") : null;
@@ -397,13 +409,28 @@ export async function mountIceWorld(host: HTMLElement) {
         : easeTo(camera.position.y, -pointer.y * 0.28, delta, 9);
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
-      if (fallback) fallback.style.visibility = "hidden";
+      if (fallback && !progressive) fallback.style.visibility = "hidden";
       if (preview && time - lastSnapshot >= 66) {
         preview.src = canvas.toDataURL("image/webp", 0.84);
         lastSnapshot = time;
       }
       if (!revealed) {
         revealed = true;
+        if (progressive) {
+          canvas.style.opacity = "1";
+          const finish = () => {
+            if (disposed) return;
+            if (fallback) fallback.style.visibility = "hidden";
+            if (staticVeil) staticVeil.style.visibility = "hidden";
+          };
+          if (!motion.matches && canvas.animate) {
+            revealAnimation = canvas.animate([{ opacity: 0 }, { opacity: 1 }], {
+              duration: 500,
+              easing: "ease-out",
+            });
+            void revealAnimation.finished.then(finish).catch(() => {});
+          } else finish();
+        }
         if (fadeBackground) {
           host.style.opacity = "1";
           if (!motion.matches)
@@ -422,6 +449,7 @@ export async function mountIceWorld(host: HTMLElement) {
       "webglcontextlost",
       () => {
         if (fallback) fallback.style.visibility = "visible";
+        if (staticVeil) staticVeil.style.visibility = "visible";
         dispose();
         canvas.remove();
         preview?.remove();
@@ -432,5 +460,6 @@ export async function mountIceWorld(host: HTMLElement) {
     dispose();
     renderer?.domElement?.remove();
     if (fallback) fallback.style.visibility = "visible";
+    if (staticVeil) staticVeil.style.visibility = "visible";
   }
 }

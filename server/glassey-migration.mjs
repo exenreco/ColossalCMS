@@ -86,6 +86,7 @@ export function migrateGlasseyDocument(document) {
   addGlossyHeaderSearch(document);
   tabletGlossyNavigation(document);
   alignGlossyMobileBrandLeft(document);
+  stabilizeGlossyHeaderControls(document);
   styleGlossySearchTemplate(document);
   addGlossyFooterSocialLinks(document);
   addGlossyGithubSocialLink(document);
@@ -216,6 +217,28 @@ const GLOSSY_HEADER_CSS = `
 .theme-root .c27-header-inner .theme-menu-items>.theme-button.c27-nav-contact{display:inline-flex}
 }
 `;
+
+/** Keep icon-only controls centered and search expansion out of desktop layout. */
+function stabilizeGlossyHeaderControls(document) {
+  const marker = "/* Glossy stable header controls v1 */";
+  if (document.css?.includes(marker)) return;
+  document.css =
+    (document.css || "") +
+    `
+${marker}
+.theme-root .c27-header-inner .theme-menu-toggle{justify-content:center;line-height:1;min-width:44px;min-height:44px;margin:0}
+.theme-root .c27-header-inner .theme-menu-toggle span:empty{display:none}
+.theme-root .c27-header-inner .theme-menu-toggle:has(span:empty){width:44px;height:44px;padding:0;gap:0}
+.theme-root .c27-header-inner .theme-menu-toggle .theme-icon{display:inline-flex;align-items:center;justify-content:center;margin:0;flex-shrink:0}
+.theme-root .c27-header-inner .theme-menu-toggle svg{display:block;margin:0}
+@media(min-width:1025px){
+.theme-root .c27-header-inner .c27-nav-search{position:relative;flex:0 0 44px;width:44px;min-width:44px;height:44px;z-index:20}
+.theme-root .c27-header-inner .c27-nav-search .theme-search{position:absolute;top:0;right:0;max-width:none}
+.theme-root .c27-header-inner .c27-nav-search .theme-search[data-search-open],.theme-root .c27-header-inner .c27-nav-search .theme-search:has(input:focus){width:min(320px,calc(100vw - 64px));background-color:#17191bf2;box-shadow:inset 0 1px 0 #ffffff14,0 8px 24px #0004}
+}
+`;
+  delete document.compiled;
+}
 
 /** Split stock branding into editable layout blocks once; preserve subsequent edits. */
 function upgradeGlossyBrandLayout(document) {

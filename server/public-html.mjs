@@ -46,6 +46,23 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
     /<title>[^<]*<\/title>/i,
     `<title>${esc(rendered.title || "Colossal CMS")}</title>`,
   );
+  if (rendered.fontProfile === "system") {
+    // Angular's critical CSS also embeds the font faces from the shared stylesheet.
+    // Keep fonts selected by an authored theme; strip only these unused built-ins.
+    html = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, (style) =>
+      style.replace(/@font-face\s*\{[^}]*\}/gi, (rule) =>
+        /font-family\s*:\s*["']?(?:DM Sans|Manrope)\b/i.test(rule) ? "" : rule,
+      ),
+    );
+    html = html.replace(
+      /<link\b[^>]*\bdata-glossy-href="([^"]+)"[^>]*>/gi,
+      (tag, href) => tag.replace(/\shref="[^"]*"/, ` href="${esc(href)}"`),
+    );
+  }
+  const image = rendered.lcpImage;
+  const preload = image?.src
+    ? `<link rel="preload" as="image" href="${esc(image.src)}"${image.srcset ? ` imagesrcset="${esc(image.srcset)}" imagesizes="${esc(image.sizes || "100vw")}"` : ""} fetchpriority="high">`
+    : "";
   html = html.replace(/<meta\b(?=[^>]*\bname=["']description["'])[^>]*>/gi, "");
   if (rendered.siteIcon)
     html = html.replace(
@@ -53,6 +70,7 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
       "",
     );
   return html
+    .replace(/<head[^>]*>/i, (head) => head + preload)
     .replace(
       /<\/head>/i,
       `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}"><link rel="apple-touch-icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
