@@ -1,6 +1,6 @@
 // @ts-ignore Three.js runtime declarations are separate from its package.
 import * as THREE from "three";
-import { throneFrame } from "./scene-math";
+import { imageAspect, throneFrame } from "./scene-math";
 import { SceneComponent, SceneFrame } from "./scene-component";
 
 /** Foreground artwork preserves its aspect ratio at every viewport size. */
@@ -24,7 +24,7 @@ export class ThroneComponent implements SceneComponent {
   resize(aspect: number, distance: number) {
     const frame = throneFrame(
       aspect,
-      this.texture.image.width / this.texture.image.height,
+      imageAspect(this.texture.image),
       distance - 1,
     );
     this.object.scale.set(frame.width, frame.height, 1);

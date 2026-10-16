@@ -9,6 +9,11 @@ import { buildGlossyStyles } from "../scripts/build-glossy-styles.mjs";
 import assets from "../shared/glossy-hero-assets.json" with { type: "json" };
 import { initialPublicRender } from "../shared/public-render.ts";
 import {
+  imageAspect,
+  throneFrame,
+  throneFallbackStyle,
+} from "../shared/ice-scene/scene-math.ts";
+import {
   defaultTheme,
   compileDocument,
   renderTheme,
@@ -23,6 +28,57 @@ const fixture = () => ({
     className: "c27-body",
     style: "",
   },
+});
+
+test("decoded artwork proportions ignore CSS sizing and static framing matches the perspective model", () => {
+  const image = {
+    naturalWidth: 1086,
+    naturalHeight: 1448,
+    width: 1920,
+    height: 1080,
+  };
+  assert.equal(imageAspect(image), 0.75);
+  assert.equal(imageAspect({ width: 640, height: 800 }), 0.8);
+  for (const [width, height] of [
+    [1920, 1080],
+    [1106, 1242],
+    [390, 844],
+  ]) {
+    const distance = 12 / 1.12;
+    const aspect = imageAspect(image);
+    const narrow = width / height < 0.9;
+    const style = throneFallbackStyle(aspect, narrow);
+    const [percent, vh] = style
+      .match(/width:min\(([\d.]+)%,([\d.]+)vh\)/)
+      .slice(1)
+      .map(Number);
+    const fallbackWidth = Math.min(
+      (width * percent) / 100,
+      (height * vh) / 100,
+    );
+    const worldHeight = 2 * Math.tan((38 * Math.PI) / 360) * (distance - 1);
+    const frame = throneFrame(width / height, aspect, distance - 1);
+    assert.ok(
+      Math.abs(fallbackWidth - (frame.width / worldHeight) * height) < 0.001,
+    );
+    const [left, top] = [
+      Number(style.match(/left:([\d.]+)%/)[1]),
+      Number(style.match(/top:([\d.]+)%/)[1]),
+    ];
+    assert.ok(
+      Math.abs(
+        (left / 100) * width - (width / 2 + (frame.x / worldHeight) * height),
+      ) < 0.001,
+    );
+    assert.ok(
+      Math.abs(
+        (top / 100) * height - (height / 2 - (frame.y / worldHeight) * height),
+      ) < 0.001,
+    );
+  }
+  const optimized = optimizeGlossyRender(fixture());
+  assert.match(optimized.html, /data-static-frame="glossy-scene-0"/);
+  assert.match(optimized.css, /@media\(max-aspect-ratio:9\/10\)/);
 });
 
 test("Glossy copies retain their identity and custom design while receiving delivery optimizations", () => {

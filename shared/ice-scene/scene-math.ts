@@ -1,6 +1,23 @@
 export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
 
+/** DOM image width/height follow CSS; texture proportions must use decoded pixels. */
+export function imageAspect(image: {
+  naturalWidth?: number;
+  naturalHeight?: number;
+  width: number;
+  height: number;
+}) {
+  return (
+    (image.naturalWidth || image.width) / (image.naturalHeight || image.height)
+  );
+}
+
+/** Match the static image to the perspective plane before WebGL is available. */
+export function throneFallbackStyle(aspect: number, narrow = false) {
+  return `position:absolute;inset:auto;max-width:none;max-height:none;width:min(${narrow ? 92 : 58}%,${(narrow ? 58 : 80) * aspect}vh);height:auto;aspect-ratio:${aspect};left:${narrow ? 50 : 70}%;top:${narrow ? 39 : 53.5}%;transform:translate(-50%,-50%);object-fit:contain;`;
+}
+
 /** Keep the authored RGB tint and its optional alpha separate from layer opacity. */
 export function sceneTint(value: string | undefined) {
   const hex = /^#[a-f\d]{6}(?:[a-f\d]{2})?$/i.test(value || "")

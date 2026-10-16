@@ -1,6 +1,7 @@
 import { parseDocument } from "htmlparser2";
 import { findAll, getOuterHTML } from "domutils";
 import assets from "../shared/glossy-hero-assets.json" with { type: "json" };
+import { throneFallbackStyle } from "../shared/ice-scene/scene-math.ts";
 
 export function optimizeGlossyRender(rendered, preview = false) {
   const id = rendered.body?.themeId || "";
@@ -27,6 +28,7 @@ export function optimizeGlossyRender(rendered, preview = false) {
     tree.children,
   );
   let lcpImage;
+  let fallbackCss = "";
   for (const scene of scenes) {
     const image = findAll(
       (node) =>
@@ -60,6 +62,14 @@ export function optimizeGlossyRender(rendered, preview = false) {
       };
     }
     scene.attribs["data-progressive-scene"] = "true";
+    if (optimized) {
+      // Keep the no-WebGL/first-paint artwork in the same frame as the live model.
+      const key = `glossy-scene-${scenes.indexOf(scene)}`;
+      scene.attribs["data-static-frame"] = key;
+      const aspect = optimized.width / optimized.height;
+      const selector = `.cl-ice-world[data-static-frame=${key}]>.cl-portrait-fallback`;
+      fallbackCss += `${selector}{${throneFallbackStyle(aspect)}}@media(max-aspect-ratio:9/10){${selector}{${throneFallbackStyle(aspect, true)}}}`;
+    }
     const color = /^#[\da-f]{6}(?:[\da-f]{2})?$/i.test(
       scene.attribs["data-scene-veil-color"] || "",
     )
@@ -91,7 +101,7 @@ export function optimizeGlossyRender(rendered, preview = false) {
   return {
     ...rendered,
     html: getOuterHTML(tree),
-    css: rendered.css + css,
+    css: rendered.css + css + fallbackCss,
     lcpImage,
     fontProfile: customFont ? "custom" : "system",
     frontendMode: "enhance",
