@@ -29,6 +29,7 @@ export interface PublicRender {
   maintenance?: boolean;
   maintenancePreview?: boolean;
   adsEnabled?: boolean;
+  frontendMode?: "enhance";
 }
 
 /** Only the same-origin server's vetted render is embedded in this inert payload. */
@@ -40,6 +41,23 @@ export function initialPublicRender(doc: Document): PublicRender | null {
     const render = payload?.textContent
       ? JSON.parse(payload.textContent)
       : null;
+    if (
+      render?.bootstrap === "enhance-v1" &&
+      render.preview !== true &&
+      typeof render.body?.className === "string" &&
+      typeof render.body?.style === "string" &&
+      typeof render.body?.themeId === "string"
+    ) {
+      // The document already contains the vetted HTML/CSS. Its enhancer needs flags only.
+      return {
+        html: "",
+        css: "",
+        body: render.body,
+        preview: false,
+        adsEnabled: render.adsEnabled === true,
+        frontendMode: "enhance",
+      };
+    }
     return typeof render?.html === "string" &&
       typeof render?.css === "string" &&
       typeof render?.body?.className === "string" &&

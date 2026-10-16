@@ -2067,7 +2067,9 @@ Verify these paths with `node --test tests/production-performance.test.mjs tests
 
 ### Glossy LCP loading
 
-Published Glossy pages retain the server-rendered DOM and load a small enhancement entry point; Angular remains available as a lazy fallback for other themes and previews. The hero is visible before JavaScript, with `loading="eager"`, `fetchpriority="high"` and a responsive image preload at the start of the document head. Bundled portrait/throne PNGs use prebuilt transparent WebP alternatives, described in `shared/glossy-hero-assets.json`; custom artwork URLs are preserved.
+Published Glossy pages, including copies that retain Glossy's body/header/hero styling, retain the server-rendered DOM and load a small enhancement entry point. Copies do not have to keep the original theme ID or name. Angular remains available as a lazy fallback for other themes and previews. The hero is visible before JavaScript, with `loading="eager"`, `fetchpriority="high"` and a responsive image preload at the start of the document head. Bundled portrait/throne PNGs use prebuilt transparent WebP alternatives, described in `shared/glossy-hero-assets.json`; custom artwork URLs are preserved.
+
+Enhanced documents send a compact `enhance-v1` startup payload containing body metadata and runtime flags, rather than a duplicate copy of the HTML, CSS and SEO data. Startup JSON is placed after visible page content. Full render APIs and editor previews retain their complete render payloads. Native image and featured-image output reserves intrinsic dimensions, and the final HTML sanitizer preserves generated `srcset`, `sizes`, asynchronous decoding and fetch-priority attributes while continuing to reject executable image URLs and event handlers.
 
 The Three.js scene starts after the hero image loads and the browser has an idle opportunity. It reuses that decoded image and fades only the live canvas over the static artwork. If JavaScript, a scene chunk or WebGL fails, the static artwork remains visible. A static veil preserves the theme's dark appearance before the canvas is ready.
 

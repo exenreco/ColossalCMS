@@ -4,11 +4,18 @@ import assets from "../shared/glossy-hero-assets.json" with { type: "json" };
 
 export function optimizeGlossyRender(rendered, preview = false) {
   const id = rendered.body?.themeId || "";
+  const glossyCopy =
+    String(rendered.body?.className || "")
+      .split(/\s+/)
+      .includes("c27-body") &&
+    /\.c27-header-inner\b/.test(rendered.css || "") &&
+    /\.c27-hero\b/.test(rendered.css || "");
   if (
     preview ||
     !(
       id === "com.colossal.theme.colossal-2027" ||
-      id.startsWith("com.colossal.theme.colossal-2027.")
+      id.startsWith("com.colossal.theme.colossal-2027.") ||
+      glossyCopy
     )
   )
     return rendered;
@@ -87,5 +94,6 @@ export function optimizeGlossyRender(rendered, preview = false) {
     css: rendered.css + css,
     lcpImage,
     fontProfile: customFont ? "custom" : "system",
+    frontendMode: "enhance",
   };
 }

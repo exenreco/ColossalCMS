@@ -29,7 +29,17 @@ export function unavailablePublicRender() {
 /** Embed vetted theme output in the first response and reuse it during Angular bootstrap. */
 export function publicHtml(shell, rendered, payloadId = "theme-render") {
   const body = rendered.body || {};
-  const initial = JSON.stringify(rendered).replace(/</g, "\\u003c");
+  const enhanced = rendered.frontendMode === "enhance" && !rendered.preview;
+  const initial = JSON.stringify(
+    enhanced
+      ? {
+          bootstrap: "enhance-v1",
+          body,
+          adsEnabled: rendered.adsEnabled === true,
+          preview: false,
+        }
+      : rendered,
+  ).replace(/</g, "\\u003c");
   const styles = (themeLoadingCss(rendered.loading) + rendered.css).replace(
     /</g,
     "\\3c ",
@@ -73,7 +83,7 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
     .replace(/<head[^>]*>/i, (head) => head + preload)
     .replace(
       /<\/head>/i,
-      `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}"><link rel="apple-touch-icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript><script type="application/json" id="${payloadId}">${initial}</script></head>`,
+      `<meta name="description" content="${esc(rendered.description)}">${seoHead(rendered.seo)}${rendered.siteIcon ? `<link rel="icon" href="${esc(rendered.siteIcon)}"><link rel="apple-touch-icon" href="${esc(rendered.siteIcon)}">` : ""}<style id="theme-styles">${styles}</style><style id="theme-startup-styles">${startup}</style><noscript><style>${startup.replace("opacity:0", "opacity:1")}</style></noscript></head>`,
     )
     .replace(
       /<body[^>]*>/i,
@@ -82,5 +92,9 @@ export function publicHtml(shell, rendered, payloadId = "theme-render") {
     .replace(
       /<cl-frontend[^>]*>[\s\S]*?<\/cl-frontend>/i,
       `<cl-frontend>${banner}${announcement}<div>${rendered.html}</div></cl-frontend>`,
+    )
+    .replace(
+      /<\/body>/i,
+      `<script type="application/json" id="${payloadId}">${initial}</script></body>`,
     );
 }

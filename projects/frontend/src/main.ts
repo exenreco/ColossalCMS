@@ -6,13 +6,7 @@ import { hydrateSliders } from "../../../shared/swiper-host";
 import { hydrateAds } from "../../../shared/google-ads-host";
 
 const rendered = initialPublicRender(document);
-const themeId = rendered?.body.themeId || "";
-if (
-  (themeId === "com.colossal.theme.colossal-2027" ||
-    themeId.startsWith("com.colossal.theme.colossal-2027.")) &&
-  rendered &&
-  !rendered.preview
-) {
+if (rendered?.frontendMode === "enhance" && !rendered.preview) {
   // Enhance the server's actual nodes. Rebuilding them restarts image loading/LCP.
   hydrateMenus(document);
   hydrateGeometry(document);

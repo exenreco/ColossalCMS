@@ -7,6 +7,13 @@ import { optimizeGlossyRender } from "../server/glossy-lcp.mjs";
 import { publicHtml } from "../server/public-html.mjs";
 import { buildGlossyStyles } from "../scripts/build-glossy-styles.mjs";
 import assets from "../shared/glossy-hero-assets.json" with { type: "json" };
+import { initialPublicRender } from "../shared/public-render.ts";
+import {
+  defaultTheme,
+  compileDocument,
+  renderTheme,
+  sanitizeTemplate,
+} from "../server/theme-engine.mjs";
 
 const fixture = () => ({
   html: '<div data-scene-preset="ice-world" data-full-viewport="true" data-portrait-url="/themes/colossal-2027/ice-throne-royal.png"><img class="cl-portrait-fallback" src="/themes/colossal-2027/ice-throne-royal.png" alt="Ice throne"></div>',
@@ -16,6 +23,95 @@ const fixture = () => ({
     className: "c27-body",
     style: "",
   },
+});
+
+test("Glossy copies retain their identity and custom design while receiving delivery optimizations", () => {
+  const copy = fixture();
+  copy.body.themeId = "com.colossal.theme.copy-glossy-child-theme-753bc3b0";
+  copy.css += ".c27-header-inner{gap:18px}.c27-hero{color:#abcdef}";
+  const before = JSON.stringify(copy);
+  const optimized = optimizeGlossyRender(copy);
+  assert.equal(optimized.frontendMode, "enhance");
+  assert.equal(optimized.body.themeId, copy.body.themeId);
+  assert.match(optimized.css, /color:#abcdef/);
+  assert.match(optimized.html, /fetchpriority="high"/);
+  assert.equal(JSON.stringify(copy), before);
+  const unrelated = { ...copy, css: ".my-header{color:red}" };
+  assert.equal(optimizeGlossyRender(unrelated), unrelated);
+});
+
+test("enhanced documents omit duplicate content and CSS, place startup data after content, and retain preview compatibility", () => {
+  const rendered = optimizeGlossyRender(fixture());
+  rendered.html += "<main>VISIBLE_PAGE_CONTENT</main>";
+  rendered.adsEnabled = true;
+  const shell =
+    '<html><head><title>Test</title></head><body><cl-frontend></cl-frontend><script type="module" src="main.js"></script></body></html>';
+  const html = publicHtml(shell, rendered);
+  const json = html.match(
+    /<script type="application\/json" id="theme-render">([\s\S]*?)<\/script>/,
+  )[1];
+  const data = JSON.parse(json);
+  assert.equal(data.bootstrap, "enhance-v1");
+  assert.equal(data.html, undefined);
+  assert.equal(data.css, undefined);
+  assert.ok(json.length < 500);
+  assert.equal((html.match(/VISIBLE_PAGE_CONTENT/g) || []).length, 1);
+  assert.ok(
+    html.indexOf('id="theme-render"') > html.indexOf("VISIBLE_PAGE_CONTENT"),
+  );
+  const parsed = initialPublicRender({
+    getElementById: () => ({ textContent: json }),
+  });
+  assert.equal(parsed.frontendMode, "enhance");
+  assert.equal(parsed.adsEnabled, true);
+  assert.equal(parsed.body.themeId, rendered.body.themeId);
+  const preview = { ...rendered, preview: true };
+  const previewJson = publicHtml(shell, preview).match(
+    /<script type="application\/json" id="theme-render">([\s\S]*?)<\/script>/,
+  )[1];
+  assert.equal(JSON.parse(previewJson).html, rendered.html);
+});
+
+test("native content images reserve their intrinsic aspect ratio before loading", () => {
+  const document = defaultTheme();
+  document.templates.home.children = [
+    {
+      id: "blk_image-dimensions",
+      type: "core/image",
+      settings: { mediaId: "image", size: "medium" },
+    },
+  ];
+  compileDocument(document);
+  const html = renderTheme(document, {
+    kind: "home",
+    settings: {},
+    allContent: [],
+    media: [
+      {
+        id: "image",
+        type: "image",
+        url: "/api/media/image/file",
+        mime: "image/png",
+        updatedAt: "version",
+        altText: "Content image",
+        metadata: { width: 1200, height: 800 },
+      },
+    ],
+  }).html;
+  assert.match(html, /width="1200" height="800"/);
+  assert.match(html, /loading="lazy"/);
+  assert.match(html, /decoding="async"/);
+  assert.match(html, /srcset="/);
+  assert.match(html, /sizes="/);
+  assert.doesNotMatch(
+    sanitizeTemplate(
+      '<img src="/safe.png" srcset="javascript:alert(1) 1x" onerror="bad()">',
+      [],
+      "render",
+      true,
+    ),
+    /javascript:|onerror/,
+  );
 });
 test("Glossy hero is prioritized, responsive and visible before JavaScript; unrelated themes and previews are preserved", async () => {
   const source = fixture(),
