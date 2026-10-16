@@ -1,4 +1,12 @@
+import {
+  tableDefaultChildren,
+  tablePlacement,
+  normalizeTableDocument,
+  setTableTreeData,
+  tableStructureError,
+} from "./table-tree";
 import { MAX_BLOCK_DEPTH } from "./block-limits";
+import type { TableRange } from "./table-block";
 import { BlockPattern, clonePatternBlocks } from "./block-patterns";
 import { applyOutlineCommand } from "./outline-document";
 import { ApiService } from "./api.service";
@@ -27,6 +35,7 @@ export class ThemeEditorState {
   private api = inject(ApiService);
   document = signal<ThemeDocument | null>(null);
   selected = signal("");
+  tableSelection = signal<({ id: string } & TableRange) | null>(null);
   dragSource: { id?: string; type?: string } | null = null;
   /** Use the block tree, rather than rendered DOM wrappers, to validate a destination. */
   canDrop(parentId: string, index: number, source = this.dragSource) {
@@ -169,6 +178,7 @@ export class ThemeEditorState {
   load(d: ThemeDocument) {
     this.document.set(structuredClone(d));
     this.saved = JSON.stringify(d);
+    normalizeTableDocument(this.document()!);
     normalizeFormattedHtmlNames(this.document()!);
     normalizeContextDocument(this.document()!);
     const workspace = this.api.state();
@@ -249,6 +259,9 @@ export class ThemeEditorState {
     this.error = "";
     try {
       change();
+      normalizeTableDocument(this.document()!);
+      const tableError = tableStructureError(this.root!);
+      if (tableError) throw Error(tableError);
       this.ensureEmptyDocuments();
       const partError =
         sharedPartsError(this.document()!.parts) ||
@@ -285,7 +298,9 @@ export class ThemeEditorState {
   set(key: string, value: any) {
     this.commit(() => {
       if (this.node) {
-        this.node.settings[key] = value;
+        if (key === "tableData" && this.node.type === "core/table")
+          setTableTreeData(this.node, value);
+        else this.node.settings[key] = value;
         if (key === "text" && this.node.type === "core/heading")
           delete this.node.settings["html"];
       }
@@ -311,7 +326,16 @@ export class ThemeEditorState {
       ...(def.container
         ? {
             children:
-              type === "core/columns"
+              tableDefaultChildren(
+                type,
+                Object.fromEntries(
+                  def.fields.map((f) => [
+                    f.key,
+                    structuredClone(f.default ?? ""),
+                  ]),
+                ),
+              ) ??
+              (type === "core/columns"
                 ? [this.create("core/column"), this.create("core/column")]
                 : type === "core/slider"
                   ? [this.create("core/slide"), this.create("core/slide")]
@@ -336,7 +360,7 @@ export class ThemeEditorState {
                             item.settings["href"] = "";
                             return item;
                           })
-                      : [],
+                      : []),
           }
         : {}),
     };
@@ -552,6 +576,7 @@ export class ThemeEditorState {
     return wrapper;
   }
   private accepts(parentType: string, childType: string) {
+    if (!tablePlacement(parentType, childType)) return false;
     if (["core/menu", "core/menu-item"].includes(parentType))
       return [
         "core/button",

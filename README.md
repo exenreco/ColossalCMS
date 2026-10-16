@@ -580,6 +580,8 @@ Existing custom item arrays migrate to nested Menu Item blocks. Older automatic 
 
 ### Table block
 
+**Advanced cell editing:** click a cell and Shift-click another to select a rectangle, then use **Merge cells** in the canvas toolbar or Inspector. **Split cell** restores the original cells and text; editing a merged cell replaces that combined text. Merges stay within header, body or footer sections. Drag the right edge of a cell to resize its column, or the bottom edge to resize its row. Resize handles also support arrow keys. The Inspector provides selection coordinates, exact pixel dimensions and **Reset sizes** (`0` means automatic). Dragging previews locally and saves as one Undo step on release; Escape cancels. Row/column insertion and deletion adjust merges and sizes. Split merged cells before reordering rows.
+
 Add **Table** from the Content category in theme, maintenance, page or post editors. Edit plain-text cells directly in the canvas or in the Inspector grid. Add/remove rows and columns and move rows up/down. The Inspector controls the header row, first-column row headers, footer row, caption, independent odd/even row colors, header/footer backgrounds, header text color, cell borders, padding, alignment and equal column widths. Shared Typography and appearance controls also apply. Wide tables scroll horizontally without widening the page. Tables support up to 50 rows, 12 columns and 1,000 characters per cell, subject to the editor's total block-settings limit. Content and presentation save with normal drafts, revisions and publishing.
 
 ### Password-protected file block
@@ -1946,3 +1948,9 @@ This README describes the current repository implementation. Historical V2 label
 ## License
 
 Colossal CMS is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Exenreco Bell.
+
+### Nested table blocks
+
+Table blocks contain **Table Header**, **Table Body**, and **Table Footer** sections. Each section contains **Table Row** blocks, and each row contains **Table Cell** blocks. Cells accept ordinary blocks such as paragraphs, headings, images, buttons, and layouts. Edit paragraph and heading text directly in the canvas; use the block list to select, reorder, copy, or remove nested blocks. Table toolbars provide shortcuts to add sections, rows, and cells.
+
+Existing tables automatically become native child blocks when opened or saved. Cell text, column widths, row heights, colors, and merged regions are preserved. Table-level sizing, merge/split, and appearance controls continue to apply. Merging displays the selected cells’ inner blocks together; splitting restores their original cell placement. The authenticated outline HTTP endpoints and editor commands enforce the same semantic nesting rules.

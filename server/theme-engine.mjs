@@ -1,3 +1,8 @@
+import {
+  migrateTable,
+  tablePlacement,
+  tableStructureError,
+} from "../shared/table-tree.ts";
 import { validateBlockPatterns } from "../shared/block-patterns.ts";
 import {
   renderProtectedFile,
@@ -142,6 +147,8 @@ const tags = [
   "source",
   "table",
   "caption",
+  "colgroup",
+  "col",
   "thead",
   "tbody",
   "tfoot",
@@ -254,6 +261,8 @@ export function sanitizeTemplate(
         "aria-roledescription",
         "style",
         "data-block-id",
+        "data-table-row",
+        "data-table-column",
         "data-geometry-count",
         "data-geometry-speed",
         "data-geometry-distance",
@@ -344,7 +353,8 @@ export function sanitizeTemplate(
         "tabindex",
       ],
       a: ["href", "target", "rel"],
-      th: ["scope"],
+      th: ["scope", "rowspan", "colspan"],
+      td: ["rowspan", "colspan"],
       img: ["src", "alt", "width", "height", "loading"],
       audio: ["src", "controls", "preload", "autoplay", "loop", "muted"],
       video: [
@@ -966,6 +976,13 @@ export function validateDocument(input, core = false) {
       !d.parts[node.type.replace("theme/part-", "")]
     )
       fail("Unknown shared part.");
+    migrateTable(node);
+    if (node.type === "core/table") {
+      const error = tableStructureError(node);
+      if (error) fail(error);
+    }
+    if (!tablePlacement(parentType, node.type))
+      fail("Invalid table block placement. Use sections, rows, and cells.");
     if (node.type === "core/column" && parentType !== "core/columns")
       fail("Column blocks can only be placed inside a Columns block.");
     if (node.type === "core/slide" && parentType !== "core/slider")
@@ -1087,6 +1104,12 @@ export function validateDocument(input, core = false) {
       if (
         !Array.isArray(node.children) ||
         (![
+          "core/table",
+          "core/table-header",
+          "core/table-body",
+          "core/table-footer",
+          "core/table-row",
+          "core/table-cell",
           "core/container",
           "core/columns",
           "core/column",
@@ -1402,7 +1425,9 @@ export function compileBlock(
 ) {
   if (++budget.count > MAX_RENDER_BLOCKS || depth > MAX_RENDER_DEPTH) return "";
   const s = b.settings || {},
-    children = (b.type === "core/post-list" ? [] : b.children || [])
+    children = (
+      ["core/post-list", "core/table"].includes(b.type) ? [] : b.children || []
+    )
       .map((n) => compileBlock(n, d, depth + 1, false, budget))
       .join("");
   let html = "";
@@ -1520,7 +1545,15 @@ export function compileBlock(
       level +
       ">";
   } else if (type === "core/table") {
-    const rendered = renderTableBlock(s, b.id, esc, typographyAttributes);
+    const rendered = renderTableBlock(
+      s,
+      b.id,
+      esc,
+      typographyAttributes,
+      b,
+      (child) => compileBlock(child, d, depth + 4, false, budget),
+      styleSettings,
+    );
     html = rendered.html;
     d._gen?.push(rendered.css);
   } else if (type === "core/paragraph")

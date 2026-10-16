@@ -66,8 +66,9 @@ export class EditorCanvasUpdates {
         (element) => element.getAttribute("data-block-id") === id,
       );
       const table = block?.querySelector<HTMLTableElement>(".cl-data-table");
-      const row = cell.parentElement as HTMLTableRowElement;
-      const rendered = table?.rows[row.rowIndex]?.cells[cell.cellIndex];
+      const rendered = table?.querySelector(
+        `[data-table-row="${Number(cell.dataset["tableRow"])}"][data-table-column="${Number(cell.dataset["tableColumn"])}"]`,
+      );
       if (!rendered || rendered.innerHTML === cell.innerHTML) continue;
       cell.replaceChildren(
         ...Array.from(rendered.childNodes).map((child) =>

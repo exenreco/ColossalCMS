@@ -172,6 +172,7 @@ import { SeoPanelComponent } from "./seo-panel.component";
                     <span class="block-setting-label">{{ field.label }}</span>
                     <span class="block-setting-control"
                       ><cl-table-settings
+                        [blockId]="themeState.node.id"
                         [value]="themeState.node.settings[field.key]"
                         (valueChange)="themeState.set(field.key, $event)"
                     /></span>

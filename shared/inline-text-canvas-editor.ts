@@ -1,7 +1,8 @@
 import type { ThemeEditorState } from "./theme-editor-state";
 import { canvasBlockId } from "./context-blocks";
 import { CanvasBlockSearch } from "./canvas-block-search";
-import { normalizeTableData } from "./table-block";
+import { setTableCellText } from "./table-block";
+import { installTableCanvasTools } from "./table-canvas-tools";
 
 /** Inline heading and paragraph authoring shared by all editor canvases. */
 export class InlineTextCanvasEditor {
@@ -11,6 +12,7 @@ export class InlineTextCanvasEditor {
   private pendingFocus = "";
   private pendingFocusAtStart = false;
   private lastInput = { id: "", at: 0, snapshot: "" };
+  private tableResizing = false;
   private slash = new CanvasBlockSearch((type) => this.chooseSlashBlock(type));
   private slashParagraph?: HTMLElement;
   private slashRange?: Range;
@@ -25,6 +27,7 @@ export class InlineTextCanvasEditor {
     },
   ) {}
   get editing() {
+    if (this.tableResizing) return true;
     const active = this.document?.activeElement as HTMLElement | null;
     if (active?.matches("[data-inline-table-editor]"))
       return (
@@ -246,12 +249,17 @@ export class InlineTextCanvasEditor {
     if (!table) return;
     for (const row of Array.from(table.rows)) {
       for (const cell of Array.from(row.cells)) {
+        const logicalRow = Number(cell.dataset["tableRow"] ?? row.rowIndex);
+        const logicalColumn = Number(
+          cell.dataset["tableColumn"] ?? cell.cellIndex,
+        );
+        if (cell.hasAttribute("data-block-id")) continue;
         cell.contentEditable = "plaintext-only";
         cell.tabIndex = 0;
         cell.dataset["inlineTableEditor"] = id;
         cell.setAttribute(
           "aria-label",
-          `Row ${row.rowIndex + 1}, column ${cell.cellIndex + 1}`,
+          `Row ${logicalRow + 1}, column ${logicalColumn + 1}`,
         );
         cell.addEventListener(
           "focus",
@@ -277,19 +285,20 @@ export class InlineTextCanvasEditor {
           () => {
             const node = this.state.find(id);
             if (node?.type !== "core/table") return;
-            const data = normalizeTableData(node.settings["tableData"]);
+            const data = setTableCellText(
+              node.settings["tableData"],
+              logicalRow,
+              logicalColumn,
+              cell.innerText,
+            );
             if (
-              !data.rows[row.rowIndex] ||
-              cell.cellIndex >= data.rows[row.rowIndex].length
+              !data.rows[logicalRow] ||
+              logicalColumn >= data.rows[logicalRow].length
             )
               return;
-            data.rows[row.rowIndex][cell.cellIndex] = cell.innerText.slice(
-              0,
-              1000,
-            );
             if (JSON.stringify(data).length > 85000) return;
             const before = JSON.stringify(this.state.document());
-            const key = `${id}:${row.rowIndex}:${cell.cellIndex}`;
+            const key = `${id}:${logicalRow}:${logicalColumn}`;
             const group =
               this.lastInput.id === key &&
               this.lastInput.snapshot === before &&
@@ -331,6 +340,14 @@ export class InlineTextCanvasEditor {
         );
       }
     }
+    installTableCanvasTools(table, id, this.state, {
+      signal: options.signal!,
+      select: this.options.select,
+      edited: this.options.edited,
+      resizing: (active) => {
+        this.tableResizing = active;
+      },
+    });
   }
   private input(paragraph: HTMLElement) {
     const id = paragraph.dataset["inlineTextEditor"]!;
@@ -500,6 +517,7 @@ export class InlineTextCanvasEditor {
   destroy() {
     this.closeSlash();
     this.events?.abort();
+    this.tableResizing = false;
     this.document = undefined;
     this.rootId = "";
     this.pendingFocus = "";

@@ -106,6 +106,7 @@
                 <span class="block-setting-label">{{ f.label }}</span>
                 <span class="block-setting-control"
                   ><cl-table-settings
+                    [blockId]="node.id"
                     [value]="node.settings[f.key]"
                     (valueChange)="state.set(f.key, $event)"
                 /></span>

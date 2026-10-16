@@ -1,3 +1,8 @@
+import {
+  migrateTable,
+  normalizeTableDocument,
+  tablePlacement,
+} from "../shared/table-tree.ts";
 /** Non-destructive compatibility upgrade, applied when old snapshots are opened. */
 import { defaultTheme, CMS_VERSION } from "./theme-engine.mjs";
 import { upgradeColossal2027Document } from "./colossal-2027-ice-world.mjs";
@@ -42,6 +47,7 @@ export function migrateThemeDocument(
   if (!input?.manifest || !input.templates || !input.parts) return input;
   const d = structuredClone(input);
   normalizeFormattedHtmlNames(d);
+  normalizeTableDocument(d);
   migrateGlasseyDocument(d);
   removeStandaloneExcerptBlocks(d);
   d.notices = [];

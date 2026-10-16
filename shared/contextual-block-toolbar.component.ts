@@ -1,3 +1,5 @@
+import { mergeTableCells, splitTableCells } from "./table-block";
+import { tableTreeData, setTableTreeData } from "./table-tree";
 import {
   Component,
   EventEmitter,
@@ -163,6 +165,75 @@ import { EditorIconComponent } from "./editor-icon.component";
               Replace
             </button>
           }
+          @if (tableForTools) {
+            <button
+              class="button small"
+              [disabled]="!canEditTableCells('merge')"
+              (click)="editTableCells('merge')"
+            >
+              Merge cells
+            </button>
+            <button
+              class="button small"
+              [disabled]="!canEditTableCells('split')"
+              (click)="editTableCells('split')"
+            >
+              Split cell
+            </button>
+          }
+          @if (node.type === "core/table") {
+            <button
+              class="button small"
+              (click)="state.insert('core/table-header', node.id, 0)"
+              [disabled]="hasTableSection('core/table-header')"
+            >
+              Add header
+            </button>
+            <button
+              class="button small"
+              (click)="
+                state.insert(
+                  'core/table-body',
+                  node.id,
+                  node.children?.length &&
+                    node.children!.at(-1)?.type === 'core/table-footer'
+                    ? node.children!.length - 1
+                    : node.children?.length
+                )
+              "
+            >
+              Add body
+            </button>
+            <button
+              class="button small"
+              (click)="state.insert('core/table-footer', node.id)"
+              [disabled]="hasTableSection('core/table-footer')"
+            >
+              Add footer
+            </button>
+          }
+          @if (
+            [
+              "core/table-header",
+              "core/table-body",
+              "core/table-footer",
+            ].includes(node.type)
+          ) {
+            <button
+              class="button small"
+              (click)="state.insert('core/table-row', node.id)"
+            >
+              Add row
+            </button>
+          }
+          @if (node.type === "core/table-row") {
+            <button
+              class="button small"
+              (click)="state.insert('core/table-cell', node.id)"
+            >
+              Add cell
+            </button>
+          }
           @if (node.type === "core/columns") {
             <button
               class="button small"
@@ -260,6 +331,46 @@ import { EditorIconComponent } from "./editor-icon.component";
 export class ContextualBlockToolbarComponent
   implements AfterViewInit, OnDestroy
 {
+  get tableForTools() {
+    let node = this.state.node;
+    while (node && node.type !== "core/table")
+      node = this.state.parent(node.id);
+    return node;
+  }
+  canEditTableCells(operation: "merge" | "split") {
+    const table = this.tableForTools,
+      range = this.state.tableSelection();
+    if (!table || range?.id !== table.id) return false;
+    const data = tableTreeData(table);
+    try {
+      if (operation === "merge") {
+        mergeTableCells(data, range);
+        return true;
+      }
+      return splitTableCells(data, range).merges.length < data.merges.length;
+    } catch {
+      return false;
+    }
+  }
+  editTableCells(operation: "merge" | "split") {
+    const table = this.tableForTools,
+      range = this.state.tableSelection();
+    if (!table || range?.id !== table.id) return;
+    this.state.commit(() => {
+      const data = (operation === "merge" ? mergeTableCells : splitTableCells)(
+        tableTreeData(table),
+        range,
+      );
+      if (table.children) setTableTreeData(table, data);
+      else table.settings["tableData"] = data;
+    });
+  }
+  hasTableSection(type: string) {
+    return !!this.state.node?.children?.some(
+      (section) => section.type === type,
+    );
+  }
+
   state = inject(ThemeEditorState);
   outline = inject(ThemeOutlineApi);
   get canPaste() {

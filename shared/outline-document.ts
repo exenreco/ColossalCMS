@@ -1,3 +1,11 @@
+import {
+  migrateTable,
+  tableDefaultChildren,
+  tablePlacement,
+  tableStructureError,
+  setTableTreeData,
+  // @ts-ignore Node server runtime requires the extension.
+} from "./table-tree.ts";
 // @ts-ignore Node 24 loads shared TypeScript helpers directly.
 import { MAX_BLOCK_DEPTH, MAX_THEME_BLOCKS } from "./block-limits.ts";
 import type { BlockDefinition, BlockNode } from "./theme-models";
@@ -149,6 +157,7 @@ function safeSettings(
   visit(value);
 }
 function accepts(parent: BlockNode, child: BlockNode) {
+  if (!tablePlacement(parent.type, child.type)) return false;
   if (["core/menu", "core/menu-item"].includes(parent.type))
     return [
       "core/button",
@@ -195,7 +204,16 @@ export function applyOutlineCommand(
       ...(def.container
         ? {
             children:
-              type === "core/columns"
+              tableDefaultChildren(
+                type,
+                Object.fromEntries(
+                  def.fields.map((f) => [
+                    f.key,
+                    structuredClone(f.default ?? ""),
+                  ]),
+                ),
+              ) ??
+              (type === "core/columns"
                 ? [make("core/column"), make("core/column")]
                 : type === "core/slider"
                   ? [make("core/slide"), make("core/slide")]
@@ -205,7 +223,7 @@ export function applyOutlineCommand(
                         Object.assign(child.settings, settings);
                         return child;
                       })
-                    : [],
+                    : []),
           }
         : {}),
     };
@@ -247,6 +265,10 @@ export function applyOutlineCommand(
     if (command.settings !== undefined) {
       safeSettings(command.settings);
       Object.assign(node.settings, command.settings);
+      if (node.type === "core/table" && "tableData" in command.settings) {
+        delete node.children;
+        migrateTable(node);
+      }
     }
     place(node, command.parentId, command.index);
     selected = node.id;
@@ -298,7 +320,16 @@ export function applyOutlineCommand(
       }
     } else if (command.type === "update") {
       safeSettings(command.settings);
-      Object.assign(node.settings, command.settings);
+      if (node.type === "core/table" && "tableData" in command.settings)
+        setTableTreeData(node, command.settings["tableData"]);
+      Object.assign(
+        node.settings,
+        Object.fromEntries(
+          Object.entries(command.settings).filter(
+            ([key]) => node.type !== "core/table" || key !== "tableData",
+          ),
+        ),
+      );
       if (node.type === "core/heading" && "text" in command.settings)
         delete node.settings.html;
     } else if (command.type === "rename" || command.type === "icon") {
@@ -351,6 +382,8 @@ export function applyOutlineCommand(
     node.children?.forEach((child) => check(child, depth + 1, node));
   };
   check(root, 0);
+  const tableError = tableStructureError(root);
+  if (tableError) throw Error(tableError);
   if (!paginationPlacementValid(root))
     throw Error(
       "Pagination must be inside a Post list or one of its layout blocks.",

@@ -1,3 +1,4 @@
+import { tableDefaultChildren } from "./table-tree";
 import { Injectable, signal } from "@angular/core";
 import definitions from "./theme-blocks.json";
 import { BlockDefinition, BlockNode } from "./theme-models";
@@ -30,7 +31,20 @@ export class BlockRegistry {
           structuredClone(f.default ?? ""),
         ]),
       ),
-      ...(def?.container ? { children: [] } : {}),
+      ...(def?.container
+        ? {
+            children:
+              tableDefaultChildren(
+                type,
+                Object.fromEntries(
+                  (def.fields || []).map((f) => [
+                    f.key,
+                    structuredClone(f.default ?? ""),
+                  ]),
+                ),
+              ) ?? [],
+          }
+        : {}),
     };
   }
 }

@@ -1,3 +1,8 @@
+import {
+  migrateTable,
+  tablePlacement,
+  tableStructureError,
+} from "../shared/table-tree.ts";
 import { MAX_BLOCK_DEPTH, MAX_CONTENT_BLOCKS } from "../shared/block-limits.ts";
 import { navigationSettingsError } from "../shared/navigation-blocks.ts";
 import { validateSeo } from "./seo.mjs";
@@ -389,6 +394,13 @@ export async function validateDetails(db, details = {}) {
     let blockCount = 0;
     const ids = new Set();
     const checkBlock = (block, depth = 0, parent = "root") => {
+      if (block && typeof block === "object") migrateTable(block);
+      if (block?.type === "core/table") {
+        const error = tableStructureError(block);
+        if (error) fail(error);
+      }
+      if (block && !tablePlacement(parent, block.type))
+        fail("Invalid table block placement. Use sections, rows, and cells.");
       if (
         ++blockCount > MAX_CONTENT_BLOCKS ||
         depth > MAX_BLOCK_DEPTH ||

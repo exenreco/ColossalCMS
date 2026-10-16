@@ -1,5 +1,10 @@
 /** Bundled SVG drawings shared by the editor, icon picker, and public renderer. */
 export const BLOCK_ICON_PATHS: Record<string, string[]> = {
+  "table-header": ["M3 3h18v18H3z", "M3 8h18M3 5h18M9 8v13M15 8v13"],
+  "table-body": ["M3 3h18v18H3z", "M3 8h18M3 16h18M9 8v8M15 8v8"],
+  "table-footer": ["M3 3h18v18H3z", "M3 16h18M3 19h18M9 3v13M15 3v13"],
+  "table-row": ["M3 8h18v8H3z", "M9 8v8M15 8v8"],
+  "table-cell": ["M5 5h14v14H5z", "M9 12h6M12 9v6"],
   table: ["M3 3h18v18H3z", "M3 9h18M3 15h18M9 3v18M15 3v18"],
   envelope: ["M3 5h18v14H3z", "M3 5l9 7 9-7"],
   "question-circle": [
