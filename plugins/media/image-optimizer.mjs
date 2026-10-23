@@ -15,6 +15,22 @@ function animatedPng(bytes) {
 }
 /** Node-only codec; the storage-independent Media API receives this as a capability. */
 export const imageOptimizer = {
+  async toIcon(bytes) {
+    const sharp = await (codecPromise ||= import("sharp").then(
+      (module) => module.default,
+    ));
+    return new Uint8Array(
+      await sharp(bytes, { limitInputPixels: MAX_PIXELS, failOn: "warning" })
+        .autoOrient()
+        .resize(512, 512, {
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .timeout({ seconds: 10 })
+        .png()
+        .toBuffer(),
+    );
+  },
   async toWebp(bytes, mime, width) {
     if (
       !["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mime) ||

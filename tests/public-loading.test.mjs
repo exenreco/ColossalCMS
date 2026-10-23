@@ -166,7 +166,7 @@ test("public documents render published content, theme styles, metadata and anno
       html,
       /<meta name="description" content="Description before JavaScript">/,
     );
-    assert.match(html, /rel="icon" href="\/api\/media\/published-icon\/file"/);
+    assert.match(html, /rel="icon" href="\/site-icon"/);
     assert.match(html, /An announcement &lt;script&gt;bad\(\)&lt;\/script&gt;/);
     assert.doesNotMatch(
       html,

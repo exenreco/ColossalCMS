@@ -365,11 +365,7 @@ class FrontendComponent implements OnInit, OnDestroy {
         );
       syncSiteIcon(
         document,
-        site.settings.siteIconId
-          ? "/api/media/" +
-              encodeURIComponent(site.settings.siteIconId) +
-              "/file"
-          : "/favicon.svg",
+        site.settings.siteIconId ? "/site-icon" : "/favicon.svg",
       );
       document.title = formatPageTitle(
         this.entry ? this.entry.details?.metaTitle || this.entry.title : "",

@@ -780,9 +780,7 @@ export async function publicThemeRenderData(request, env) {
     announcement: ctx.plugins.some((p) => p.id === "com.colossal.announcement")
       ? ctx.settings.announcement || ""
       : "",
-    siteIcon: ctx.settings.siteIconId
-      ? "/api/media/" + encodeURIComponent(ctx.settings.siteIconId) + "/file"
-      : "/favicon.svg",
+    siteIcon: ctx.settings.siteIconId ? "/site-icon" : "/favicon.svg",
   };
   try {
     return {

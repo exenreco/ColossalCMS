@@ -76,7 +76,13 @@ export function cacheCandidate(request) {
     return null;
   if (
     path.startsWith("/admin") ||
-    ["/login", "/setup", "/healthz", "/signin-with-chatgpt"].includes(path)
+    [
+      "/login",
+      "/setup",
+      "/healthz",
+      "/signin-with-chatgpt",
+      "/site-icon",
+    ].includes(path)
   )
     return null;
   const api = ["/api/themes/render", "/api/public"].includes(path);

@@ -28,6 +28,7 @@ import { contentViewAnalytics } from "./content-views.mjs";
 import { recordDocumentView, analyticsViewCounts } from "./view-analytics.mjs";
 import { LOGIN_SECURITY_ID } from "./login-security.mjs";
 import { handleMedia, serveMedia } from "./media.mjs";
+import { serveSiteIcon } from "./site-icon.mjs";
 import {
   uploadedPlugins,
   installPlugin,
@@ -312,6 +313,12 @@ const coreWorker = {
     const url = new URL(request.url);
     const path = url.pathname;
     try {
+      if (path === "/site-icon" && ["GET", "HEAD"].includes(request.method))
+        return await serveSiteIcon(
+          request,
+          { ...env, DB: database(env) },
+          identity,
+        );
       const pluginPublicResponse = await pluginRuntime.dispatch("public", {
         request,
         env,

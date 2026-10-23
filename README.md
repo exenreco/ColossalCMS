@@ -652,7 +652,9 @@ Panel and viewport menus support arrow-key navigation. Editor shortcuts defer to
 
 **Settings > Appearance** controls the dashboard and every shared editor with **Light**, **Dark**, or **System** mode. System follows the device color scheme and updates live. This workspace setting persists in the database; the editor has no separate mode toggle. Public theme colors remain controlled by the Theme Editor.
 
-**Settings > General > Site Icon** controls browser tabs and bookmarks in the admin and frontend (and their favicon in SEO previews). **Site Logo** separately supplies the image for Site Identity blocks and the frontend brand. Both use the shared image library. Existing installations copy their former identity image into Site Logo once to preserve their design; afterward, changing or removing either setting does not change the other. Legacy Logo URLs become external library images without server downloads.
+**Settings > General > Site Icon** controls browser tabs and bookmarks in the admin and frontend (and their favicon in SEO previews). Public pages link to the stable `/site-icon` endpoint, outside the `/api/` path blocked by robots.txt. On Node hosting, uploaded icons (including SVG) are rendered as a transparent, square 512 × 512 PNG for search engines. The original is retained; the rendition refreshes when the selected media changes. This core endpoint works without the SEO plugin. External library icons redirect to their original URL, and runtimes without the image codec serve the original format. Search engines still need to recrawl the homepage before their displayed icon changes.
+
+**Site Logo** separately supplies the image for Site Identity blocks and the frontend brand. Both use the shared image library. Existing installations copy their former identity image into Site Logo once to preserve their design; afterward, changing or removing either setting does not change the other. Legacy Logo URLs become external library images without server downloads.
 
 ## Themes and templates
 
