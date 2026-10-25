@@ -656,6 +656,8 @@ Panel and viewport menus support arrow-key navigation. Editor shortcuts defer to
 
 **Site Logo** separately supplies the image for Site Identity blocks and the frontend brand. Both use the shared image library. Existing installations copy their former identity image into Site Logo once to preserve their design; afterward, changing or removing either setting does not change the other. Legacy Logo URLs become external library images without server downloads.
 
+The Media Library accepts multi-size `.ico` files as images, including PNG and classic Windows bitmap frames. ICO uploads can be previewed, replaced, and selected as Site Icons; original bytes are retained. Embedded PNG frames can produce the square PNG favicon rendition. Bitmap-only ICOs are served in their original, search-engine-compatible ICO format.
+
 ## Themes and templates
 
 The shared sidebar defaults to **List view**, a compact block hierarchy available from the sidebar menu and the vertical toolbar. List shares its selection, context menu, keyboard actions, and drag/drop behavior with Outline. Switch to **Outline** for dark rounded block cards, connected hierarchy lines, expandable branches, per-block icons, inline labels, and an animated context menu. Drag a block onto the middle of a container to nest it, or onto its upper/lower edge to reorder it. Right-click or use the actions button for copy, cut, paste, duplicate, move, rename, shared-part editing, and deletion. Arrow keys navigate the tree; F2 renames an outline label. Outline changes share the Inspector's undo/redo journal. Outline opens in the shared left sidebar and keeps the canvas visible.
@@ -786,7 +788,7 @@ Search/filter the shared library, switch grid/list, upload/select media, edit me
     <tbody>
         <tr>
             <td>Image</td>
-            <td>PNG, JPEG, GIF, WebP, static sanitized SVG</td>
+            <td>PNG, JPEG, GIF, WebP, static sanitized SVG, ICO</td>
         </tr>
         <tr>
             <td>Audio</td>

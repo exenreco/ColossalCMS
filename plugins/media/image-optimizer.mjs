@@ -1,3 +1,5 @@
+import { inspectIco } from "../../shared/ico.mjs";
+
 let codecPromise;
 const MAX_PIXELS = 40_000_000;
 let active = 0;
@@ -16,6 +18,11 @@ function animatedPng(bytes) {
 /** Node-only codec; the storage-independent Media API receives this as a capability. */
 export const imageOptimizer = {
   async toIcon(bytes) {
+    if (bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 1 && bytes[3] === 0) {
+      const frame = inspectIco(bytes).find((frame) => frame.format === "png");
+      if (!frame) throw new Error("Retain the original bitmap ICO.");
+      bytes = frame.bytes;
+    }
     const sharp = await (codecPromise ||= import("sharp").then(
       (module) => module.default,
     ));

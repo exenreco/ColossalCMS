@@ -8,6 +8,7 @@ import {
   deleteResponsiveFiles,
 } from "../plugins/media/variants.mjs";
 import { imageSize } from "image-size";
+import { inspectIco } from "../shared/ico.mjs";
 import { inspectModel } from "./gltf.mjs";
 import { modelPoster } from "./model-poster.mjs";
 import { XMLValidator, XMLParser } from "fast-xml-parser";
@@ -29,6 +30,7 @@ const MIME = {
   gif: "image/gif",
   webp: "image/webp",
   svg: "image/svg+xml",
+  ico: "image/vnd.microsoft.icon",
   mp3: "audio/mpeg",
   wav: "audio/wav",
   ogg: "audio/ogg",
@@ -43,11 +45,15 @@ export function inspectMedia(bytes, filename, mime) {
   const expected = MIME[ext];
   if (!expected)
     fail(
-      "Supported files: PNG, JPG, GIF, WebP, SVG, PDF, MP3, WAV, OGG, MP4, WebM, GLB, glTF, and model ZIP packages.",
+      "Supported files: PNG, JPG, GIF, WebP, SVG, ICO, PDF, MP3, WAV, OGG, MP4, WebM, GLB, glTF, and model ZIP packages.",
     );
   if (
     mime &&
     mime !== expected &&
+    !(
+      ext === "ico" &&
+      ["image/x-icon", "image/ico", "image/icon"].includes(mime)
+    ) &&
     ![
       "application/octet-stream",
       "audio/mp3",
@@ -60,6 +66,15 @@ export function inspectMedia(bytes, filename, mime) {
     new TextDecoder().decode(bytes.slice(start, end));
   const head = ascii(0, 16);
   let valid = false;
+  let iconFrames;
+  if (ext === "ico") {
+    try {
+      iconFrames = inspectIco(bytes);
+      valid = true;
+    } catch {
+      fail("This ICO file is damaged or contains an unsupported frame.");
+    }
+  }
   if (ext === "pdf")
     valid =
       /^%PDF-\d\.\d/.test(head) &&
@@ -166,8 +181,13 @@ export function inspectMedia(bytes, filename, mime) {
   let metadata = { size: bytes.length };
   if (type === "image") {
     try {
-      const size = imageSize(bytes);
+      const size = iconFrames?.[0] || imageSize(bytes);
       metadata = { ...metadata, width: size.width, height: size.height };
+      if (iconFrames)
+        metadata.iconSizes = iconFrames.map(({ width, height }) => ({
+          width,
+          height,
+        }));
     } catch {
       fail("This image is damaged or has no readable dimensions.");
     }

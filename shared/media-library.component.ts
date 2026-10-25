@@ -212,7 +212,7 @@ import { GltfViewerComponent } from "./gltf-viewer.component";
               ><input
                 type="file"
                 aria-label="Choose media file"
-                accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.mp3,.wav,.ogg,.mp4,.webm,.glb,.gltf,.zip"
+                accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.ico,.pdf,.mp3,.wav,.ogg,.mp4,.webm,.glb,.gltf,.zip"
                 (change)="picked($event)"
             /></label>
             @if (fileIsImage) {
@@ -487,7 +487,9 @@ export class MediaLibraryComponent {
     );
   }
   get fileIsImage() {
-    return !!this.file && /\.(png|jpe?g|gif|webp|svg)$/i.test(this.file.name);
+    return (
+      !!this.file && /\.(png|jpe?g|gif|webp|svg|ico)$/i.test(this.file.name)
+    );
   }
   choose(item: MediaItem) {
     if (!this.picker) {
