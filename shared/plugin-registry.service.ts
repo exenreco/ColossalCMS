@@ -18,7 +18,9 @@ import aiAssistant from "../plugins/ai-assistant/plugin.manifest.json";
 import trivia from "../plugins/trivia/plugin.manifest.json";
 import messaging from "../plugins/messaging/plugin.manifest.json";
 import lazyLoad from "../plugins/lazy-load/plugin.manifest.json";
+import mediaManagerPlay from "../plugins/media-manager-play/plugin.manifest.json";
 export const PLUGIN_MANIFESTS = [
+  mediaManagerPlay,
   caching,
   lazyLoad,
   messaging,
@@ -41,6 +43,10 @@ export const PLUGIN_MANIFESTS = [
 ];
 /** Maps reviewed manifest entry names to lazy Angular components; arbitrary uploaded code is never executed. */
 export const PLUGIN_COMPONENTS: Record<string, () => Promise<any>> = {
+  MediaManagerPlayComponent: () =>
+    import("../plugins/media-manager-play/admin").then(
+      (m) => m.MediaManagerPlayComponent,
+    ),
   CachingComponent: () =>
     import("../plugins/caching/admin").then((m) => m.CachingComponent),
   LazyLoadComponent: () =>

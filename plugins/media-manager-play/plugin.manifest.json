@@ -1,0 +1,23 @@
+{
+  "id": "com.colossal.media-manager-play",
+  "name": "Media Manager Play Billing",
+  "description": "Verify Android ad-removal purchases and receive authenticated Google Play notifications through the CMS HTTPS API.",
+  "version": "0.0.3",
+  "isCore": false,
+  "author": "Telephonic",
+  "license": "MIT",
+  "icon": "plugins",
+  "requires": { "colossal": ">=0.0.3", "plugins": [] },
+  "admin": {
+    "entryComponent": "MediaManagerPlayComponent",
+    "menu": {
+      "label": "Media Manager",
+      "icon": "plugins",
+      "path": "/admin/media-manager-play",
+      "order": 985,
+      "group": "system"
+    },
+    "skeleton": { "component": "SettingsSkeletonComponent", "variant": "form" }
+  },
+  "frontend": { "routes": [] }
+}

@@ -17,7 +17,9 @@ import aiAssistant from "./ai-assistant/plugin.manifest.json" with { type: "json
 import trivia from "./trivia/plugin.manifest.json" with { type: "json" };
 import messaging from "./messaging/plugin.manifest.json" with { type: "json" };
 import lazyLoad from "./lazy-load/plugin.manifest.json" with { type: "json" };
+import mediaManagerPlay from "./media-manager-play/plugin.manifest.json" with { type: "json" };
 export const manifests = [
+  mediaManagerPlay,
   caching,
   lazyLoad,
   messaging,

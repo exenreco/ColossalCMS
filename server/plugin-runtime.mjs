@@ -12,7 +12,9 @@ import messaging from "../plugins/messaging/server.mjs";
 import lazyLoad from "../plugins/lazy-load/server.mjs";
 
 // The composition root is the only place that knows which reviewed integrations are bundled.
+import mediaManagerPlay from "../plugins/media-manager-play/server.mjs";
 export const pluginRuntime = createPluginRegistry([
+  mediaManagerPlay,
   caching,
   lazyLoad,
   messaging,

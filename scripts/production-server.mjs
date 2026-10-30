@@ -1,3 +1,4 @@
+import { playHosting } from "../plugins/media-manager-play/hosting.mjs";
 import { imageOptimizer } from "../plugins/media/image-optimizer.mjs";
 import http from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
@@ -114,6 +115,7 @@ export async function productionRuntime(config, log = console.log) {
     await seedBuiltInData(DB, log, config.CMS_ADMIN_EMAIL);
     DB.builtinsReady = true;
     return {
+      MEDIA_MANAGER_PLAY: playHosting(config),
       IMAGE_OPTIMIZER: imageOptimizer,
       DB,
       STORAGE,
