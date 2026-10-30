@@ -7,10 +7,11 @@ and deploy the CMS after installing these source files and registry contribution
 
 ## Current state
 
-The plugin is implemented locally and disabled by default. It has not been
-deployed, linked to a live Google workload identity provider, or connected to the
-Android app. Mock-provider tests are not evidence of a successful live payment.
-No private Google keys or hosting credentials are shipped in the plugin.
+Verification is disabled by default. Deploy the current CMS build to receive
+the encrypted configuration inputs. Google workload identity setup and Android
+integration remain separate prerequisites. Mock-provider tests are not evidence
+of a successful live payment. No private Google keys or hosting credentials are
+shipped in the plugin.
 
 The existing Google identity is
 `media-manager-play-verifier@portfolio-457414.iam.gserviceaccount.com`, with
@@ -22,10 +23,13 @@ a Vercel deployment to impersonate it until Workload Identity Federation is set 
 The manifest is registered in both plugin catalogs, the server contribution in
 `server/plugin-runtime.mjs`, and the admin component in the lazy component registry.
 The Node production adapter passes only the plugin's server environment binding.
-No package dependency or database migration is required. Settings use the existing
-config table; raw receipts and purchase tokens are not stored in the CMS database.
+No package dependency or database migration is required. Availability uses the
+existing config table; the three configuration fields use its encrypted credential
+records. Raw receipts and purchase tokens are not stored in the CMS database.
 
-1. Configure a permanent HTTPS CMS origin and the environment values below.
+1. Configure a permanent HTTPS CMS origin and a stable `CMS_ENCRYPTION_KEY` in
+   hosting secrets. Open the plugin page to save the three verification fields
+   encrypted in the CMS database.
 2. Configure Google Workload Identity Federation for the exact production hosting
    project/team/environment. For Vercel, use its signed deployment OIDC identity.
    Bind only that production subject to `roles/iam.workloadIdentityUser` on the
@@ -42,11 +46,32 @@ Google IAM/federation changes and deployment require the owner's authorization.
 Existing hosting charges/limits still apply. This plugin does not upgrade Google
 Cloud billing or provision new hosting.
 
-## Server environment (never frontend settings)
+## Encrypted plugin settings
+
+The plugin page provides three masked inputs: Play licensing public key,
+workload identity provider audience, and verifier service account. All three are
+stored through the shared credential vault as AES-256-GCM envelopes in the config
+table. The vault uses a random IV and binds each ciphertext to its field name.
+Raw values are never returned by the admin API, written to logs or placed in
+ordinary plugin settings. Blank inputs preserve existing values; enter a replacement
+to update a field. Validation of every replacement happens before writes.
+
+The stable 32-byte `CMS_ENCRYPTION_KEY` must remain in hosting secrets, outside
+the database it encrypts. Without it, the page reports that encrypted storage is
+unavailable and rejects credential writes. Keep the original key across deploys.
+
+Server requests decrypt the saved values on demand, so saving a replacement does
+not require a redeploy. Existing hosting environment overrides retain precedence
+and are marked managed/read-only. If previously configured there, use the existing
+Connections credential migration, verify the encrypted copies, then remove those
+three overrides and redeploy before editing the fields in this page. Workload
+federation and Pub/Sub still require external Google/hosting setup.
+
+## Hosting bindings and legacy environment fallbacks
 
 | Variable                               | Value                                                                                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `MEDIA_MANAGER_PLAY_PUBLIC_KEY`        | Base64 SPKI licensing public key from Play Console, also embedded in Android                                  |
+| `MEDIA_MANAGER_PLAY_PUBLIC_KEY`        | Legacy fallback; prefer the encrypted Play licensing public key input                                         |
 | `MEDIA_MANAGER_PLAY_WIF_AUDIENCE`      | `//iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER` |
 | `MEDIA_MANAGER_PLAY_SERVICE_ACCOUNT`   | `media-manager-play-verifier@portfolio-457414.iam.gserviceaccount.com`                                        |
 | `VERCEL_OIDC_TOKEN`                    | Signed token provided by Vercel; do not paste a fixed token into CMS settings                                 |

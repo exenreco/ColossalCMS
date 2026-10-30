@@ -1,5 +1,8 @@
 /** Reusable server-only credentials. Bootstrap connections and encryption keys stay outside the DB. */
 export const DATABASE_CONFIG_KEYS = new Set([
+  "MEDIA_MANAGER_PLAY_PUBLIC_KEY",
+  "MEDIA_MANAGER_PLAY_WIF_AUDIENCE",
+  "MEDIA_MANAGER_PLAY_SERVICE_ACCOUNT",
   "OPENAI_API_KEY",
   "ANTHROPIC_API_KEY",
   "GEMINI_API_KEY",

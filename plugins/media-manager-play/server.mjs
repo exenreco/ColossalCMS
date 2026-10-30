@@ -1,4 +1,10 @@
 import {
+  readConfiguration,
+  credentialStatus,
+  validateCredentialUpdates,
+  saveCredentials,
+} from "./configuration.mjs";
+import {
   createPlayService,
   ID,
   PlayError,
@@ -35,7 +41,7 @@ async function publicHandler(context, type) {
       .first();
     if (!plugin?.installed || !plugin?.active || !(await settings(db)).enabled)
       throw new PlayError("Purchase verification is disabled.", 503);
-    const config = context.env.MEDIA_MANAGER_PLAY || {};
+    const config = await readConfiguration(context.env);
     if (type === "verify")
       return json(
         await service.verify(await readBody(context.request), config),
@@ -85,10 +91,15 @@ export default {
           const input = await readBody(request);
           if (
             typeof input.enabled !== "boolean" ||
-            Object.keys(input).some((key) => key !== "enabled")
+            Object.keys(input).some(
+              (key) => !["enabled", "credentials"].includes(key),
+            )
           )
             return json({ error: "Choose enabled or disabled." }, 400);
-          const ready = readiness(env.MEDIA_MANAGER_PLAY);
+          const replacements = await validateCredentialUpdates(
+            input.credentials,
+          );
+          const ready = readiness(await readConfiguration(env, replacements));
           if (
             input.enabled &&
             (!ready.identityConfigured || !ready.receiptKeyConfigured)
@@ -100,6 +111,7 @@ export default {
               },
               400,
             );
+          await saveCredentials(env, replacements);
           await db
             .prepare(
               "INSERT INTO config (id,value) VALUES ('media-manager-play',?) ON CONFLICT(id) DO UPDATE SET value=excluded.value",
@@ -110,7 +122,8 @@ export default {
         }
         return json({
           ...(await settings(db)),
-          ...readiness(env.MEDIA_MANAGER_PLAY),
+          ...readiness(await readConfiguration(env)),
+          ...(await credentialStatus(env)),
           verifyUrl: new URL("/api/media-manager/play/verify", request.url)
             .href,
           notificationsUrl: new URL(

@@ -51,6 +51,51 @@ import { ApiService } from "../../shared/api.service";
             Activate this plugin in Plugins as well. Unconfigured or disabled
             services never grant ad removal.
           </p>
+          <h2>Encrypted verification settings</h2>
+          <p class="field-note">
+            All three fields are encrypted in the database. Leave a saved field
+            blank to keep its current value. Saved values are never returned to
+            this page.
+          </p>
+          @if (!status.storageWritable) {
+            <p class="notice" role="alert">
+              Database encryption is unavailable. Configure CMS_ENCRYPTION_KEY
+              in the hosting secrets; the master encryption key stays outside
+              the database.
+            </p>
+          }
+          @for (field of fields; track field.key) {
+            <label
+              >{{ field.label }}
+              <input
+                type="password"
+                autocomplete="new-password"
+                spellcheck="false"
+                [ngModel]="credentials[field.key]"
+                (ngModelChange)="credentials[field.key] = $event"
+                [disabled]="
+                  busy ||
+                  !status.storageWritable ||
+                  status.credentials?.[field.key]?.managed
+                "
+                [placeholder]="
+                  status.credentials?.[field.key]?.configured
+                    ? 'Saved — leave blank to keep'
+                    : field.placeholder
+                "
+              />
+            </label>
+            @if (status.credentials?.[field.key]?.managed) {
+              <p class="field-note">
+                Managed by hosting environment. Migrate to encrypted storage and
+                remove the hosting override before replacing it here.
+              </p>
+            } @else if (
+              status.credentials?.[field.key]?.source === "database"
+            ) {
+              <p class="field-note">Saved encrypted in database.</p>
+            }
+          }
           <div class="status-grid">
             <p>
               Package: <code>{{ status.packageName }}</code> · Product:
@@ -77,8 +122,10 @@ import { ApiService } from "../../shared/api.service";
           </div>
           <p class="field-note">
             These indicators check configuration, not live Google API access.
-            Configure workload identity federation in the hosting environment;
-            credentials are never entered into this page.
+            Save the public key, provider audience and service account above.
+            Workload identity federation must still be configured in Google
+            Cloud; the deployment identity token is supplied by the host, not
+            stored here.
           </p>
           <label
             >Android verification endpoint<code>{{
@@ -113,6 +160,30 @@ export class MediaManagerPlayComponent implements OnInit {
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   status: any = {};
+  credentials: Record<string, string> = {
+    publicKey: "",
+    audience: "",
+    serviceAccount: "",
+  };
+  readonly fields = [
+    {
+      key: "publicKey",
+      label: "Play licensing public key",
+      placeholder: "Base64 RSA licensing public key",
+    },
+    {
+      key: "audience",
+      label: "Workload identity provider audience",
+      placeholder:
+        "//iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER",
+    },
+    {
+      key: "serviceAccount",
+      label: "Verifier service account",
+      placeholder:
+        "media-manager-play-verifier@portfolio-457414.iam.gserviceaccount.com",
+    },
+  ];
   loading = true;
   busy = false;
   error = "";
@@ -125,6 +196,7 @@ export class MediaManagerPlayComponent implements OnInit {
     this.error = "";
     try {
       this.status = await this.api.request("/admin/media-manager-play");
+      this.credentials = { publicKey: "", audience: "", serviceAccount: "" };
     } catch (error) {
       this.error = (error as Error).message;
     } finally {
@@ -140,9 +212,11 @@ export class MediaManagerPlayComponent implements OnInit {
       this.status = await this.api.request(
         "/admin/media-manager-play",
         "POST",
-        { enabled: this.status.enabled },
+        { enabled: this.status.enabled, credentials: this.credentials },
       );
-      this.notice = "Verification settings saved.";
+      this.credentials = { publicKey: "", audience: "", serviceAccount: "" };
+      this.notice =
+        "Verification settings saved. Configuration values are encrypted in the database.";
     } catch (error) {
       this.error = (error as Error).message;
     } finally {
