@@ -283,3 +283,31 @@ test("Vercel blocks dotenv writes and background connection jobs but supports me
     DB.close();
   }
 });
+
+test("Vercel platform identity header never reaches authentication or plugin requests", async () => {
+  const DB = localDatabase();
+  let identified = false;
+  const handler = createVercelHandler(
+    { CMS_PUBLIC_URL: "https://cms.test", VERCEL: "1" },
+    async () => ({
+      DB,
+      AUTH: {
+        identify: async (request) => {
+          identified = true;
+          assert.equal(request.headers.get("x-vercel-oidc-token"), null);
+          return null;
+        },
+        setupNeeded: async () => false,
+      },
+    }),
+  );
+  try {
+    const response = await call(handler, "/api/admin/session", {
+      headers: { "x-vercel-oidc-token": "platform-token" },
+    });
+    assert.equal(response.status, 401);
+    assert.equal(identified, true);
+  } finally {
+    await DB.close();
+  }
+});

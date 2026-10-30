@@ -74,12 +74,16 @@ federation and Pub/Sub still require external Google/hosting setup.
 | `MEDIA_MANAGER_PLAY_PUBLIC_KEY`        | Legacy fallback; prefer the encrypted Play licensing public key input                                         |
 | `MEDIA_MANAGER_PLAY_WIF_AUDIENCE`      | `//iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER` |
 | `MEDIA_MANAGER_PLAY_SERVICE_ACCOUNT`   | `media-manager-play-verifier@portfolio-457414.iam.gserviceaccount.com`                                        |
-| `VERCEL_OIDC_TOKEN`                    | Signed token provided by Vercel; do not paste a fixed token into CMS settings                                 |
+| `VERCEL_OIDC_TOKEN`                    | Local/build fallback only; Vercel Functions use their request-scoped platform token                           |
 | `MEDIA_MANAGER_PLAY_PUSH_AUDIENCE`     | Exact HTTPS notification URL configured as the Pub/Sub OIDC audience                                          |
 | `MEDIA_MANAGER_PLAY_PUSH_EMAIL`        | Dedicated Pub/Sub push-authentication service account email                                                   |
 | `MEDIA_MANAGER_PLAY_PUSH_SUBSCRIPTION` | `projects/PROJECT_ID/subscriptions/SUBSCRIPTION_ID`                                                           |
 
-This initial hosting adapter supports Vercel's environment-provided OIDC token.
+Vercel Functions supply their rotating OIDC token in the platform request header.
+The Vercel adapter binds that token to the individual request and strips the header
+before forwarding requests to authentication or plugins; it never mutates the warm
+shared runtime. Missing invocation tokens fail closed, without a build-token fallback.
+Standalone Node hosts may use an explicitly supplied environment token for local testing.
 On another host, provide a trusted, refreshable `identityToken()` supplier in the
 server-only `env.MEDIA_MANAGER_PLAY` binding. A static copied access/OIDC token is
 not a production setup. No private-key fallback is implemented.

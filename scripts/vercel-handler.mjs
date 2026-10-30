@@ -1,3 +1,4 @@
+import { playRequestHosting } from "../plugins/media-manager-play/hosting.mjs";
 import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import worker from "../server/worker.mjs";
@@ -125,6 +126,7 @@ export function createVercelHandler(
       headers.delete("oai-authenticated-user-id");
       headers.delete("oai-authenticated-user-email");
       headers.delete("x-cms-client-ip");
+      headers.delete("x-vercel-oidc-token");
       const ip = clientIp(req, { vercel: config.VERCEL === "1" });
       headers.set("x-cms-client-ip", ip);
       let body;
@@ -164,7 +166,15 @@ export function createVercelHandler(
         authorizeHeartbeat(request, config.CRON_SECRET);
       const cold = !runtime;
       const runtimeStarted = performance.now();
-      const env = await getRuntime();
+      const sharedEnv = await getRuntime();
+      const env = {
+        ...sharedEnv,
+        MEDIA_MANAGER_PLAY: playRequestHosting(
+          sharedEnv.MEDIA_MANAGER_PLAY,
+          req.headers,
+          config.VERCEL === "1",
+        ),
+      };
       const runtimeDuration = performance.now() - runtimeStarted;
       const authStarted = performance.now();
       let response =

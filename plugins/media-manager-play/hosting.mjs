@@ -12,3 +12,15 @@ export function playHosting(config) {
     subscription: config.MEDIA_MANAGER_PLAY_PUSH_SUBSCRIPTION || "",
   };
 }
+
+// Function tokens are request headers, not build-time environment variables.
+// Keep the supplier request-local: warm/concurrent invocations must not share it.
+export function playRequestHosting(binding, headers, isVercel) {
+  if (!isVercel) return binding;
+  const token = headers["x-vercel-oidc-token"];
+  return {
+    ...binding,
+    identityToken: () =>
+      typeof token === "string" && token.length <= 20000 ? token : "",
+  };
+}
